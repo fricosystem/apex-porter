@@ -73,7 +73,6 @@ function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[
     case 'entregas1':
       return [
         { label: 'Empresa', value: r.empresa },
-        { label: 'Departamento', value: r.departamento },
         formatRgCpfField(r.rgCpf),
       ];
     case 'visitantes':
