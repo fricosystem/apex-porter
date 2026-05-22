@@ -277,7 +277,7 @@ export default function RegistroModal({
   const empresaSuggestions = useMemo(() => {
     const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
 
-    // From empresas (seed data — still useful for suggestions)
+    // Apenas da coleção de empresas
     empresas.forEach((e) => {
       if (!map.has(e.nome)) {
         map.set(e.nome, {
@@ -287,47 +287,13 @@ export default function RegistroModal({
       }
     });
 
-    // From pessoas (cadastros) — empresa field is PRIMARY source
-    pessoas.filter((p) => !p.inativo).forEach((p) => {
-      if (p.empresa && !map.has(p.empresa)) {
-        map.set(p.empresa, {
-          data: { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' },
-          sublabel: p.nome || '',
-        });
-      } else if (p.empresa && map.has(p.empresa)) {
-        const existing = map.get(p.empresa)!;
-        map.set(p.empresa, {
-          data: mergeUnified(existing.data, { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' }),
-          sublabel: existing.sublabel,
-        });
-      }
-    });
-
-    // From previous records — associate empresa with motorista/nome
-    registrosFluxo.forEach((r) => {
-      const unified = extractUnifiedFromRecord(r);
-      const key = unified.company;
-      if (!key) return;
-
-      if (map.has(key)) {
-        const existing = map.get(key)!;
-        map.set(key, {
-          data: mergeUnified(existing.data, unified),
-          sublabel: existing.sublabel,
-        });
-      } else {
-        const sublabel = unified.name || '';
-        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
-      }
-    });
-
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
       label,
       sublabel: sublabel || undefined,
       origin: (data.origin as 'cadastro' | 'historico' | undefined),
       data: data as unknown as Record<string, string>,
     }));
-  }, [empresas, pessoas, registrosFluxo]);
+  }, [empresas]);
 
   const rgCpfSuggestions = useMemo(() => {
     const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
@@ -538,6 +504,16 @@ export default function RegistroModal({
       horarioEntrada: format(new Date(), 'HH:mm'),
       porteiro: prev.porteiro || user?.nome || '',
     }));
+  };
+
+  const handleEmpresaSelect = (suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    if (unified.company) {
+      setFormData((prev) => ({
+        ...prev,
+        empresa: unified.company,
+      }));
+    }
   };
 
   const handleSubmit = () => {
@@ -861,7 +837,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -904,7 +880,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -967,7 +943,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1030,7 +1006,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1092,7 +1068,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1174,7 +1150,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleEmpresaSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
