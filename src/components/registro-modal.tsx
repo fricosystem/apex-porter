@@ -1371,7 +1371,7 @@ export default function RegistroModal({
               <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold uppercase tracking-wider text-[11px]">Modo de Refação Auditável</p>
-                <p>Altere as informações necessárias abaixo e salve para criar uma nova versão corrigida do registro original #{registroInicial?.id}.</p>
+                <p>Altere as informações necessárias abaixo e salve para criar uma nova versão corrigida do registro original.</p>
               </div>
             </div>
           )}

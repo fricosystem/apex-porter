@@ -806,7 +806,7 @@ export default function FluxoPage() {
               })()}
               <span className="flex-1">Detalhes do Registro</span>
               
-              {selectedRegistro && (
+              {selectedRegistro && !selectedRegistro.inativo && (
                 <button
                   type="button"
                   onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(selectedRegistro))}
@@ -870,7 +870,7 @@ export default function FluxoPage() {
               </div>
 
               {/* Only show detalhes/ocorrencia/saida if not yet finalized */}
-              {!selectedRegistro.horarioSaida && (
+              {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
                 <>
                   {/* Peso de Saída — PESAGEM DE CARGA, COLETA e ENTREGAS */}
                   {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2') && (() => {
@@ -972,7 +972,7 @@ export default function FluxoPage() {
               )}
 
               {/* Registrar Saída button - only if not yet finalized */}
-              {!selectedRegistro.horarioSaida && (
+              {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
                 <Button
                   onClick={handleRegistrarSaida}
                   className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white text-base font-semibold"

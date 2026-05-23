@@ -84,46 +84,73 @@ const LEGEND_STYLE = {
   fontFamily: 'inherit',
 };
 
-// ── Custom Cursor with curved connector line from tooltip area to bar ──
+// ── Custom Cursor with connector line from tooltip area to point ──
 function ChartCursor(props: any) {
-  const { x, y, width, height, top, bottom } = props;
-  if (x === undefined || y === undefined) return null;
+  const { x, y, width, height, top, bottom, points } = props;
+  
+  if (x === undefined) return null;
 
-  const barW = width || 20;
-  const cx = x + barW / 2;
+  const cx = x;
   const chartTop = top ?? 0;
-  const barTop = y;
-  const barH = height || 20;
-  const barBottom = barTop + barH;
-
+  const chartBottom = bottom ?? 0;
+  
+  let pointY = y;
+  let barWidth = width || 20;
+  
+  // For LineChart/AreaChart, use points if available
+  if (points && points.length > 0 && points[0].value !== undefined) {
+    pointY = points[0].y;
+  }
+  
   const color = '#10b981';
-  const midY = chartTop + (barTop - chartTop) * 0.5;
 
   return (
     <g>
-      {/* Soft highlight behind hovered bar */}
-      <rect
-        x={x - 2}
-        y={chartTop}
-        width={barW + 4}
-        height={barBottom - chartTop}
-        fill="rgba(16,185,129,0.06)"
-        rx={3}
-      />
-
-      {/* Main curved connector line: from chart top center → bar top center */}
-      <path
-        d={`M${cx},${chartTop} C${cx},${midY} ${cx - 10},${barTop - 8} ${cx},${barTop}`}
-        fill="none"
+      {/* Vertical line through the point */}
+      <line
+        x1={cx}
+        y1={chartTop}
+        x2={cx}
+        y2={chartBottom}
         stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        opacity="0.6"
+        strokeWidth="1"
+        strokeDasharray="3 3"
+        opacity="0.3"
       />
 
-      {/* Dot at bar top (target endpoint) */}
-      <circle cx={cx} cy={barTop} r="3" fill={color} opacity="0.5" />
-      <circle cx={cx} cy={barTop} r="1.5" fill="#ffffff" />
+      {/* Connector line from chart top to the point */}
+      {pointY !== undefined && (
+        <line
+          x1={cx}
+          y1={chartTop}
+          x2={cx}
+          y2={pointY}
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          opacity="0.6"
+        />
+      )}
+
+      {/* Dot at the point (target endpoint) */}
+      {pointY !== undefined && (
+        <>
+          <circle cx={cx} cy={pointY} r="4" fill={color} opacity="0.8" />
+          <circle cx={cx} cy={pointY} r="2" fill="#ffffff" />
+        </>
+      )}
+      
+      {/* For BarChart, show highlight behind bar */}
+      {width !== undefined && height !== undefined && (
+        <rect
+          x={x - 2}
+          y={chartTop}
+          width={barWidth + 4}
+          height={chartBottom - chartTop}
+          fill="rgba(16,185,129,0.06)"
+          rx={3}
+        />
+      )}
     </g>
   );
 }
@@ -499,22 +526,18 @@ export default function DashboardPage() {
   }, [registrosFluxo, fim]);
 
   const fluxoPorPeriodo = useMemo(() => {
-    const counts: Record<string, number> = {
-      'Madrugada (00h-06h)': 0,
-      'Manhã (06h-12h)': 0,
-      'Tarde (12h-18h)': 0,
-      'Noite (18h-00h)': 0,
-    };
+    const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+    const data = hours.map(h => ({ periodo: h, fluxo: 0 }));
+    
     registrosFluxoFiltered.forEach(r => {
       if (r.horarioEntrada) {
-        const hour = parseInt(r.horarioEntrada.split(':')[0], 10);
-        if (hour >= 6 && hour < 12) counts['Manhã (06h-12h)']++;
-        else if (hour >= 12 && hour < 18) counts['Tarde (12h-18h)']++;
-        else if (hour >= 18 && hour <= 23) counts['Noite (18h-00h)']++;
-        else counts['Madrugada (00h-06h)']++;
+        const h = r.horarioEntrada.split(':')[0] + ':00';
+        const entry = data.find(d => d.periodo === h);
+        if (entry) entry.fluxo++;
       }
     });
-    return Object.entries(counts).map(([periodo, fluxo]) => ({ periodo, fluxo }));
+    
+    return data;
   }, [registrosFluxoFiltered]);
 
   const checklistsPorStatus = useMemo(() => {
@@ -917,7 +940,7 @@ export default function DashboardPage() {
                             <Cell key={`cell-${index}`} fill={(entry as any).fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1070,7 +1093,7 @@ export default function DashboardPage() {
                             <Cell key={`grav-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1108,7 +1131,7 @@ export default function DashboardPage() {
                             <Cell key={`oc-status-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1141,7 +1164,7 @@ export default function DashboardPage() {
                             <Cell key={`vei-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1179,7 +1202,7 @@ export default function DashboardPage() {
                             <Cell key={`pes-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1212,7 +1235,7 @@ export default function DashboardPage() {
                             <Cell key={`pa-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1250,7 +1273,7 @@ export default function DashboardPage() {
                             <Cell key={`ap-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1283,7 +1306,7 @@ export default function DashboardPage() {
                             <Cell key={`insp-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
