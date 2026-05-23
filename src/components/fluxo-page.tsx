@@ -23,7 +23,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogPortal,
+  DialogOverlay,
 } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
 import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib/data';
 import RegistroModal from './registro-modal';
@@ -795,7 +798,6 @@ export default function FluxoPage() {
       {/* Detail Modal */}
       <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setPesoSaidaInput(''); } }}>
         <DialogContent
-          className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
@@ -1057,33 +1059,37 @@ export default function FluxoPage() {
 
       {/* Modal Mensagem Liberação */}
       <Dialog open={!!mensagemLiberacao} onOpenChange={(v) => { if (!v) setMensagemLiberacao(null); }}>
-        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-left">
-              <MessageSquare className="h-5 w-5 text-emerald-600" />
-              Mensagem de Liberação
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="bg-muted p-3 rounded-md text-sm text-foreground whitespace-pre-wrap select-all">
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogPrimitive.Content
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <DialogTitle className="text-sm font-medium mb-3">Mensagem de Liberação</DialogTitle>
+            <div className="bg-muted p-2 rounded text-xs text-foreground whitespace-pre-wrap select-all">
               {mensagemLiberacao}
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => {
-                if (mensagemLiberacao) {
-                  navigator.clipboard.writeText(mensagemLiberacao);
-                  toast.success('Mensagem copiada para a área de transferência!');
-                  setMensagemLiberacao(null);
-                }
-              }}
-            >
-              Copiar e Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+            <div className="mt-3">
+              <Button
+                size="sm"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                onClick={() => {
+                  if (mensagemLiberacao) {
+                    navigator.clipboard.writeText(mensagemLiberacao);
+                    toast.success('Mensagem copiada!');
+                    setMensagemLiberacao(null);
+                  }
+                }}
+              >
+                Copiar e Fechar
+              </Button>
+            </div>
+            <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Fechar</span>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </DialogPortal>
       </Dialog>
     </motion.div>
   );

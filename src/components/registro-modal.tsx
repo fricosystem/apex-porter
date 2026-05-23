@@ -8,7 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogPortal,
+  DialogOverlay,
 } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -1448,44 +1452,49 @@ export default function RegistroModal({
         onClose();
       }
     }}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Mensagem de Liberação</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <p className="text-sm text-muted-foreground">
-            Copie a mensagem abaixo para enviar no grupo de liberação:
-          </p>
-          <div className="bg-muted p-3 rounded-lg text-sm text-foreground select-all">
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+        >
+          <DialogTitle className="text-sm font-medium mb-3">Mensagem de Liberação</DialogTitle>
+          <div className="bg-muted p-2 rounded text-xs text-foreground select-all">
             {coletaMessage}
           </div>
-        </div>
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setColetaMessage(null);
-              onClose();
-            }}
-          >
-            Fechar
-          </Button>
-          <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => {
-              if (coletaMessage) {
-                navigator.clipboard.writeText(coletaMessage)
-                  .then(() => toast.success('Mensagem copiada!'))
-                  .catch(() => toast.error('Erro ao copiar. Selecione o texto e copie manualmente.'));
-              }
-              setColetaMessage(null);
-              onClose();
-            }}
-          >
-            Copiar mensagem
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          <div className="mt-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs flex-1"
+              onClick={() => {
+                setColetaMessage(null);
+                onClose();
+              }}
+            >
+              Fechar
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs flex-1"
+              onClick={() => {
+                if (coletaMessage) {
+                  navigator.clipboard.writeText(coletaMessage)
+                    .then(() => toast.success('Mensagem copiada!'))
+                    .catch(() => toast.error('Erro ao copiar. Selecione o texto e copie manualmente.'));
+                }
+                setColetaMessage(null);
+                onClose();
+              }}
+            >
+              Copiar
+            </Button>
+          </div>
+          <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fechar</span>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
     </>
   );
