@@ -173,7 +173,7 @@ interface RegistroModalProps {
 
 export default function RegistroModal({
   open,
-  onClose,
+  onClose: originalOnClose,
   categoriaInicial,
   registroInicial,
   isRefacao,
@@ -182,6 +182,11 @@ export default function RegistroModal({
   const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user, addRascunhoFluxo, updateRascunhoFluxo, removeRascunhoFluxo, addEmpresa, addPessoa, updatePessoa } = useAppStore();
   const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
   const [coletaMessage, setColetaMessage] = useState<string | null>(null);
+
+  const onClose = () => {
+    limparCampos();
+    originalOnClose();
+  };
 
   // Cadastrar Empresa quick modal
   const [cadastrarEmpresaOpen, setCadastrarEmpresaOpen] = useState(false);
@@ -192,6 +197,17 @@ export default function RegistroModal({
     porteiro: user?.nome || '',
   }));
 
+  const limparCampos = () => {
+    setFormData({
+      data: formData.data || format(new Date(), 'dd/MM/yyyy'),
+      horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
+      porteiro: user?.nome || '',
+    });
+    if (!categoriaInicial) {
+      setCategoria('');
+    }
+  };
+
   useEffect(() => {
     if (open) {
       if (registroInicial && (isRefacao || isRascunho)) {
@@ -199,13 +215,14 @@ export default function RegistroModal({
         const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, ...rest } = registroInicial as any;
         setFormData({ ...rest });
       } else {
-        setCategoria(categoriaInicial || '');
-        setFormData((prev) => ({
-          data: format(new Date(), 'dd/MM/yyyy'),
-          horarioEntrada: format(new Date(), 'HH:mm'),
+        setFormData({
+          data: formData.data || format(new Date(), 'dd/MM/yyyy'),
+          horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
           porteiro: user?.nome || '',
-          ...prev,
-        }));
+        });
+        if (!categoriaInicial) {
+          setCategoria('');
+        }
       }
     }
   }, [open, registroInicial, isRefacao, isRascunho, user, categoriaInicial]);
@@ -482,6 +499,7 @@ export default function RegistroModal({
       addRascunhoFluxo(registro);
       toast.success('Rascunho salvo com sucesso!');
     }
+    limparCampos();
     onClose();
   };
 
@@ -803,9 +821,11 @@ export default function RegistroModal({
       const mensagem = `O Sr. ${formData.motorista || ''}, ${docLabel} ${docValue}, está aqui pela empresa ${formData.empresa || ''} para retirar a coleta. Podemos liberar?`;
       
       setColetaMessage(mensagem);
+      limparCampos();
       return; // Do not call onClose() yet, wait for user to close the message modal
     }
 
+    limparCampos();
     onClose();
   };
 
