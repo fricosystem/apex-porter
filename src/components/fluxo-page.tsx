@@ -293,6 +293,16 @@ export default function FluxoPage() {
     setCategoriaAtiva('todos');
   }, [setCategoriaAtiva]);
 
+  useEffect(() => {
+    if (statusFilter === 'finalizado') {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      setFiltroData(`${ano}-${mes}-${dia}`);
+    }
+  }, [statusFilter]);
+
   const departamentoOptions = useMemo(() => {
     const set = new Set<string>();
     departamentos.forEach((d) => set.add(d.nome));
