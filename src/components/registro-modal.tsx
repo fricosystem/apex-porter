@@ -1438,7 +1438,7 @@ export default function RegistroModal({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 flex-wrap justify-between sm:justify-end w-full">
+        <DialogFooter className="gap-2 sm:gap-0 flex-wrap justify-between sm:justify-end w-full pt-4">
           {isRascunho ? (
             <Button variant="destructive" onClick={handleDeleteDraft} className="w-full sm:w-auto mb-2 sm:mb-0 sm:mr-auto">
               Excluir Rascunho
