@@ -442,7 +442,52 @@ export default function RegistroModal({
   // ── Handlers ──
 
   const handleCategoriaChange = (v: string) => {
-    setCategoria(v as CategoriaFluxo);
+    const novaCategoria = v as CategoriaFluxo;
+    
+    // Transferir dados entre campos equivalentes ao mudar de categoria
+    setFormData((prev) => {
+      const novoFormData = { ...prev };
+      
+      // Obter o nome principal do formulário atual
+      let nomePrincipal = prev.nome || prev.motorista || prev.nomeColaborador || prev.destinatario || '';
+      
+      // Obter o documento principal do formulário atual
+      let docPrincipal = prev.rgCpf || prev.cpfRg || '';
+      
+      // Preencher campos equivalentes na nova categoria
+      switch (novaCategoria) {
+        case 'entregas1':
+        case 'visitantes':
+        case 'prestadores':
+          if (nomePrincipal && !prev.nome) novoFormData.nome = nomePrincipal;
+          if (docPrincipal && !prev.rgCpf) novoFormData.rgCpf = docPrincipal;
+          break;
+          
+        case 'pesagem':
+        case 'coleta':
+          if (nomePrincipal && !prev.motorista) novoFormData.motorista = nomePrincipal;
+          if (docPrincipal && !prev.rgCpf) novoFormData.rgCpf = docPrincipal;
+          break;
+          
+        case 'entregas2':
+          if (nomePrincipal && !prev.motorista) novoFormData.motorista = nomePrincipal;
+          if (docPrincipal && !prev.cpfRg) novoFormData.cpfRg = docPrincipal;
+          break;
+          
+        case 'movimentacao':
+          if (nomePrincipal && !prev.nomeColaborador) novoFormData.nomeColaborador = nomePrincipal;
+          if (docPrincipal && !prev.rgCpf) novoFormData.rgCpf = docPrincipal;
+          break;
+          
+        case 'correspondencias':
+          if (nomePrincipal && !prev.destinatario) novoFormData.destinatario = nomePrincipal;
+          break;
+      }
+      
+      return novoFormData;
+    });
+    
+    setCategoria(novaCategoria);
   };
 
   const updateField = (field: string, value: string) => {
