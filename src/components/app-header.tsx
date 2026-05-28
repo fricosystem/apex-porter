@@ -107,17 +107,8 @@ export default function AppHeader() {
       return;
     }
     
-    // Process ticket input (allow only numbers or full ticket)
-    let processedTicket = ticketInput.trim().toUpperCase();
-    if (!processedTicket.startsWith('TK-')) {
-      // If just numbers/letters, format as TK-XXXX-XXXX
-      const cleaned = processedTicket.replace(/[^A-Z0-9]/g, '');
-      if (cleaned.length === 8) {
-        processedTicket = `TK-${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
-      } else {
-        processedTicket = `TK-${processedTicket}`;
-      }
-    }
+    // Process ticket input: remove any non-digit characters, since tickets are DDMNX (digits only)
+    const processedTicket = ticketInput.trim().replace(/\D/g, '');
 
     // Find the pessoa with this ticket
     const pessoa = pessoas.find(p => p.ticket === processedTicket);
