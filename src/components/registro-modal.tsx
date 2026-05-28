@@ -1523,7 +1523,7 @@ export default function RegistroModal({
 
           <div className="space-y-2">
             <div className="flex items-end gap-2">
-              <div className="flex-1">
+              <div className="flex-1 space-y-1.5">
                 <Label className="flex items-center gap-1">
                   Tipo de Visita <span className="text-red-500">*</span>
                 </Label>
