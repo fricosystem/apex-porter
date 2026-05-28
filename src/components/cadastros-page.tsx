@@ -20,6 +20,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Ticket,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -77,6 +78,7 @@ interface FormState {
   placa: string;
   telefone: string;
   email: string;
+  ticket: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -89,6 +91,7 @@ const EMPTY_FORM: FormState = {
   placa: '',
   telefone: '',
   email: '',
+  ticket: '',
 };
 
 export default function CadastrosPage() {
@@ -338,6 +341,10 @@ export default function CadastrosPage() {
           p.placa.toLowerCase().includes(q)
       );
     }
+    
+    // Ordenar A-Z pelo nome
+    list = [...list].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    
     return list;
   }, [pessoas, search, filterTipo, filterStatus, filterDepartamento, filterEmpresa]);
 
@@ -359,6 +366,7 @@ export default function CadastrosPage() {
       placa: pessoa.placa || '',
       telefone: pessoa.telefone || '',
       email: pessoa.email || '',
+      ticket: pessoa.ticket || '',
     });
     setDialogOpen(true);
   };
@@ -393,6 +401,7 @@ export default function CadastrosPage() {
         placa: form.placa.trim().toUpperCase(),
         telefone: form.telefone.trim(),
         email: form.email.trim(),
+        ticket: form.ticket.trim() || undefined,
       });
       toast.success('Pessoa atualizada!');
     } else {
@@ -407,6 +416,7 @@ export default function CadastrosPage() {
         placa: form.placa.trim().toUpperCase(),
         telefone: form.telefone.trim(),
         email: form.email.trim(),
+        ticket: form.ticket.trim() || undefined,
       });
       toast.success('Pessoa cadastrada!');
     }
@@ -565,9 +575,11 @@ export default function CadastrosPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
-                      {departamentos.map(d => (
-                        <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
-                      ))}
+                      {[...departamentos]
+                        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                        .map(d => (
+                          <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -579,9 +591,11 @@ export default function CadastrosPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todas</SelectItem>
-                      {empresas.map(e => (
-                        <SelectItem key={e.id} value={e.nome}>{e.nome}</SelectItem>
-                      ))}
+                      {[...empresas]
+                        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                        .map(e => (
+                          <SelectItem key={e.id} value={e.nome}>{e.nome}</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -748,6 +762,45 @@ export default function CadastrosPage() {
                       {detailsPessoa.inativo ? "Inativo" : "Ativo"}
                     </Badge>
                   </div>
+                </div>
+
+                {/* Ticket */}
+                <div className="pt-3 border-t border-border/40">
+                  {detailsPessoa.ticket ? (
+                    <div className="flex items-center justify-between gap-2 bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800/40">
+                      <div className="flex items-center gap-2">
+                        <Ticket className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Ticket</p>
+                          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{detailsPessoa.ticket}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => {
+                          const pessoaAtualizada = { ...detailsPessoa, ticket: undefined };
+                          updatePessoa(pessoaAtualizada);
+                          setDetailsPessoa(pessoaAtualizada);
+                          toast.success('Ticket removido com sucesso!');
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remover
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 p-3 rounded-lg border border-dashed border-muted-foreground/30">
+                      <div className="flex items-center gap-2">
+                        <Ticket className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Ticket</p>
+                          <p className="text-sm text-muted-foreground">Nenhum ticket cadastrado</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -964,6 +1017,16 @@ export default function CadastrosPage() {
                 placeholder="email@empresa.com"
                 value={form.email}
                 onChange={(e) => updateForm('email', e.target.value)}
+              />
+            </div>
+
+            {/* Ticket */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Ticket</Label>
+              <Input
+                placeholder="DDMNX (ex: 03101)"
+                value={form.ticket}
+                onChange={(e) => updateForm('ticket', e.target.value)}
               />
             </div>
           </div>

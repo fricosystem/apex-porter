@@ -12,7 +12,7 @@ import {
   DialogOverlay,
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { X, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,6 +29,7 @@ import {
   CATEGORIAS_FLUXO,
   type CategoriaFluxo,
   type RegistroFluxo,
+  type Pessoa,
 } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
 import { toast } from 'sonner';
@@ -37,7 +38,7 @@ import { formatCpfRg } from '@/lib/utils';
 
 // Unified data structure for autocomplete — stores ALL available info
 // regardless of which category it came from
-interface UnifiedSuggestionData {
+export interface UnifiedSuggestionData {
   name: string;       // person's name
   company: string;    // company name
   doc: string;        // RG/CPF
@@ -47,7 +48,7 @@ interface UnifiedSuggestionData {
 }
 
 // Maps unified data → form fields for each category
-function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestionData): Record<string, string> {
+export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestionData): Record<string, string> {
   const mapped: Record<string, string> = {};
 
   switch (categoria) {
@@ -102,7 +103,7 @@ function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestion
 }
 
 // Extract unified data from any RegistroFluxo
-function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionData {
+export function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionData {
   const data: UnifiedSuggestionData = { name: '', company: '', doc: '', plate: '', department: '' };
 
   switch (r.categoria) {
@@ -165,10 +166,11 @@ function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggesti
 interface RegistroModalProps {
   open: boolean;
   onClose: () => void;
-  categoriaInicial?: CategoriaFluxo;
-  registroInicial?: RegistroFluxo | null;
+  categoriaInicial: CategoriaFluxo;
+  registroInicial?: RegistroFluxo;
   isRefacao?: boolean;
   isRascunho?: boolean;
+  prefilledFormData?: Record<string, string>;
 }
 
 export default function RegistroModal({
@@ -178,10 +180,81 @@ export default function RegistroModal({
   registroInicial,
   isRefacao,
   isRascunho,
+  prefilledFormData,
 }: RegistroModalProps) {
   const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user, addRascunhoFluxo, updateRascunhoFluxo, removeRascunhoFluxo, addEmpresa, addPessoa, updatePessoa } = useAppStore();
   const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
   const [coletaMessage, setColetaMessage] = useState<string | null>(null);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [ticketGerado, setTicketGerado] = useState<string | null>(null);
+
+  // Função para verificar recorrência por CPF
+  const verificarRecorrencia = (cpf: string): { isRecorrente: boolean; pessoa?: Pessoa; contador: number } => {
+    if (!cpf) return { isRecorrente: false, contador: 0 };
+    
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    const pessoa = pessoas.find(p => p.rgCpf.replace(/\D/g, '') === cpfLimpo && !p.inativo);
+    
+    if (!pessoa) return { isRecorrente: false, contador: 0 };
+    
+    // Contar registros no histórico
+    const contador = registrosFluxo.filter(r => {
+      const doc = extractUnifiedFromRecord(r).doc.replace(/\D/g, '');
+      return doc === cpfLimpo;
+    }).length;
+    
+    return { isRecorrente: contador >= 3, pessoa, contador };
+  };
+
+  // Função para gerar ticket no formato DDMNX
+  const gerarTicket = (): string => {
+    // Obter data atual
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, '0'); // DD com zero à esquerda
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // MN com zero à esquerda
+    const prefixo = dia + mes;
+
+    // Contar quantos tickets já existem para hoje (início com prefixo DDMN)
+    let count = 0;
+    pessoas.forEach(p => {
+      if (p.ticket && p.ticket.startsWith(prefixo)) {
+        count++;
+      }
+    });
+
+    // O próximo número é count + 1
+    const numeroSequencial = count + 1;
+
+    // Ticket é DDMNX
+    return prefixo + numeroSequencial.toString();
+  };
+
+  // Função para verificar e gerar ticket único
+  const handleCriarTicket = () => {
+    // Pegar CPF do form data
+    let cpf = '';
+    if (formData.rgCpf) cpf = formData.rgCpf;
+    else if (formData.cpfRg) cpf = formData.cpfRg;
+    
+    if (!cpf) {
+      toast.error('Informe o CPF/RG primeiro');
+      return;
+    }
+
+    const { pessoa } = verificarRecorrencia(cpf);
+    if (!pessoa) {
+      toast.error('Pessoa não cadastrada');
+      return;
+    }
+
+    const novoTicket = gerarTicket();
+
+    // Atualizar pessoa com o novo ticket
+    updatePessoa({ ...pessoa, ticket: novoTicket });
+    setTicketGerado(novoTicket);
+    setTicketModalOpen(true);
+    toast.success('Ticket criado com sucesso!');
+  };
 
   const onClose = () => {
     limparCampos();
@@ -210,7 +283,10 @@ export default function RegistroModal({
 
   useEffect(() => {
     if (open) {
-      if (registroInicial && (isRefacao || isRascunho)) {
+      if (prefilledFormData) {
+        setFormData(prefilledFormData);
+        setCategoria(categoriaInicial);
+      } else if (registroInicial && (isRefacao || isRascunho)) {
         setCategoria(registroInicial.categoria);
         const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, ...rest } = registroInicial as any;
         setFormData({ ...rest });
@@ -225,7 +301,7 @@ export default function RegistroModal({
         }
       }
     }
-  }, [open, registroInicial, isRefacao, isRascunho, user, categoriaInicial]);
+  }, [open, registroInicial, isRefacao, isRascunho, user, categoriaInicial, prefilledFormData]);
 
   // ── Unified suggestion builders ──
   // All suggestions store data using UnifiedSuggestionData keys
@@ -1446,25 +1522,57 @@ export default function RegistroModal({
           )}
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-1">
-              Tipo de Visita <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={categoria}
-              onValueChange={handleCategoriaChange}
-              disabled={isRefacao}
-            >
-              <SelectTrigger className={!categoria ? 'text-muted-foreground border-amber-500/50 focus:ring-amber-500' : ''}>
-                <SelectValue placeholder="Selecione o tipo de visita" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIAS_FLUXO.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label className="flex items-center gap-1">
+                  Tipo de Visita <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={categoria}
+                  onValueChange={handleCategoriaChange}
+                  disabled={isRefacao}
+                >
+                  <SelectTrigger className={!categoria ? 'text-muted-foreground border-amber-500/50 focus:ring-amber-500' : ''}>
+                    <SelectValue placeholder="Selecione o tipo de visita" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIAS_FLUXO.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(() => {
+                let cpf = '';
+                if (formData.rgCpf) cpf = formData.rgCpf;
+                else if (formData.cpfRg) cpf = formData.cpfRg;
+                
+                const { isRecorrente, pessoa } = verificarRecorrencia(cpf);
+                
+                if (!isRecorrente || !pessoa) return null;
+                
+                if (pessoa.ticket) {
+                  return (
+                    <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-lg px-3 py-2">
+                      <Ticket className="h-4 w-4 text-emerald-600" />
+                      <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{pessoa.ticket}</span>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <Button
+                    onClick={handleCriarTicket}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <Ticket className="h-4 w-4 mr-2" />
+                    Criar Ticket
+                  </Button>
+                );
+              })()}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3">{renderFields()}</div>
@@ -1552,6 +1660,61 @@ export default function RegistroModal({
               }}
             >
               Copiar
+            </Button>
+          </div>
+          <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fechar</span>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
+
+    <Dialog open={ticketModalOpen} onOpenChange={(v) => {
+      if (!v) {
+        setTicketModalOpen(false);
+        setTicketGerado(null);
+      }
+    }}>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className="data-[state=open]:animate-none data-[state=closed]:animate-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+        >
+          <DialogTitle className="flex items-center gap-2 text-sm font-medium mb-3">
+            <Ticket className="h-5 w-5 text-amber-500" />
+            Ticket Gerado com Sucesso!
+          </DialogTitle>
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-500/30 p-3 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground mb-1">Guarde este código para visitas futuras</p>
+            <p className="text-2xl font-bold tracking-wider text-amber-700 dark:text-amber-400 select-all">{ticketGerado}</p>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs flex-1"
+              onClick={() => {
+                setTicketModalOpen(false);
+                setTicketGerado(null);
+              }}
+            >
+              Fechar
+            </Button>
+            <Button
+              size="sm"
+              className="bg-amber-600 hover:bg-amber-700 text-white text-xs flex-1"
+              onClick={() => {
+                if (ticketGerado) {
+                  navigator.clipboard.writeText(ticketGerado)
+                    .then(() => toast.success('Ticket copiado!'))
+                    .catch(() => toast.error('Erro ao copiar. Selecione o texto e copie manualmente.'));
+                }
+                setTicketModalOpen(false);
+                setTicketGerado(null);
+              }}
+            >
+              Copiar Ticket
             </Button>
           </div>
           <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">

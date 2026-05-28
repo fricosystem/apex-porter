@@ -220,11 +220,14 @@ export default function FluxoPage() {
     departamentos,
     empresas,
     addEmpresa,
+    prefilledRegistroModal,
+    clearPrefilledRegistroModal
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(
     categoriaAtiva === 'todos' ? 'visitantes' : categoriaAtiva
   );
+  const [prefilledFormData, setPrefilledFormData] = useState<Record<string, string> | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('aberto');
   const [ordenacao, setOrdenacao] = useState<'mais_recentes' | 'mais_antigos'>('mais_recentes');
 
@@ -252,6 +255,8 @@ export default function FluxoPage() {
   // Refacao auditavel states
   const [registroRefacao, setRegistroRefacao] = useState<RegistroFluxo | null>(null);
   const [isRefacao, setIsRefacao] = useState(false);
+  const [confirmarRefacaoOpen, setConfirmarRefacaoOpen] = useState(false);
+  const [registroParaConfirmar, setRegistroParaConfirmar] = useState<RegistroFluxo | null>(null);
 
   const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
   const [mensagemLiberacao, setMensagemLiberacao] = useState<string | null>(null);
@@ -292,6 +297,15 @@ export default function FluxoPage() {
   useEffect(() => {
     setCategoriaAtiva('todos');
   }, [setCategoriaAtiva]);
+
+  useEffect(() => {
+    if (prefilledRegistroModal) {
+      setModalCategoria(prefilledRegistroModal.categoria);
+      setPrefilledFormData(prefilledRegistroModal.formData || null);
+      setModalOpen(true);
+      clearPrefilledRegistroModal();
+    }
+  }, [prefilledRegistroModal, clearPrefilledRegistroModal]);
 
   useEffect(() => {
     if (statusFilter === 'finalizado') {
@@ -463,14 +477,22 @@ export default function FluxoPage() {
   };
 
   const handleRefazer = (r: RegistroFluxo) => {
-    inativarRegistroFluxo(r.id, undefined, 'Substituído por nova versão corrigida (Refazer)');
+    setRegistroParaConfirmar(r);
+    setConfirmarRefacaoOpen(true);
+  };
+
+  const confirmarRefazer = () => {
+    if (!registroParaConfirmar) return;
+    inativarRegistroFluxo(registroParaConfirmar.id, undefined, 'Substituído por nova versão corrigida (Refazer)');
     toast.info('Registro anterior inativado para refação.');
+    setConfirmarRefacaoOpen(false);
     setDetailModalOpen(false);
     setSelectedRegistro(null);
-    setRegistroRefacao(r);
+    setRegistroRefacao(registroParaConfirmar);
     setIsRefacao(true);
-    setModalCategoria(r.categoria);
+    setModalCategoria(registroParaConfirmar.categoria);
     setModalOpen(true);
+    setRegistroParaConfirmar(null);
   };
 
 
@@ -798,11 +820,12 @@ export default function FluxoPage() {
       {/* Registro Modal */}
       <RegistroModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setPrefilledFormData(null); }}
         categoriaInicial={modalCategoria}
         registroInicial={registroRefacao}
         isRefacao={isRefacao}
         isRascunho={isRascunhoEditing}
+        prefilledFormData={prefilledFormData}
       />
 
       {/* Detail Modal */}
@@ -1092,6 +1115,45 @@ export default function FluxoPage() {
                 }}
               >
                 Copiar e Fechar
+              </Button>
+            </div>
+            <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Fechar</span>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
+
+      {/* Modal de Confirmação para Refazer Registro */}
+      <Dialog open={confirmarRefacaoOpen} onOpenChange={(v) => { if (!v) { setConfirmarRefacaoOpen(false); setRegistroParaConfirmar(null); } }}>
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogPrimitive.Content
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <DialogTitle className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Confirmar Refazer Registro
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground mb-4">
+              Tem certeza que deseja refazer este registro? O registro original será inativado e você poderá criar uma nova versão corrigida.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setConfirmarRefacaoOpen(false); setRegistroParaConfirmar(null); }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={confirmarRefazer}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Confirmar
               </Button>
             </div>
             <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">

@@ -352,6 +352,13 @@ interface AppState {
   addRascunhoFluxo: (registro: RegistroFluxo) => void;
   updateRascunhoFluxo: (registro: RegistroFluxo) => void;
   removeRascunhoFluxo: (id: string) => void;
+  
+  // Ticket
+  ticketModalOpen: boolean;
+  setTicketModalOpen: (open: boolean) => void;
+  prefilledRegistroModal: { categoria?: CategoriaFluxo; formData?: Record<string, string> } | null;
+  openRegistroModalWithPrefill: (data: { categoria: CategoriaFluxo; formData: Record<string, string> }) => void;
+  clearPrefilledRegistroModal: () => void;
 
   // Cadastros
   empresas: Empresa[];
@@ -470,6 +477,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ currentPage: page });
   },
+  
+  // Ticket
+  ticketModalOpen: false,
+  setTicketModalOpen: (open) => set({ ticketModalOpen: open }),
+  prefilledRegistroModal: null,
+  openRegistroModalWithPrefill: (data) => {
+    set({ prefilledRegistroModal: data, currentPage: 'fluxo' });
+  },
+  clearPrefilledRegistroModal: () => set({ prefilledRegistroModal: null }),
 
   // Auth
   isAuthenticated: false,

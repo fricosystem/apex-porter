@@ -220,6 +220,7 @@ export interface Pessoa {
   email: string;
   dataCadastro?: string; // YYYY-MM-DD
   inativo?: boolean;     // soft-delete flag
+  ticket?: string;       // código do ticket único para visitantes recorrentes
 }
 
 // Deprecated alias — kept for backward compatibility with Fluxo records
