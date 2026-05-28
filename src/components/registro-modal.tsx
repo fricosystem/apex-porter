@@ -199,8 +199,8 @@ export default function RegistroModal({
 
   const limparCampos = () => {
     setFormData({
-      data: formData.data || format(new Date(), 'dd/MM/yyyy'),
-      horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
+      data: format(new Date(), 'dd/MM/yyyy'),
+      horarioEntrada: format(new Date(), 'HH:mm'),
       porteiro: user?.nome || '',
     });
     if (!categoriaInicial) {
@@ -216,8 +216,8 @@ export default function RegistroModal({
         setFormData({ ...rest });
       } else {
         setFormData({
-          data: formData.data || format(new Date(), 'dd/MM/yyyy'),
-          horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
+          data: format(new Date(), 'dd/MM/yyyy'),
+          horarioEntrada: format(new Date(), 'HH:mm'),
           porteiro: user?.nome || '',
         });
         if (!categoriaInicial) {
