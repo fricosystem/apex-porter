@@ -76,11 +76,12 @@ export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSug
       if (data.plate) mapped.placa = data.plate;
       break;
     case 'entregas2':
-      if (data.name) mapped.motorista = data.name;
-      if (data.doc) mapped.cpfRg = data.doc;
-      if (data.company) mapped.empresa = data.company;
-      if (data.department) mapped.departamento = data.department;
-      break;
+        if (data.name) mapped.motorista = data.name;
+        if (data.doc) mapped.cpfRg = data.doc;
+        if (data.company) mapped.empresa = data.company;
+        if (data.department) mapped.departamento = data.department;
+        if (data.plate) mapped.placa = data.plate;
+        break;
     case 'coleta':
       if (data.name) mapped.motorista = data.name;
       if (data.doc) mapped.rgCpf = data.doc;
@@ -130,6 +131,7 @@ export function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionDat
       data.doc = r.cpfRg;
       data.company = r.empresa;
       data.department = r.departamento;
+      data.plate = r.placa;
       break;
     case 'coleta':
       data.doc = r.rgCpf;
@@ -681,7 +683,7 @@ export default function RegistroModal({
     // Salva ou atualiza a pessoa na coleção Cadastros
     const checkAndCadastrarPessoa = (
       nome: string,
-      opts: { empresa?: string; departamento?: string; rgCpf?: string; tipo?: string }
+      opts: { empresa?: string; departamento?: string; rgCpf?: string; tipo?: string; placa?: string }
     ) => {
       const nomeTrim = nome.trim();
       if (!nomeTrim) return;
@@ -694,6 +696,7 @@ export default function RegistroModal({
         if (opts.empresa && !existing.empresa) updates.empresa = opts.empresa.trim();
         if (opts.departamento && !existing.departamento) updates.departamento = opts.departamento.trim();
         if (opts.rgCpf && !existing.rgCpf) updates.rgCpf = opts.rgCpf.trim();
+        if (opts.placa && !existing.placa) updates.placa = opts.placa.trim();
         if (Object.keys(updates).length > 0) {
           updatePessoa({ ...existing, ...updates });
         }
@@ -705,7 +708,7 @@ export default function RegistroModal({
           empresa: opts.empresa?.trim() || '',
           departamento: opts.departamento?.trim() || '',
           rgCpf: opts.rgCpf?.trim() || '',
-          placa: '',
+          placa: opts.placa?.trim() || '',
           cargo: '',
           telefone: '',
           email: '',
@@ -906,13 +909,13 @@ export default function RegistroModal({
         if (formData.nome) checkAndCadastrarPessoa(formData.nome, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.rgCpf, tipo: 'Prestador' });
         break;
       case 'pesagem':
-        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, tipo: 'Motorista' });
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, tipo: 'Motorista', placa: formData.placa });
         break;
       case 'entregas2':
-        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.cpfRg, tipo: 'Motorista' });
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.cpfRg, tipo: 'Motorista', placa: formData.placa });
         break;
       case 'coleta':
-        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, rgCpf: formData.rgCpf, tipo: 'Motorista' });
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, rgCpf: formData.rgCpf, tipo: 'Motorista', placa: formData.placa });
         break;
       case 'movimentacao':
         if (formData.nomeColaborador) checkAndCadastrarPessoa(formData.nomeColaborador, { rgCpf: formData.rgCpf, tipo: 'Colaborador' });

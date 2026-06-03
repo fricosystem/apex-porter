@@ -23,8 +23,53 @@ import { useAppStore } from '@/lib/store';
 import {
   type PreAutorizacao, type StatusPreAutorizacao,
 } from '@/lib/data';
-import AutocompleteInput from './autocomplete-input';
+import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
+import { formatCpfRg } from '@/lib/utils';
 import { toast } from 'sonner';
+
+// Reuse the same unified data structure and helpers from registro-modal.tsx
+interface UnifiedSuggestionData {
+  name: string;
+  company: string;
+  doc: string;
+  plate: string;
+  department: string;
+  origin?: string;
+}
+
+// Custom mapToFormFields for Pre-Autorizacao fields
+function mapToFormFieldsPreAutorizacao(data: UnifiedSuggestionData): Record<string, string> {
+  const mapped: Record<string, string> = {};
+  if (data.name) mapped.visitanteNome = data.name;
+  if (data.company) mapped.visitanteEmpresa = data.company;
+  if (data.doc) mapped.visitanteDoc = data.doc;
+  if (data.department) mapped.departamento = data.department;
+  return mapped;
+}
+
+// Extract from existing pre-autorizacoes
+function extractUnifiedFromPreAutorizacao(pa: PreAutorizacao): UnifiedSuggestionData {
+  return {
+    name: pa.visitanteNome,
+    company: pa.visitanteEmpresa,
+    doc: pa.visitanteDoc,
+    plate: '',
+    department: pa.departamento,
+    origin: 'historico',
+  };
+}
+
+// Merge function (same as registro-modal)
+function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggestionData): UnifiedSuggestionData {
+  return {
+    name: existing.name || incoming.name,
+    company: existing.company || incoming.company,
+    doc: existing.doc || incoming.doc,
+    plate: existing.plate || incoming.plate,
+    department: existing.department || incoming.department,
+    origin: existing.origin || incoming.origin,
+  };
+}
 
 type StatusFilter = 'agendado' | 'confirmado' | 'todos';
 
@@ -50,7 +95,7 @@ const statusLabels: Record<StatusPreAutorizacao, string> = {
 };
 
 export default function PreAutorizacaoPage() {
-  const { preAutorizacoes, addPreAutorizacao, updatePreAutorizacao, cancelarPreAutorizacao, user, pessoas, empresas, departamentos } = useAppStore();
+  const { preAutorizacoes, addPreAutorizacao, updatePreAutorizacao, cancelarPreAutorizacao, user, pessoas, empresas, departamentos, ramais, registrosFluxo } = useAppStore();
 
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('agendado');
@@ -70,8 +115,8 @@ export default function PreAutorizacaoPage() {
       if (statusFilter === 'confirmado' && pa.status !== 'confirmado') return false;
       if (busca) {
         const s = busca.toLowerCase();
-        return [pa.visitanteNome, pa.visitanteEmpresa, pa.departamento, pa.autorizadoPor, pa.motivo]
-          .some(f => f.toLowerCase().includes(s));
+        return [pa.visitanteNome, pa.visitanteEmpresa, pa.departamento, pa.autorizadoPor, pa.motivo, pa.criadoPor]
+          .some(f => f?.toLowerCase().includes(s));
       }
       return true;
     });
@@ -85,30 +130,163 @@ export default function PreAutorizacaoPage() {
     expirados: preAutorizacoes.filter(p => p.status === 'expirado').length,
   }), [preAutorizacoes]);
 
-  // Sugestões
+  // Sugestões (mesma logica unificada do Novo Registro)
   const nameSuggestions = useMemo(() => {
-    const set = new Map<string, Record<string, string>>();
-    pessoas.filter(f => !f.inativo).forEach(f => set.set(f.nome, { name: f.nome }));
-    preAutorizacoes.forEach(pa => { if (pa.visitanteNome) set.set(pa.visitanteNome, { name: pa.visitanteNome }); });
-    return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
-  }, [pessoas, preAutorizacoes]);
+    const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
+
+    // From pessoas (cadastros) — PRIMARY source
+    pessoas.filter((f) => !f.inativo).forEach((f) => {
+      if (!map.has(f.nome)) {
+        map.set(f.nome, {
+          data: {
+            name: f.nome,
+            company: f.empresa || '',
+            doc: f.rgCpf || '',
+            plate: f.placa || '',
+            department: f.departamento || '',
+            origin: 'cadastro',
+          },
+          sublabel: [f.tipo, f.empresa, f.cargo, f.departamento].filter(Boolean).join(' — ') || f.rgCpf || '',
+        });
+      }
+    });
+
+    // From ramais
+    ramais.forEach((r) => {
+      if (!map.has(r.nome)) {
+        map.set(r.nome, {
+          data: { name: r.nome, company: '', doc: '', plate: '', department: r.departamento },
+          sublabel: `${r.departamento} — Ramal ${r.ramal}`,
+        });
+      }
+    });
+
+    // From previous fluxo records
+    registrosFluxo.forEach((r) => {
+      // Replicate extractUnifiedFromRecord from registro-modal.tsx
+      const extractFromFluxo = (r: any): UnifiedSuggestionData => {
+        const data: UnifiedSuggestionData = { name: '', company: '', doc: '', plate: '', department: '' };
+        switch (r.categoria) {
+          case 'entregas1':
+            data.name = r.nome; data.company = r.empresa; data.doc = r.rgCpf; break;
+          case 'visitantes':
+          case 'prestadores':
+            data.name = (r as any).nome || r.nomeEmpresa; data.company = (r as any).empresa || ''; data.department = r.departamento; data.doc = r.rgCpf; break;
+          case 'pesagem':
+            data.company = r.empresa; data.plate = r.placa; data.name = r.motorista; data.doc = (r as any).rgCpf || ''; break;
+          case 'entregas2':
+            data.name = r.motorista; data.doc = r.cpfRg; data.company = r.empresa; data.department = r.departamento; data.plate = r.placa; break;
+          case 'coleta':
+            data.doc = r.rgCpf; data.plate = r.placa; data.company = r.empresa; data.name = r.motorista; break;
+          case 'movimentacao':
+            data.name = r.nomeColaborador; data.doc = r.rgCpf; break;
+          case 'correspondencias':
+            data.name = r.destinatario; data.company = r.remetente; data.department = r.departamento; break;
+        }
+        return data;
+      };
+      const unified = extractFromFluxo(r);
+      const key = unified.name;
+      if (!key) return;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, { data: mergeUnified(existing.data, unified), sublabel: existing.sublabel || unified.company });
+      } else {
+        const sublabel = unified.company || unified.department || '';
+        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
+      }
+    });
+
+    // From previous pre-autorizacoes
+    preAutorizacoes.forEach((pa) => {
+      const unified = extractUnifiedFromPreAutorizacao(pa);
+      const key = unified.name;
+      if (!key) return;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, { data: mergeUnified(existing.data, unified), sublabel: existing.sublabel || unified.company });
+      } else {
+        const sublabel = unified.company || unified.department || '';
+        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
+      }
+    });
+
+    return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
+      label,
+      sublabel: sublabel || undefined,
+      origin: data.origin as 'cadastro' | 'historico' | undefined,
+      data: data as unknown as Record<string, string>,
+    }));
+  }, [pessoas, ramais, registrosFluxo, preAutorizacoes]);
 
   const empresaSuggestions = useMemo(() => {
-    const set = new Map<string, Record<string, string>>();
-    empresas.forEach(e => set.set(e.nome, { company: e.nome }));
-    preAutorizacoes.forEach(pa => { if (pa.visitanteEmpresa) set.set(pa.visitanteEmpresa, { company: pa.visitanteEmpresa }); });
-    return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
-  }, [empresas, preAutorizacoes]);
+    const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
+    empresas.forEach((e) => {
+      if (!map.has(e.nome)) {
+        map.set(e.nome, {
+          data: { name: '', company: e.nome, doc: '', plate: '', department: '', origin: 'cadastro' },
+          sublabel: e.cnpj || '',
+        });
+      }
+    });
+    return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
+      label,
+      sublabel: sublabel || undefined,
+      origin: data.origin as 'cadastro' | 'historico' | undefined,
+      data: data as unknown as Record<string, string>,
+    }));
+  }, [empresas]);
 
   const autorizadores = useMemo(() => {
-    const set = new Map<string, Record<string, string>>();
+    const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
     pessoas.filter(f => !f.inativo && ['Supervisor', 'Gerente', 'Diretor', 'Coordenador'].some(c => f.cargo.includes(c)))
-      .forEach(f => set.set(f.nome, { name: f.nome }));
-    if (!set.size) pessoas.filter(f => !f.inativo).forEach(f => set.set(f.nome, { name: f.nome }));
-    return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
+      .forEach(f => {
+        if (!map.has(f.nome)) {
+          map.set(f.nome, {
+            data: { name: f.nome, company: f.empresa || '', doc: f.rgCpf || '', plate: f.placa || '', department: f.departamento || '', origin: 'cadastro' },
+            sublabel: [f.cargo, f.departamento].filter(Boolean).join(' — '),
+          });
+        }
+      });
+    if (!map.size) {
+      pessoas.filter(f => !f.inativo).forEach(f => {
+        if (!map.has(f.nome)) {
+          map.set(f.nome, {
+            data: { name: f.nome, company: f.empresa || '', doc: f.rgCpf || '', plate: f.placa || '', department: f.departamento || '', origin: 'cadastro' },
+            sublabel: [f.cargo, f.departamento].filter(Boolean).join(' — '),
+          });
+        }
+      });
+    }
+    return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
+      label,
+      sublabel: sublabel || undefined,
+      origin: data.origin as 'cadastro' | 'historico' | undefined,
+      data: data as unknown as Record<string, string>,
+    }));
   }, [pessoas]);
 
   const updateField = (f: string, v: string) => setFormData(prev => ({ ...prev, [f]: v }));
+
+  const handleAutoSelect = (suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    const mapped = mapToFormFieldsPreAutorizacao(unified);
+    setFormData(prev => ({ ...prev, ...mapped }));
+  };
+
+  const handleEmpresaSelect = (suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    if (unified.company) {
+      setFormData(prev => ({ ...prev, visitanteEmpresa: unified.company }));
+    }
+  };
+
+  const handleAutorizadorSelect = (suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    if (unified.name) {
+      setFormData(prev => ({ ...prev, autorizadoPor: unified.name }));
+    }
+  };
 
   const handleOpenModal = () => { setFormData({}); setModalOpen(true); };
 
@@ -128,6 +306,7 @@ export default function PreAutorizacaoPage() {
       dataPrevista: formData.dataPrevista,
       horarioPrevisto: formData.horarioPrevisto || '',
       status: 'agendado',
+      criadoPor: user?.nome || '',
     };
     addPreAutorizacao(pa);
     toast.success('Pré-autorização cadastrada!');
@@ -183,7 +362,7 @@ export default function PreAutorizacaoPage() {
         {/* Status tabs */}
         <Tabs value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
           <TabsList className="w-full grid grid-cols-3 h-10">
-            <TabsTrigger value="agendado" className="text-sm data-[state=active]:bg-amber-500 data-[state=active]:text-white">Pendentes</TabsTrigger>
+            <TabsTrigger value="agendado" className="text-sm data-[state=active]:bg-amber-600 data-[state=active]:text-white">Pendentes</TabsTrigger>
             <TabsTrigger value="confirmado" className="text-sm data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Confirmados</TabsTrigger>
             <TabsTrigger value="todos" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Todos</TabsTrigger>
           </TabsList>
@@ -220,7 +399,8 @@ export default function PreAutorizacaoPage() {
                         <div className="mt-2 space-y-1">
                           {pa.visitanteEmpresa && <p className="text-sm text-muted-foreground"><span className="font-medium">Empresa:</span> {pa.visitanteEmpresa}</p>}
                           <p className="text-sm text-muted-foreground"><span className="font-medium">Depto:</span> {pa.departamento}</p>
-                          <p className="text-sm text-muted-foreground"><span className="font-medium">Autorizado por:</span> {pa.autorizadoPor}</p>
+                          <p className="text-sm text-muted-foreground"><span className="font-medium">Autorizado Por:</span> {pa.autorizadoPor}</p>
+                          {pa.criadoPor && <p className="text-sm text-muted-foreground"><span className="font-medium">Criado Por:</span> {pa.criadoPor}</p>}
                         </div>
                         <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" />{pa.dataPrevista}</span>
@@ -249,7 +429,7 @@ export default function PreAutorizacaoPage() {
       </div>
 
       {/* Botão */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 p-4 md:px-6 pb-3 bg-background/80 backdrop-blur-md border-t border-border/50">
+      <div className="fixed bottom-16 left-0 right-0 z-30 pt-3 pb-7 px-4 md:px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
         <Button onClick={handleOpenModal} className="w-full h-13 bg-amber-600 hover:bg-amber-700 text-white text-base font-semibold shadow-lg">
           <Plus className="h-5 w-5 mr-2" />Nova Pré-Autorização
         </Button>
@@ -257,23 +437,23 @@ export default function PreAutorizacaoPage() {
 
       {/* Modal Registro */}
       <Dialog open={modalOpen} onOpenChange={v => !v && setModalOpen(false)}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-amber-600" />Nova Pré-Autorização</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2"><Label>Nome do Visitante *</Label><AutocompleteInput value={formData.visitanteNome || ''} onChange={v => updateField('visitanteNome', v)} onSelect={s => { if (s.data?.name) updateField('visitanteNome', s.data.name as string); }} suggestions={nameSuggestions} placeholder="Nome completo" /></div>
-            <div className="space-y-2"><Label>RG/CPF</Label><Input value={formData.visitanteDoc || ''} onChange={e => updateField('visitanteDoc', e.target.value)} placeholder="00.000.000-0" /></div>
-            <div className="space-y-2"><Label>Empresa</Label><AutocompleteInput value={formData.visitanteEmpresa || ''} onChange={v => updateField('visitanteEmpresa', v)} onSelect={s => { if (s.data?.company) updateField('visitanteEmpresa', s.data.company as string); }} suggestions={empresaSuggestions} placeholder="Empresa do visitante" /></div>
+            <div className="space-y-2"><Label>Nome do Visitante *</Label><AutocompleteInput value={formData.visitanteNome || ''} onChange={v => updateField('visitanteNome', v)} onSelect={s => handleAutoSelect(s.data || {})} suggestions={nameSuggestions} placeholder="Nome completo" /></div>
+            <div className="space-y-2"><Label>RG/CPF</Label><Input value={formData.visitanteDoc || ''} onChange={e => updateField('visitanteDoc', formatCpfRg(e.target.value))} placeholder="00.000.000-0" /></div>
+            <div className="space-y-2"><Label>Empresa</Label><AutocompleteInput value={formData.visitanteEmpresa || ''} onChange={v => updateField('visitanteEmpresa', v)} onSelect={s => handleEmpresaSelect(s.data || {})} suggestions={empresaSuggestions} placeholder="Empresa do visitante" /></div>
             <div className="space-y-2"><Label>Departamento</Label><Select value={formData.departamento || ''} onValueChange={v => updateField('departamento', v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{departamentos.map(d => <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Autorizado Por *</Label><AutocompleteInput value={formData.autorizadoPor || ''} onChange={v => updateField('autorizadoPor', v)} onSelect={s => { if (s.data?.name) updateField('autorizadoPor', s.data.name as string); }} suggestions={autorizadores} placeholder="Nome de quem autorizou" /></div>
+            <div className="space-y-2"><Label>Autorizado Por *</Label><AutocompleteInput value={formData.autorizadoPor || ''} onChange={v => updateField('autorizadoPor', v)} onSelect={s => handleAutorizadorSelect(s.data || {})} suggestions={autorizadores} placeholder="Nome de quem autorizou" /></div>
             <div className="space-y-2"><Label>Motivo</Label><Textarea value={formData.motivo || ''} onChange={e => updateField('motivo', e.target.value)} placeholder="Motivo da visita" rows={2} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Data Prevista *</Label><Input type="date" value={formData.dataPrevista || ''} onChange={e => updateField('dataPrevista', e.target.value)} /></div>
               <div className="space-y-2"><Label>Horário Previsto</Label><Input type="time" value={formData.horarioPrevisto || ''} onChange={e => updateField('horarioPrevisto', e.target.value)} /></div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} className="bg-amber-600 hover:bg-amber-700">Salvar</Button>
           </DialogFooter>
@@ -282,7 +462,7 @@ export default function PreAutorizacaoPage() {
 
       {/* Modal Detalhes */}
       <Dialog open={detailOpen} onOpenChange={v => { if (!v) { setDetailOpen(false); setSelected(null); } }}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar" onOpenAutoFocus={e => e.preventDefault()}>
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={e => e.preventDefault()}>
           <DialogHeader><DialogTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-amber-600" />Detalhes da Pré-Autorização</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4">
@@ -294,6 +474,7 @@ export default function PreAutorizacaoPage() {
                   { l: 'Empresa', v: selected.visitanteEmpresa },
                   { l: 'Departamento', v: selected.departamento },
                   { l: 'Autorizado Por', v: selected.autorizadoPor },
+                  { l: 'Criado Por', v: selected.criadoPor },
                   { l: 'Motivo', v: selected.motivo },
                   { l: 'Data Prevista', v: selected.dataPrevista },
                   { l: 'Horário Previsto', v: selected.horarioPrevisto },

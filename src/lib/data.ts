@@ -36,12 +36,12 @@ export type CategoriaFluxo =
   | 'correspondencias';
 
 export const CATEGORIAS_FLUXO: { value: CategoriaFluxo; label: string }[] = [
-  { value: 'visitantes', label: 'VISITANTES' },
-  { value: 'prestadores', label: 'PRESTADORES DE SERVIÇOS' },
+  { value: 'visitantes', label: 'VISITANTE' },
+  { value: 'prestadores', label: 'PRESTADOR DE SERVIÇOS' },
   { value: 'pesagem', label: 'PESAGEM DE CARGA' },
-  { value: 'entregas2', label: 'ENTREGAS' },
+  { value: 'entregas2', label: 'ENTREGA' },
   { value: 'coleta', label: 'COLETA' },
-  { value: 'movimentacao', label: 'MOVIMENTAÇÃO INTERNA COLABORADORES' },
+  { value: 'movimentacao', label: 'MOVIMENTAÇÃO INTERNA COLABORADOR' },
 ];
 
 export interface BaseRegistroFluxo {
@@ -316,6 +316,7 @@ export interface PreAutorizacao {
   registroFluxoId?: string;
   dataConfirmacao?: string;
   porteiro?: string;
+  criadoPor?: string;
 }
 
 // ── Ocorrências ──
