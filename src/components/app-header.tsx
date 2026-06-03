@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-import { Settings, LogOut, User as UserIcon, Ticket } from 'lucide-react';
+import { Settings, LogOut, User as UserIcon, Ticket, WifiOff } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useSignalStrength, type SignalLevel } from '@/lib/hooks/use-signal-strength';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -29,73 +28,26 @@ import { extractUnifiedFromRecord, mapToFormFields } from './registro-modal';
 import { type CategoriaFluxo } from '@/lib/data';
 import { toast } from 'sonner';
 import { X } from 'lucide-react';
-
-// ── Signal Bars ─────────────────────────────────────────────────────────────
-function SignalBars({ level }: { level: SignalLevel }) {
-  const heights = ['30%', '50%', '70%', '100%'];
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '14px' }}>
-      {heights.map((h, i) => {
-        const active = level > 0 && i < level;
-        return (
-          <div
-            key={i}
-            style={{
-              width: '3px',
-              height: h,
-              borderRadius: '1px',
-              backgroundColor: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.25)',
-              transition: 'background-color 0.4s ease',
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Signal Indicator ─────────────────────────────────────────────────────────
-function SignalIndicator() {
-  const { level, label, latency } = useSignalStrength();
-
-  const tooltipText = level === 0
-    ? 'Sem conexão'
-    : `${label}${latency !== null ? ` · ${latency}ms` : ''}`;
-
-  return (
-    <div
-      title={tooltipText}
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: '5px',
-        cursor: 'default',
-      }}
-    >
-      <SignalBars level={level} />
-      {latency !== null && level > 0 && (
-        <span
-          style={{
-            fontSize: '9px',
-            lineHeight: 1,
-            color: 'rgba(255,255,255,0.85)',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {latency}ms
-        </span>
-      )}
-    </div>
-  );
-}
+import { Badge } from '@/components/ui/badge';
 
 // ── App Header ───────────────────────────────────────────────────────────────
 export default function AppHeader() {
   const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill } = useAppStore();
   const [ticketInput, setTicketInput] = useState('');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -172,16 +124,7 @@ export default function AppHeader() {
         className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-md"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            height: '56px',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-          }}
-        >
+        <div className="relative flex items-center justify-between h-14 px-4">
           {/* Left: Logo + título */}
           <div className="flex items-center gap-2">
             <img
@@ -196,11 +139,18 @@ export default function AppHeader() {
             </div>
           </div>
 
-          {/* Center: Indicador de sinal */}
-          <SignalIndicator />
+          {/* Center: Offline Badge */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            {isOffline && (
+              <Badge variant="destructive" className="flex items-center gap-1.5 px-3 py-1 text-xs">
+                <WifiOff className="h-3.5 w-3.5" />
+                Você está offline. Reconectando...
+              </Badge>
+            )}
+          </div>
 
           {/* Right: Ações */}
-          <div className="flex items-center gap-1 justify-end">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               className="text-primary-foreground hover:bg-white/10 h-9 w-9"
