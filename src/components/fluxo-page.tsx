@@ -781,18 +781,18 @@ export default function FluxoPage() {
                       )}
 
                       {/* Rodapé: data e horários */}
-                      <div className="flex flex-nowrap items-center gap-x-3 mt-2.5 pt-2 border-t border-border/40 text-sm text-muted-foreground overflow-x-auto scrollbar-none">
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <Calendar className="h-4 w-4" />
+                      <div className="flex flex-nowrap items-center gap-x-1.5 sm:gap-x-3 mt-2.5 pt-2 border-t border-border/40 text-[10px] sm:text-xs md:text-sm text-muted-foreground overflow-x-auto scrollbar-none">
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                           {data}
                         </span>
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <Clock className="h-4 w-4" />
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                           Entrou às: {horarioEntrada}
                         </span>
                         {hasSaida && (
-                          <span className="flex items-center gap-1.5 shrink-0 text-emerald-600 dark:text-emerald-400">
-                            <LogOut className="h-4 w-4" />
+                          <span className="flex items-center gap-1 shrink-0 text-emerald-600 dark:text-emerald-400">
+                            <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
                             Saiu às: {horarioSaida}
                           </span>
                         )}
