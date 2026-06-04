@@ -48,8 +48,14 @@ export interface UnifiedSuggestionData {
 }
 
 // Maps unified data → form fields for each category
-export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestionData): Record<string, string> {
+export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestionData, targetField?: string): Record<string, string> {
   const mapped: Record<string, string> = {};
+
+  // Special handling for Autorizado Por in movimentacao: only fill that field
+  if (categoria === 'movimentacao' && targetField === 'autorizadoPor') {
+    if (data.name) mapped.autorizadoPor = data.name;
+    return mapped;
+  }
 
   switch (categoria) {
     case 'entregas1':
@@ -91,7 +97,6 @@ export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSug
     case 'movimentacao':
       if (data.name) mapped.nomeColaborador = data.name;
       if (data.doc) mapped.rgCpf = data.doc;
-      if (data.department) mapped.autorizadoPor = data.department;
       break;
     case 'correspondencias':
       if (data.name) mapped.destinatario = data.name;
@@ -636,10 +641,10 @@ export default function RegistroModal({
 
   // When user selects an autocomplete suggestion, map unified data → current category fields
   // Always preserve data and horarioEntrada (auto-filled from current date/time)
-  const handleAutoSelect = (suggestionData: Record<string, string>) => {
+  const handleAutoSelect = (suggestionData: Record<string, string>, targetField?: string) => {
     const unified = suggestionData as unknown as UnifiedSuggestionData;
     const activeCatForAuto = categoria || categoriaInicial || 'entregas2';
-    const mapped = mapToFormFields(activeCatForAuto, unified);
+    const mapped = mapToFormFields(activeCatForAuto, unified, targetField);
 
     setFormData((prev) => ({
       ...prev,
@@ -1394,7 +1399,7 @@ export default function RegistroModal({
               <AutocompleteInput
                 value={formData.autorizadoPor || ''}
                 onChange={(v) => updateField('autorizadoPor', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={(s) => handleAutoSelect(s.data || {}, 'autorizadoPor')}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem autorizou"
               />
