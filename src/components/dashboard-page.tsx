@@ -290,7 +290,142 @@ function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) 
   );
 }
 
+// ── Custom Tooltip Component with connector line from tooltip to point ──
+function ChartTooltip({ active, payload, label, coordinate }: any) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const mainColor = payload[0]?.color || '#10b981';
+  const pointX = coordinate?.x || 0;
+  const pointY = coordinate?.y || 0;
+
+  return (
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Connector line from point to tooltip */}
+      <svg
+        style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}
+        width="40"
+        height="30"
+      >
+        <path
+          d={`M 20 30 Q 20 15 20 0`}
+          fill="none"
+          stroke={mainColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="2 2"
+          opacity="0.5"
+        />
+        <circle cx="20" cy="0" r="4" fill={mainColor} />
+      </svg>
+
+      {/* Badge container */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          padding: '12px 16px',
+          background: 'linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.96))',
+          borderRadius: 12,
+          border: `1px solid ${mainColor}60`,
+          boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 20px ${mainColor}30`,
+          minWidth: 'fit-content',
+          position: 'relative',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        {/* Label (title) */}
+        {label !== undefined && label !== '' && (
+          <span
+            style={{
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 14,
+              letterSpacing: 0.3,
+              lineHeight: 1.3,
+            }}
+          >
+            {label}
+          </span>
+        )}
+        {/* Payload items */}
+        {payload.map((entry: any, idx: number) => {
+          const itemColor = entry.color || '#10b981';
+          return (
+            <div
+              key={`tooltip-item-${idx}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              {/* Color indicator with glow ring */}
+              <div style={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    backgroundColor: itemColor,
+                    boxShadow: `0 0 10px ${itemColor}80`,
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: -4,
+                    borderRadius: '50%',
+                    border: `2px solid ${itemColor}40`,
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Title (white bold) */}
+                <span
+                  style={{
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {entry.name}
+                </span>
+                {/* Result subtitle (green, not bold) */}
+                <span
+                  style={{
+                    color: itemColor,
+                    fontWeight: 400,
+                    fontSize: 15,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {entry.value !== undefined && entry.value !== null
+                    ? typeof entry.value === 'number'
+                      ? entry.value.toLocaleString('pt-BR')
+                      : entry.value
+                    : '—'}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const [activeChartStates, setActiveChartStates] = useState<Record<string, number | null>>({});
+  
+  const setActiveChartIndex = (chartId: string, index: number | null) => {
+    setActiveChartStates(prev => ({
+      ...prev,
+      [chartId]: prev[chartId] === index ? null : index
+    }));
+  };
+  
   const {
     registrosFluxo,
     veiculos,
@@ -864,14 +999,38 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={entradasSaidasPorHora}>
+                      <BarChart 
+                        data={entradasSaidasPorHora}
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('entradasSaidas', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
+                          activeIndex={activeChartStates['entradasSaidas']}
+                          active={activeChartStates['entradasSaidas'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="entradas" fill="#10b981" radius={[4, 4, 0, 0]} name="Entradas" />
-                        <Bar dataKey="saidas" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Saídas" />
+                        <Bar 
+                          dataKey="entradas" 
+                          fill="#10b981" 
+                          radius={[4, 4, 0, 0]} 
+                          name="Entradas" 
+                          className="cursor-pointer"
+                        />
+                        <Bar 
+                          dataKey="saidas" 
+                          fill="#14b8a6" 
+                          radius={[4, 4, 0, 0]} 
+                          name="Saídas" 
+                          className="cursor-pointer"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -889,11 +1048,23 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={tendenciaSemanal}>
+                      <LineChart 
+                        data={tendenciaSemanal}
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('tendencia', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
+                          activeIndex={activeChartStates['tendencia']}
+                          active={activeChartStates['tendencia'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                         <Line
                           type="monotone"
@@ -903,6 +1074,7 @@ export default function DashboardPage() {
                           dot={{ fill: '#10b981', r: 4 }}
                           activeDot={{ r: 6 }}
                           name="Movimentações"
+                          className="cursor-pointer"
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -926,7 +1098,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('checklists', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={checklistsPorStatus}
                           cx="50%"
@@ -935,12 +1113,17 @@ export default function DashboardPage() {
                           outerRadius={90}
                           paddingAngle={2}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {checklistsPorStatus.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={(entry as any).fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['checklists']}
+                          active={activeChartStates['checklists'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -959,11 +1142,23 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={fluxoPorPeriodo}>
+                      <AreaChart 
+                        data={fluxoPorPeriodo}
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('fluxoPeriodo', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="periodo" tick={AXIS_TICK_STYLE_SMALL} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
+                          activeIndex={activeChartStates['fluxoPeriodo']}
+                          active={activeChartStates['fluxoPeriodo'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                         <defs>
                           <linearGradient id="colorFluxo" x1="0" y1="0" x2="0" y2="1">
@@ -978,6 +1173,7 @@ export default function DashboardPage() {
                           fill="url(#colorFluxo)"
                           strokeWidth={2}
                           name="Fluxo"
+                          className="cursor-pointer"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -1001,14 +1197,27 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={fluxoPorCategoria} layout="vertical">
+                      <BarChart 
+                        data={fluxoPorCategoria} 
+                        layout="vertical"
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('fluxoCategorias', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                         <YAxis dataKey="categoria" type="category" width={100} tick={AXIS_TICK_STYLE_SMALL} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
+                          activeIndex={activeChartStates['fluxoCategorias']}
+                          active={activeChartStates['fluxoCategorias'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" />
-                        <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" />
+                        <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" className="cursor-pointer" />
+                        <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" className="cursor-pointer" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1026,13 +1235,26 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={empresasMaisFrequentes} layout="vertical">
+                      <BarChart 
+                        data={empresasMaisFrequentes} 
+                        layout="vertical"
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('empresas', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                         <YAxis dataKey="empresa" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(6,182,212,0.1)' }} 
+                          activeIndex={activeChartStates['empresas']}
+                          active={activeChartStates['empresas'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="registros" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Registros" />
+                        <Bar dataKey="registros" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Registros" className="cursor-pointer" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1055,13 +1277,25 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={ocorrenciasPorTipo}>
+                      <BarChart 
+                        data={ocorrenciasPorTipo}
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('ocorrenciasTipo', data.activeIndex);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="tipo" tick={AXIS_TICK_STYLE_SMALL} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          cursor={{ fill: 'rgba(239,68,68,0.1)' }} 
+                          activeIndex={activeChartStates['ocorrenciasTipo']}
+                          active={activeChartStates['ocorrenciasTipo'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="qtd" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ocorrências" />
+                        <Bar dataKey="qtd" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ocorrências" className="cursor-pointer" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1079,7 +1313,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('ocorrenciasGravidade', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={ocorrenciasPorGravidade}
                           cx="50%"
@@ -1088,12 +1328,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {ocorrenciasPorGravidade.map((entry, index) => (
                             <Cell key={`grav-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['ocorrenciasGravidade']}
+                          active={activeChartStates['ocorrenciasGravidade'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1117,7 +1362,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('ocorrenciasStatus', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={ocorrenciasPorStatus}
                           cx="50%"
@@ -1126,12 +1377,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {ocorrenciasPorStatus.map((entry, index) => (
                             <Cell key={`oc-status-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['ocorrenciasStatus']}
+                          active={activeChartStates['ocorrenciasStatus'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1150,7 +1406,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('veiculosTipo', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={veiculosPorTipo}
                           cx="50%"
@@ -1159,12 +1421,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {veiculosPorTipo.map((entry, index) => (
                             <Cell key={`vei-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['veiculosTipo']}
+                          active={activeChartStates['veiculosTipo'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1188,7 +1455,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('pessoasTipo', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={pessoasPorTipo}
                           cx="50%"
@@ -1197,12 +1470,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {pessoasPorTipo.map((entry, index) => (
                             <Cell key={`pes-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['pessoasTipo']}
+                          active={activeChartStates['pessoasTipo'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1221,7 +1499,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('preAuthStatus', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={preAuthPorStatus}
                           cx="50%"
@@ -1230,12 +1514,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {preAuthPorStatus.map((entry, index) => (
                             <Cell key={`pa-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['preAuthStatus']}
+                          active={activeChartStates['preAuthStatus'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1259,7 +1548,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('achadosStatus', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={achadosPorStatus}
                           cx="50%"
@@ -1268,12 +1563,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {achadosPorStatus.map((entry, index) => (
                             <Cell key={`ap-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['achadosStatus']}
+                          active={activeChartStates['achadosStatus'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1292,7 +1592,13 @@ export default function DashboardPage() {
                 <CardContent className="pt-0">
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart
+                        onClick={(data) => {
+                          if (data?.activeIndex !== undefined) {
+                            setActiveChartIndex('inspecoesStatus', data.activeIndex);
+                          }
+                        }}
+                      >
                         <Pie
                           data={inspecoesPorStatus}
                           cx="50%"
@@ -1301,12 +1607,17 @@ export default function DashboardPage() {
                           outerRadius={85}
                           paddingAngle={3}
                           dataKey="value"
+                          className="cursor-pointer"
                         >
                           {inspecoesPorStatus.map((entry, index) => (
                             <Cell key={`insp-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <Tooltip content={<ChartTooltip />} />
+                        <Tooltip 
+                          content={<ChartTooltip />} 
+                          activeIndex={activeChartStates['inspecoesStatus']}
+                          active={activeChartStates['inspecoesStatus'] !== null}
+                        />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
