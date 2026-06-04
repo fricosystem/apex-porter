@@ -155,34 +155,14 @@ function ChartCursor(props: any) {
   );
 }
 
-// ── Custom Tooltip Component with connector line from tooltip to point ──
-function ChartTooltip({ active, payload, label, coordinate }: any) {
+// ── Custom Tooltip Component ──
+function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
 
   const mainColor = payload[0]?.color || '#10b981';
-  const pointX = coordinate?.x || 0;
-  const pointY = coordinate?.y || 0;
 
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* Connector line from point to tooltip */}
-      <svg
-        style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}
-        width="40"
-        height="30"
-      >
-        <path
-          d={`M 20 30 Q 20 15 20 0`}
-          fill="none"
-          stroke={mainColor}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="2 2"
-          opacity="0.5"
-        />
-        <circle cx="20" cy="0" r="4" fill={mainColor} />
-      </svg>
-
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Badge container */}
       <div
         style={{
