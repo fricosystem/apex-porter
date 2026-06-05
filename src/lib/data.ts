@@ -1,4 +1,4 @@
-// Type definitions and lookup constants for APEX Porter
+// Type definitions and lookup constants for APEX Portaria
 // Seed data (fictional initial records) has been moved to ./seed-data.ts
 
 export type PageType =

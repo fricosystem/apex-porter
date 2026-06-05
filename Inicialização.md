@@ -1,10 +1,10 @@
-# Manual de Inicialização do Projeto — APEX Porter
+# Manual de Inicialização do Projeto — APEX Portaria
 
 Este manual orienta como preparar o ambiente de desenvolvimento e executar o servidor localmente no Windows de forma rápida e segura.
 
 ---
 
-## 🚀 Requisitos Pró-Ativos
+## 🚀 Requisitos Pré-Ativos
 
 *   **Node.js**: Versão LTS recomendada (v18 ou superior).
 *   **Gerenciador de Pacotes**: Recomendamos o **pnpm** (versão 9.0.0 ou superior) para máxima velocidade e eficiência.
@@ -30,7 +30,7 @@ pnpm install --ignore-scripts
 Após concluir a instalação das dependências, inicialize o servidor local executando:
 
 ```bash
-*********************pnpm exec next dev
+pnpm exec next dev
 ```
 
 *Nota: O comando `pnpm exec next dev` é o mais compatível no Windows, pois executa diretamente o binário local do Next.js (Turbopack) sem iniciar sub-processos do CMD.*

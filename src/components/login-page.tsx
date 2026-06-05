@@ -184,14 +184,14 @@ export default function LoginPage() {
               boxShadow: '0 0 30px rgba(16,185,129,0.15), inset 0 0 20px rgba(16,185,129,0.05)',
             }}
           >
-            <img src="/icons/APEX_LOGO.png" alt="APEX Porter Logo" className="w-24 h-24 object-contain" />
+            <img src="/icons/APEX_LOGO.png" alt="APEX Portaria Logo" className="w-24 h-24 object-contain" />
             {/* Pulse ring around logo */}
             <div
               className="absolute inset-0 rounded-[2rem] border border-emerald-400/30"
               style={{ animation: 'pulse-ring 2.5s ease-in-out infinite' }}
             />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white tracking-widest">APEX PORTER</h1>
+          <h1 className="text-3xl font-bold text-white tracking-widest">APEX PORTARIA</h1>
           <p className="text-emerald-300/60 mt-1 text-xs tracking-[0.25em] uppercase">
             Sistema de Controle de Acesso
           </p>
@@ -568,7 +568,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase">
-          APEX Porter v2.0 — DESENVOLVIDO POR APEX HUB
+          APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
       </motion.div>
     </div>

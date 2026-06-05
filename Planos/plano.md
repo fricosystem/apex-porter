@@ -1,6 +1,6 @@
 # Plano de Implementação: Aba de Departamentos
 
-Este plano detalha as etapas necessárias para implementar a nova aba **Departamentos** no sistema APEX Porter. A aba seguirá o layout padrão do sistema, incluindo uma listagem com busca, um botão para criar/editar registros através de um modal (idêntico ao modal de *Nova Pessoa* mas com apenas os campos de **Nome** e **Empresa**), integração com a coleção `"departamentos"` no Firestore e a inclusão da rota no menu **Mais** do rodapé.
+Este plano detalha as etapas necessárias para implementar a nova aba **Departamentos** no sistema APEX Portaria. A aba seguirá o layout padrão do sistema, incluindo uma listagem com busca, um botão para criar/editar registros através de um modal (idêntico ao modal de *Nova Pessoa* mas com apenas os campos de **Nome** e **Empresa**), integração com a coleção `"departamentos"` no Firestore e a inclusão da rota no menu **Mais** do rodapé.
 
 ---
 

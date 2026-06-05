@@ -1,10 +1,10 @@
-# APEX Porter - Worklog
+# APEX Portaria - Worklog
 
-## Project: APEX Porter - Sistema de Registro de Entrada e Saída
+## Project: APEX Portaria - Sistema de Registro de Entrada e Saída
 ## Date: 2025-03-15
 
 ### Summary
-Built a complete single-page web application called "APEX Porter" - an entry/exit registration system for Android and tablets. The entire app runs on the `/` route using client-side state management with Zustand.
+Built a complete single-page web application called "APEX Portaria" - an entry/exit registration system for Android and tablets. The entire app runs on the `/` route using client-side state management with Zustand.
 
 ### Files Created
 
@@ -274,7 +274,7 @@ Stage Summary:
 ---
 Task ID: 3
 Agent: main
-Task: Create comprehensive Firebase integration plan (Firestore + Auth only) for APEX Porter
+Task: Create comprehensive Firebase integration plan (Firestore + Auth only) for APEX Portaria
 
 Work Log:
 - Read and analyzed the entire project structure (18 data domains, 20+ components, single monolithic Zustand store)

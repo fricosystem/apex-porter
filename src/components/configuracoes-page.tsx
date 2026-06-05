@@ -311,11 +311,11 @@ export default function ConfiguracoesPage() {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Sistema</span>
-            <span className="font-medium">APEX Porter</span>
+            <span className="font-medium">APEX Portaria</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Desenvolvido por</span>
-            <span className="font-medium">APEX Tecnologia</span>
+            <span className="font-medium">APEX HUB</span>
           </div>
         </CardContent>
       </Card>

@@ -99,7 +99,7 @@ export default function AppHeader() {
 
       openRegistroModalWithPrefill({
         categoria: lastRecord.categoria,
-        formData: formFields
+        formData: formFields,
       });
     } else {
       toast.info('Nenhum registro anterior encontrado para este ticket');
@@ -125,18 +125,13 @@ export default function AppHeader() {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="relative flex items-center justify-between h-14 px-4">
-          {/* Left: Logo + título */}
+          {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <img
               src="/icons/APEX_LOGO.png"
-              alt="APEX Porter Logo"
+              alt="APEX Portaria Logo"
               className="h-9 w-9 md:h-10 md:w-10 object-contain drop-shadow-sm"
             />
-            <div className="hidden sm:block">
-              <p className="text-[11px] leading-tight opacity-85">
-                Sistema de Registro
-              </p>
-            </div>
           </div>
 
           {/* Center: Offline Badge */}
@@ -162,16 +157,13 @@ export default function AppHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground hover:bg-white/10 h-9 px-2 gap-2"
+                  className="text-primary-foreground hover:bg-white/10 h-9 w-9"
                 >
                   <Avatar className="h-7 w-7">
                     <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline text-sm max-w-24 truncate font-medium">
-                    {user?.nome || 'Usuário'}
-                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">

@@ -1,6 +1,6 @@
 {
-  "name": "APEX Porter - Sistema de Registro",
-  "short_name": "APEX Porter",
+  "name": "APEX Portaria - Sistema de Registro",
+  "short_name": "APEX Portaria",
   "description": "Sistema de registro de entrada e saída para controle de acesso",
   "start_url": "/",
   "display": "standalone",

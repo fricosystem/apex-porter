@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "APEX Porter - Sistema de Registro",
+  title: "APEX Portaria - Sistema de Registro",
   description: "Sistema de registro de entrada e saída para controle de acesso",
   manifest: "/manifest.json",
   icons: {
@@ -40,12 +40,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "APEX Porter",
+    title: "APEX Portaria",
   },
   formatDetection: {
     telephone: false,
   },
-  applicationName: "APEX Porter",
+  applicationName: "APEX Portaria",
 };
 
 export default function RootLayout({
@@ -61,8 +61,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="APEX Porter" />
-        <meta name="application-name" content="APEX Porter" />
+        <meta name="apple-mobile-web-app-title" content="APEX Portaria" />
+        <meta name="application-name" content="APEX Portaria" />
         <meta name="msapplication-TileColor" content="#059669" />
         <meta name="msapplication-navbutton-color" content="#059669" />
       </head>
