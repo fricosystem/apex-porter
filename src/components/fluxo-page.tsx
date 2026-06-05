@@ -786,11 +786,13 @@ export default function FluxoPage() {
                           <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                           {data}
                         </span>
-                        <span className="flex items-center gap-1 shrink-0">
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                          Entrou às: {horarioEntrada}
-                        </span>
-                        {hasSaida && (
+                        {horarioEntrada && (
+                          <span className="flex items-center gap-1 shrink-0">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            Entrou às: {horarioEntrada}
+                          </span>
+                        )}
+                        {hasSaida && horarioSaida && (
                           <span className="flex items-center gap-1 shrink-0 text-emerald-600 dark:text-emerald-400">
                             <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
                             Saiu às: {horarioSaida}

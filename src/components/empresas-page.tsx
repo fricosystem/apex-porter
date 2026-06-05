@@ -10,11 +10,17 @@ import {
   Edit2,
   X,
   Check,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +29,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useAppStore } from '@/lib/store';
-import { type Empresa } from '@/lib/data';
+import { type Empresa, type RegistroFluxo } from '@/lib/data';
 import { toast } from 'sonner';
 
 interface FormState {
@@ -39,12 +45,16 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function EmpresasPage() {
-  const { empresas, addEmpresa, removeEmpresa, updateEmpresa } = useAppStore();
+  const { empresas, addEmpresa, removeEmpresa, updateEmpresa, registrosFluxo } = useAppStore();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
   const [search, setSearch] = useState('');
+  
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsEmpresa, setDetailsEmpresa] = useState<Empresa | null>(null);
+  const [showMoreVisits, setShowMoreVisits] = useState(false);
 
   // Sincroniza e filtra a busca pelas empresas cadastradas
   const filteredEmpresas = useMemo(() => {
@@ -113,6 +123,34 @@ export default function EmpresasPage() {
   const updateForm = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const empresaVisits = useMemo(() => {
+    if (!detailsEmpresa) return [];
+    return registrosFluxo
+      .filter((r) => {
+        let company = '';
+        switch (r.categoria) {
+          case 'entregas1': company = r.empresa; break;
+          case 'visitantes':
+          case 'prestadores':
+            company = (r as any).empresa || r.nomeEmpresa?.split(' / ')[1] || ''; break;
+          case 'pesagem':
+          case 'entregas2':
+          case 'coleta': company = r.empresa; break;
+          case 'movimentacao': return false;
+          case 'correspondencias': company = r.remetente; break;
+        }
+        return company === detailsEmpresa.nome;
+      })
+      .sort((a, b) => {
+        const da = 'data' in a ? (a as any).data : '';
+        const ha = a.horarioEntrada || '';
+        const db = 'data' in b ? (b as any).data : '';
+        const hb = b.horarioEntrada || '';
+        if (da !== db) return da > db ? -1 : 1;
+        return ha > hb ? -1 : 1;
+      });
+  }, [detailsEmpresa, registrosFluxo]);
 
   return (
     <motion.div
@@ -197,7 +235,7 @@ export default function EmpresasPage() {
               exit={{ opacity: 0, x: -100 }}
               transition={{ duration: 0.2 }}
             >
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => { setDetailsEmpresa(e); setShowMoreVisits(false); setDetailsOpen(true); }}>
                 <CardContent className="p-0">
                   <div className="flex items-stretch">
                     {/* Stripe indicator */}
@@ -215,7 +253,7 @@ export default function EmpresasPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald/10"
-                          onClick={() => openEditDialog(e)}
+                          onClick={(event) => { event.stopPropagation(); openEditDialog(e); }}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -223,7 +261,8 @@ export default function EmpresasPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             removeEmpresa(e.id);
                             toast.success('Empresa removida');
                           }}
@@ -308,6 +347,116 @@ export default function EmpresasPage() {
                 </>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Detalhes da Empresa */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5 text-emerald-600" />
+              Detalhes da Empresa
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailsEmpresa && (
+            <div className="space-y-5">
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                    <Building className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">{detailsEmpresa.nome}</h3>
+                    {detailsEmpresa.contato && <p className="text-sm text-muted-foreground">{detailsEmpresa.contato}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  {detailsEmpresa.cnpj && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">CNPJ</p>
+                      <p className="text-sm font-medium">{detailsEmpresa.cnpj}</p>
+                    </div>
+                  )}
+                  {detailsEmpresa.contato && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Contato</p>
+                      <p className="text-sm font-medium">{detailsEmpresa.contato}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Visitas */}
+              <div>
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Histórico de Visitas ({empresaVisits.length})
+                </h4>
+                
+                {empresaVisits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg border border-dashed">
+                    Nenhum registro encontrado.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {empresaVisits.slice(0, showMoreVisits ? 25 : 5).map((v) => (
+                      <div key={v.id} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg border text-sm">
+                        <div>
+                          <p className="font-medium">
+                            {'data' in v ? (v as any).data : ''}
+                            <span className="text-muted-foreground ml-2 font-normal">{v.horarioEntrada}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {v.categoria} • {(v as any).departamento || '-'}
+                          </p>
+                        </div>
+                        {v.horarioSaida && (
+                          <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full shrink-0">
+                            Saída: {v.horarioSaida}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {empresaVisits.length > 5 && (
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2 text-xs"
+                    onClick={() => setShowMoreVisits(!showMoreVisits)}
+                  >
+                    {showMoreVisits ? (
+                      <>Ver menos <ChevronUp className="h-3 w-3 ml-1" /></>
+                    ) : (
+                      <>Ver mais {Math.min(empresaVisits.length - 5, 20)} visitas <ChevronDown className="h-3 w-3 ml-1" /></>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsOpen(false)} className="w-full sm:w-auto">
+              Fechar
+            </Button>
+            {detailsEmpresa && (
+               <Button 
+                 onClick={() => {
+                   setDetailsOpen(false);
+                   openEditDialog(detailsEmpresa);
+                 }}
+                 className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+               >
+                 <Edit2 className="h-4 w-4 mr-2" />
+                 Editar
+               </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
