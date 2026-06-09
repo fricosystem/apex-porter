@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, useMap, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -63,6 +63,48 @@ function FitBounds({ pontos }: { pontos: Array<{ latitude: number; longitude: nu
   return null;
 }
 
+function MarkerWithTooltip({ ponto }: { ponto: { nome: string, latitude: number, longitude: number } }) {
+  const [showTooltip, setShowTooltip] = useState(true);
+
+  useEffect(() => {
+    // Hide tooltip after 3 seconds
+    const timeout = setTimeout(() => {
+      setShowTooltip(false);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [ponto]);
+
+  const handleClick = () => {
+    // Show tooltip when clicked and hide after 3 seconds
+    setShowTooltip(true);
+    const timeout = setTimeout(() => {
+      setShowTooltip(false);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  };
+
+  return (
+    <Marker
+      position={[ponto.latitude, ponto.longitude]}
+      eventHandlers={{ click: handleClick }}
+    >
+      {showTooltip && (
+        <Tooltip
+          permanent={true}
+          direction="top"
+          offset={[0, -25]}
+          opacity={1}
+        >
+          <div className="bg-gray-900 text-white px-2 py-1 rounded text-xs font-medium shadow-lg">
+            {ponto.nome}
+          </div>
+        </Tooltip>
+      )}
+    </Marker>
+  );
+}
+
 export default function RotaMap({ pontos }: RotaMapProps) {
   if (pontos.length === 0) return null;
 
@@ -91,9 +133,20 @@ export default function RotaMap({ pontos }: RotaMapProps) {
         <FitBounds pontos={pontos} />
         <Polyline positions={polylinePositions} color="#059669" weight={4} />
         {pontos.map((ponto, idx) => (
-          <Marker key={idx} position={[ponto.latitude, ponto.longitude]} />
+          <MarkerWithTooltip key={idx} ponto={ponto} />
         ))}
       </MapContainer>
+      <style>{`
+        .leaflet-tooltip {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .leaflet-tooltip:before {
+          border-top-color: #111827 !important;
+        }
+      `}</style>
     </div>
   );
 }
