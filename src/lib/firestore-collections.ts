@@ -32,6 +32,8 @@ import type {
   AchadosPerdidosItem,
   Aviso,
   Ronda,
+  RotaGeoreferenciada,
+  ChecklistTurno,
   ChecklistTurno,
   InspecaoDiaria,
   ProtocoloEmergencia,
@@ -349,6 +351,32 @@ export async function updateRonda(id: string, data: Partial<Ronda>): Promise<voi
 
 export async function removeRonda(id: string): Promise<void> {
   await deleteDocument(RONDAS_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ROTAS GEOREFERENCIADAS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const ROTAS_GEO_COL = 'rotas';
+
+export function subscribeRotasGeoreferenciadas(callback: (data: RotaGeoreferenciada[]) => void): Unsubscribe {
+  return subscribeCollection<RotaGeoreferenciada>(ROTAS_GEO_COL, callback);
+}
+
+export async function addRotaGeoreferenciada(data: Omit<RotaGeoreferenciada, 'id'>): Promise<string> {
+  return addDocument(ROTAS_GEO_COL, data as Record<string, unknown>);
+}
+
+export async function setRotaGeoreferenciada(id: string, data: Omit<RotaGeoreferenciada, 'id'>): Promise<void> {
+  await setDocument(ROTAS_GEO_COL, id, data as Record<string, unknown>);
+}
+
+export async function updateRotaGeoreferenciada(id: string, data: Partial<RotaGeoreferenciada>): Promise<void> {
+  await updateDocument(ROTAS_GEO_COL, id, data);
+}
+
+export async function removeRotaGeoreferenciada(id: string): Promise<void> {
+  await deleteDocument(ROTAS_GEO_COL, id);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -23,7 +23,8 @@ export type PageType =
   | 'protocolos-emergencia'
   | 'configuracoes'
   | 'perfil'
-  | 'lembretes';
+  | 'lembretes'
+  | 'admin';
 
 export type CategoriaFluxo =
   | 'entregas1'
@@ -366,8 +367,26 @@ export interface Ocorrencia {
   resolucao?: string;
 }
 
-// ── Ronda / Patrulhamento ──
+// ── Ronda / Patrulhamento (Geolocalização) ──
 export type StatusRonda = 'em_andamento' | 'concluida' | 'parcial';
+
+export interface PontoRota {
+  id: string;
+  nome: string;
+  latitude: number;
+  longitude: number;
+  raio: number; // em metros
+  horarioExecucao: string; // HH:mm
+  recorrente: boolean;
+  diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+}
+
+export interface RotaGeoreferenciada {
+  id: string;
+  nome: string;
+  pontos: PontoRota[];
+  criadoEm?: string; // ISO string
+}
 
 export interface PontoRonda {
   id: string;
@@ -377,6 +396,9 @@ export interface PontoRonda {
   horarioReal: string;
   status: 'ok' | 'irregularidade';
   observacao: string;
+  latitude?: number;
+  longitude?: number;
+  raio?: number;
 }
 
 export interface Ronda {

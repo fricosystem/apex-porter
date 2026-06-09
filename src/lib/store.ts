@@ -21,8 +21,10 @@ import type {
   ChecklistTurno,
   InspecaoDiaria,
   ProtocoloEmergencia,
+  ProtocoloEmergencia,
   AtivacaoProtocolo,
   Lembrete,
+  RotaGeoreferenciada,
 } from './data';
 import {
   signInWithEmail,
@@ -95,6 +97,11 @@ import {
   setRonda as setRondaFS,
   updateRonda as updateRondaFS,
   removeRonda as removeRondaFS,
+  subscribeRotasGeoreferenciadas,
+  addRotaGeoreferenciada as addRotaGeoreferenciadaFS,
+  setRotaGeoreferenciada as setRotaGeoreferenciadaFS,
+  updateRotaGeoreferenciada as updateRotaGeoreferenciadaFS,
+  removeRotaGeoreferenciada as removeRotaGeoreferenciadaFS,
   subscribeChecklists,
   setChecklist as setChecklistFS,
   updateChecklist as updateChecklistFS,
@@ -276,6 +283,12 @@ function startSubscriptions() {
     })
   );
 
+  unsubs.push(
+    subscribeRotasGeoreferenciadas((data) => {
+      useAppStore.setState({ rotasGeoreferenciadas: data });
+    })
+  );
+
   // Phase 6 — Checklists
   unsubs.push(
     subscribeChecklists((data) => {
@@ -417,11 +430,16 @@ interface AppState {
   updateOcorrencia: (oc: Ocorrencia) => void;
   removeOcorrencia: (id: string) => void;
 
-  // Rondas
+  // Rondas e Rotas Georeferenciadas
   rondas: Ronda[];
   addRonda: (ronda: Ronda) => void;
   updateRonda: (ronda: Ronda) => void;
   removeRonda: (id: string) => void;
+
+  rotasGeoreferenciadas: RotaGeoreferenciada[];
+  addRotaGeoreferenciada: (rota: RotaGeoreferenciada) => void;
+  updateRotaGeoreferenciada: (rota: RotaGeoreferenciada) => void;
+  removeRotaGeoreferenciada: (id: string) => void;
 
   // Checklist de Turno
   checklists: ChecklistTurno[];
@@ -989,10 +1007,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  // Rondas (Firestore-backed — Phase 6)
+  // Rondas e Rotas Georeferenciadas
   rondas: [],
   addRonda: (ronda) => {
-    set((state) => ({ rondas: [ronda, ...state.rondas] }));
+    set((state) => ({ rondas: [...state.rondas, ronda] }));
     const { id, ...data } = ronda;
     setRondaFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao adicionar ronda:', err);
@@ -1008,9 +1026,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
   removeRonda: (id) => {
-    set((state) => ({ rondas: state.rondas.filter((r) => r.id !== id) }));
+    set((state) => ({
+      rondas: state.rondas.filter((r) => r.id !== id),
+    }));
     removeRondaFS(id).catch((err) => {
       console.warn('[Firestore] Falha ao remover ronda:', err);
+    });
+  },
+
+  rotasGeoreferenciadas: [],
+  addRotaGeoreferenciada: (rota) => {
+    set((state) => ({ rotasGeoreferenciadas: [...state.rotasGeoreferenciadas, rota] }));
+    const { id, ...data } = rota;
+    setRotaGeoreferenciadaFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao adicionar rota georeferenciada:', err);
+    });
+  },
+  updateRotaGeoreferenciada: (rota) => {
+    set((state) => ({
+      rotasGeoreferenciadas: state.rotasGeoreferenciadas.map((r) => (r.id === rota.id ? rota : r)),
+    }));
+    const { id, ...data } = rota;
+    updateRotaGeoreferenciadaFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao atualizar rota georeferenciada:', err);
+    });
+  },
+  removeRotaGeoreferenciada: (id) => {
+    set((state) => ({
+      rotasGeoreferenciadas: state.rotasGeoreferenciadas.filter((r) => r.id !== id),
+    }));
+    removeRotaGeoreferenciadaFS(id).catch((err) => {
+      console.warn('[Firestore] Falha ao remover rota georeferenciada:', err);
     });
   },
 

@@ -27,6 +27,7 @@ import DepartamentosPage from '@/components/departamentos-page';
 import EmpresasPage from '@/components/empresas-page';
 import PerfilPage from '@/components/perfil-page';
 import LembretesPage from '@/components/lembretes-page';
+import AdminPage from '@/components/admin-page';
 import AppHeader from '@/components/app-header';
 import BottomNav from '@/components/bottom-nav';
 
@@ -55,6 +56,7 @@ function PageRenderer() {
     'inspecao-diaria': <InspecaoDiariaPage />,
     'protocolos-emergencia': <ProtocolosEmergenciaPage />,
     lembretes: <LembretesPage />,
+    admin: <AdminPage />,
   };
 
   return (
@@ -318,7 +320,7 @@ export default function Home() {
       <main className="flex-1 overflow-hidden">
         <PageRenderer />
       </main>
-      <BottomNav />
+      {currentPage !== 'admin' && <BottomNav />}
     </div>
   );
 }

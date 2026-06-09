@@ -24,6 +24,7 @@ import {
   Siren,
   Building2,
   Building,
+  Shield,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { PageType } from '@/lib/data';
@@ -66,6 +67,7 @@ const SECONDARY_NAV: NavItem[] = [
   { page: 'lista-negra', label: 'Lista Negra', icon: ShieldBan },
   { page: 'achados-perdidos', label: 'Achados e Perdidos', icon: Search },
   { page: 'configuracoes', label: 'Configurações', icon: Settings },
+  { page: 'admin', label: 'Admin', icon: Shield },
 ];
 
 export default function BottomNav() {

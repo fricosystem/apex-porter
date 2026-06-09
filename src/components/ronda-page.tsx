@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -23,7 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAppStore } from '@/lib/store';
 import {
   ROTAS_RONDA, PONTOS_RONDA_PREDEFINIDOS,
-  type Ronda, type PontoRonda, type StatusRonda,
+  type Ronda, type PontoRonda, type StatusRonda, type RotaGeoreferenciada,
 } from '@/lib/data';
 import { toast } from 'sonner';
 
@@ -50,6 +50,34 @@ const statusIcons: Record<StatusRonda, React.ElementType> = {
 function getCurrentTime(): string {
   const now = new Date();
   return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
+}
+
+function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // Radius of the earth in m
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in m
+  return d;
+}
+
+function isTimeValidForCheckin(horarioPrevisto: string): boolean {
+  if (!horarioPrevisto) return true;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [h, m] = horarioPrevisto.split(':').map(Number);
+  const previstoMinutes = h * 60 + m;
+  
+  // Available from 5 minutes before
+  return currentMinutes >= (previstoMinutes - 5);
 }
 
 function getPontosForRota(rotaIndex: number): string[] {
@@ -81,7 +109,7 @@ function generatePontos(rondaId: string, rota: string): PontoRonda[] {
 }
 
 export default function RondaPage() {
-  const { rondas, addRonda, updateRonda, removeRonda, user } = useAppStore();
+  const { rondas, addRonda, updateRonda, removeRonda, user, rotasGeoreferenciadas } = useAppStore();
 
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas');
@@ -91,9 +119,28 @@ export default function RondaPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRota, setSelectedRota] = useState('');
 
-  // Detail/execution modal
+  // Detail modal (read-only)
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRonda, setSelectedRonda] = useState<Ronda | null>(null);
+
+  // Execution modal
+  const [executionOpen, setExecutionOpen] = useState(false);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLon, setUserLon] = useState<number | null>(null);
+
+  // Watch position
+  useEffect(() => {
+    if (!executionOpen) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude);
+        setUserLon(pos.coords.longitude);
+      },
+      (err) => console.error('Error watching position', err),
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [executionOpen]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -131,11 +178,30 @@ export default function RondaPage() {
       toast.error('Selecione uma rota');
       return;
     }
+
+    const rotaData = rotasGeoreferenciadas.find((r) => r.id === selectedRota);
+    if (!rotaData) {
+      toast.error('Rota não encontrada');
+      return;
+    }
+
     const id = `rn_${Date.now()}`;
-    const pontos = generatePontos(id, selectedRota);
+    const pontos: PontoRonda[] = rotaData.pontos.map((p, idx) => ({
+      id: `pt_${Date.now()}_${idx}`,
+      rondaId: id,
+      ponto: p.nome,
+      horarioPrevisto: p.horarioExecucao,
+      horarioReal: '',
+      status: 'ok' as const,
+      observacao: '',
+      latitude: p.latitude,
+      longitude: p.longitude,
+      raio: p.raio,
+    }));
+
     const ronda: Ronda = {
       id,
-      rota: selectedRota,
+      rota: rotaData.nome,
       data: format(new Date(), 'yyyy-MM-dd'),
       horarioInicio: getCurrentTime(),
       horarioFim: '',
@@ -144,7 +210,7 @@ export default function RondaPage() {
       pontos,
     };
     addRonda(ronda);
-    toast.success('Ronda iniciada!');
+    toast.success('Ronda criada!');
     setModalOpen(false);
   };
 
@@ -154,10 +220,16 @@ export default function RondaPage() {
     toast.success('Ronda removida');
   };
 
-  // Handle open detail (execution modal)
+  // Handle open detail (read-only view)
   const handleOpenDetail = (ronda: Ronda) => {
     setSelectedRonda({ ...ronda, pontos: ronda.pontos.map(p => ({ ...p })) });
     setDetailOpen(true);
+  };
+
+  // Handle open execution
+  const handleOpenExecution = (ronda: Ronda) => {
+    setSelectedRonda({ ...ronda, pontos: ronda.pontos.map(p => ({ ...p })) });
+    setExecutionOpen(true);
   };
 
   // Check-in a ponto
@@ -167,6 +239,7 @@ export default function RondaPage() {
       p.id === pontoId ? { ...p, horarioReal: getCurrentTime() } : p
     );
     setSelectedRonda({ ...selectedRonda, pontos: updatedPontos });
+    toast.success('Check-in realizado no ponto!');
   };
 
   // Update ponto field
@@ -191,16 +264,24 @@ export default function RondaPage() {
     };
     updateRonda(updated);
     toast.success(status === 'concluida' ? 'Ronda concluída com sucesso!' : 'Ronda finalizada parcialmente');
-    setDetailOpen(false);
+    setExecutionOpen(false);
     setSelectedRonda(null);
   };
 
-  // Save intermediate changes when closing detail
-  const handleCloseDetail = (open: boolean) => {
+  // Save intermediate changes when closing execution
+  const handleCloseExecution = (open: boolean) => {
     if (!open) {
       if (selectedRonda && selectedRonda.status === 'em_andamento') {
         updateRonda(selectedRonda);
       }
+      setExecutionOpen(false);
+      setSelectedRonda(null);
+    }
+  };
+
+  // Close read-only detail
+  const handleCloseDetail = (open: boolean) => {
+    if (!open) {
       setDetailOpen(false);
       setSelectedRonda(null);
     }
@@ -219,7 +300,7 @@ export default function RondaPage() {
         </div>
         <Button onClick={handleOpenModal} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
           <Plus className="h-4 w-4 mr-2" />
-          Nova Ronda
+          Criar Ronda
         </Button>
       </div>
 
@@ -282,7 +363,7 @@ export default function RondaPage() {
             <Inbox className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <p className="text-lg font-medium mb-1">Nenhuma ronda encontrada</p>
-          <p className="text-sm text-muted-foreground/70">Toque em Nova Ronda para iniciar um patrulhamento.</p>
+          <p className="text-sm text-muted-foreground/70">Toque em Criar Ronda para iniciar um patrulhamento.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -367,7 +448,7 @@ export default function RondaPage() {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              onClick={e => { e.stopPropagation(); handleOpenDetail(ronda); }}
+                              onClick={e => { e.stopPropagation(); handleOpenExecution(ronda); }}
                             >
                               <Play className="h-4 w-4" />
                             </Button>
@@ -449,7 +530,7 @@ export default function RondaPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Navigation className="h-5 w-5 text-emerald-600" />
-              Nova Ronda
+              Criar Ronda
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4">
@@ -457,11 +538,11 @@ export default function RondaPage() {
               <Label>Rota *</Label>
               <Select value={selectedRota} onValueChange={setSelectedRota}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a rota de patrulhamento" />
+                  <SelectValue placeholder="Selecione a rota" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROTAS_RONDA.map((rota, i) => (
-                    <SelectItem key={i} value={rota}>{rota}</SelectItem>
+                  {rotasGeoreferenciadas.map((rota) => (
+                    <SelectItem key={rota.id} value={rota.id}>{rota.nome}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -471,10 +552,11 @@ export default function RondaPage() {
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Pontos que serão verificados</Label>
                 <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                  {getPontosForRota(ROTAS_RONDA.indexOf(selectedRota)).map((ponto, i) => (
+                  {rotasGeoreferenciadas.find(r => r.id === selectedRota)?.pontos.map((ponto, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
                       <MapPin className="h-3 w-3 text-emerald-600 shrink-0" />
-                      <span>{ponto}</span>
+                      <span>{ponto.nome}</span>
+                      <span className="text-muted-foreground ml-auto">{ponto.horarioExecucao}</span>
                     </div>
                   ))}
                 </div>
@@ -494,13 +576,13 @@ export default function RondaPage() {
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreateRonda} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Play className="h-4 w-4 mr-2" />
-              Iniciar Ronda
+              Criar Ronda
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Ronda Detail / Execution Modal */}
+      {/* Ronda Detail Modal (Read-Only) */}
       <Dialog open={detailOpen} onOpenChange={handleCloseDetail}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
@@ -511,7 +593,6 @@ export default function RondaPage() {
           </DialogHeader>
           {selectedRonda && (
             <div className="space-y-4">
-              {/* Ronda info */}
               <div className="flex justify-center">
                 <Badge className={`${statusColors[selectedRonda.status]} text-sm px-4 py-1`}>
                   {statusLabels[selectedRonda.status]}
@@ -540,6 +621,75 @@ export default function RondaPage() {
                 </div>
               </div>
 
+              <div className="space-y-2.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Pontos de Verificação
+                </p>
+                {selectedRonda.pontos.map((ponto) => {
+                  const isChecked = !!ponto.horarioReal;
+                  return (
+                    <Card key={ponto.id} className={`overflow-hidden border ${ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
+                      <CardContent className="p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {isChecked ? (
+                              <CheckCircle2 className={`h-4 w-4 shrink-0 ${ponto.status === 'irregularidade' ? 'text-red-500' : 'text-emerald-500'}`} />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                            )}
+                            <span className="font-medium text-sm truncate">{ponto.ponto}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Previsto</Label>
+                            <Input value={ponto.horarioPrevisto} readOnly className="h-8 text-xs bg-muted/50" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Atual</Label>
+                            <Input value={ponto.horarioReal} readOnly className="h-8 text-xs bg-muted/50" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Status</Label>
+                            <Input value={ponto.status === 'ok' ? 'OK' : 'Irregularidade'} readOnly className="h-8 text-xs bg-muted/50" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Observação</Label>
+                            <Input value={ponto.observacao} readOnly className="h-8 text-xs bg-muted/50" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Ronda Execution Modal */}
+      <Dialog open={executionOpen} onOpenChange={handleCloseExecution}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Play className="h-5 w-5 text-emerald-600" />
+              Execução da Ronda
+            </DialogTitle>
+          </DialogHeader>
+          {selectedRonda && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="text-sm font-medium text-muted-foreground shrink-0">Rota</span>
+                  <span className="text-sm text-foreground text-right font-medium">{selectedRonda.rota}</span>
+                </div>
+              </div>
+
               {/* Progress summary */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">
@@ -556,14 +706,33 @@ export default function RondaPage() {
               {/* Pontos checklist */}
               <div className="space-y-2.5">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Pontos de Verificação
+                  Pontos de Verificação (Geolocalizados)
                 </p>
                 {selectedRonda.pontos.map((ponto) => {
                   const isChecked = !!ponto.horarioReal;
+                  
+                  // Geofencing Check
+                  let inRadius = false;
+                  let dist = -1;
+                  if (ponto.latitude && ponto.longitude && userLat && userLon) {
+                    dist = getDistanceFromLatLonInM(userLat, userLon, ponto.latitude, ponto.longitude);
+                    if (dist <= (ponto.raio || 50)) {
+                      inRadius = true;
+                    }
+                  } else if (!ponto.latitude || !ponto.longitude) {
+                    // Fallback se o ponto não tem lat/long (rotas mockadas legadas)
+                    inRadius = true; 
+                  }
+
+                  const timeValid = isTimeValidForCheckin(ponto.horarioPrevisto);
+                  
+                  // Check-in visível até 5 min antes, inativo se fora do raio
+                  const showCheckin = !isChecked && timeValid;
+                  const canCheckin = inRadius && showCheckin;
+
                   return (
                     <Card key={ponto.id} className={`overflow-hidden border ${ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
                       <CardContent className="p-3 space-y-2.5">
-                        {/* Ponto header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {isChecked ? (
@@ -573,19 +742,20 @@ export default function RondaPage() {
                             )}
                             <span className="font-medium text-sm truncate">{ponto.ponto}</span>
                           </div>
-                          {selectedRonda.status === 'em_andamento' && !isChecked && (
+                          
+                          {showCheckin || !isChecked ? (
                             <Button
                               size="sm"
-                              className="h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                              onClick={() => handleCheckin(ponto.id)}
+                              disabled={!canCheckin}
+                              className={`h-7 text-xs ${canCheckin ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                              onClick={() => canCheckin && handleCheckin(ponto.id)}
                             >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Check-in
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {canCheckin ? 'Check-in' : (!timeValid ? 'Aguardando horário' : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS'))}
                             </Button>
-                          )}
+                          ) : null}
                         </div>
 
-                        {/* Ponto details */}
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[10px] text-muted-foreground">Previsto</Label>
@@ -596,13 +766,12 @@ export default function RondaPage() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Real</Label>
+                            <Label className="text-[10px] text-muted-foreground">Atual</Label>
                             <Input
                               type="time"
                               value={ponto.horarioReal}
-                              onChange={e => updatePontoField(ponto.id, 'horarioReal', e.target.value)}
-                              readOnly={selectedRonda.status !== 'em_andamento'}
-                              className="h-8 text-xs"
+                              readOnly
+                              className="h-8 text-xs bg-muted/50"
                             />
                           </div>
                         </div>
@@ -613,7 +782,6 @@ export default function RondaPage() {
                             <Select
                               value={ponto.status}
                               onValueChange={v => updatePontoField(ponto.id, 'status', v)}
-                              disabled={selectedRonda.status !== 'em_andamento'}
                             >
                               <SelectTrigger className={`h-8 text-xs ${ponto.status === 'irregularidade' ? 'border-red-300' : 'border-emerald-300'}`}>
                                 <SelectValue />
@@ -639,7 +807,6 @@ export default function RondaPage() {
                             <Input
                               value={ponto.observacao}
                               onChange={e => updatePontoField(ponto.id, 'observacao', e.target.value)}
-                              readOnly={selectedRonda.status !== 'em_andamento'}
                               placeholder="Observações..."
                               className="h-8 text-xs"
                             />
@@ -652,15 +819,13 @@ export default function RondaPage() {
               </div>
 
               {/* Finalizar button */}
-              {selectedRonda.status === 'em_andamento' && (
-                <Button
-                  onClick={handleFinalizar}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-lg"
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  Finalizar Ronda
-                </Button>
-              )}
+              <Button
+                onClick={handleFinalizar}
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-lg"
+              >
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Finalizar Ronda
+              </Button>
             </div>
           )}
         </DialogContent>
