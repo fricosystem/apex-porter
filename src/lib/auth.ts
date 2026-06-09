@@ -26,6 +26,7 @@ export interface FirestoreUser {
   dataCadastro: Timestamp | FieldValue | null;
   ultimoLogin: Timestamp | FieldValue | null;
   settings?: any;
+  mapconfig?: 'padrao' | 'satelite';
 }
 
 // ── Collection name ──

@@ -18,14 +18,23 @@ interface ModalNovoPontoProps {
 }
 
 function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
+  const { user, updateUser } = useAppStore();
+
   const [nome, setNome] = useState(pontoEditar?.nome || '');
   const [horarioExecucao, setHorarioExecucao] = useState(pontoEditar?.horarioExecucao || '');
-  const [raio, setRaio] = useState(pontoEditar?.raio || 50);
+  const [raio, setRaio] = useState(pontoEditar?.raio || 10);
   const [recorrente, setRecorrente] = useState(pontoEditar?.recorrente || false);
   const [diasSemana, setDiasSemana] = useState<string[]>(pontoEditar?.diasSemana || []);
   const [latitude, setLatitude] = useState<number | null>(pontoEditar?.latitude || null);
   const [longitude, setLongitude] = useState<number | null>(pontoEditar?.longitude || null);
+  const [altitude, setAltitude] = useState<number | null>(pontoEditar?.altitude || null);
   const [locating, setLocating] = useState(!pontoEditar);
+  
+  // Map config from user profile
+  const isSatellite = user?.mapconfig === 'satelite';
+  const setIsSatellite = (value: boolean) => {
+    updateUser({ mapconfig: value ? 'satelite' : 'padrao' });
+  };
 
   const diasOptions = [
     { value: 'seg', label: 'Seg' },
@@ -38,29 +47,53 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
   ];
 
   useEffect(() => {
+    let currentWatchId: number | null = null;
+    
     if (!pontoEditar && 'geolocation' in navigator) {
+      // First try getCurrentPosition for immediate result
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLatitude(position.coords.latitude);
           setLongitude(position.coords.longitude);
+          setAltitude(position.coords.altitude);
           setLocating(false);
         },
         (error) => {
-          console.error("Erro ao obter geolocalização:", error);
-          toast.error("Não foi possível obter sua localização atual.");
-          // Fallback location if needed
-          setLatitude(-23.55052);
-          setLongitude(-46.633308);
+          console.error("Erro ao obter geolocalização inicial:", error);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+      
+      // Then watch for position changes
+      currentWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+          setAltitude(position.coords.altitude);
           setLocating(false);
         },
-        { enableHighAccuracy: true }
+        (error) => {
+          console.error("Erro ao observar geolocalização:", error);
+          // Don't show toast for watch errors - just log
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else if (pontoEditar) {
       setLocating(false);
     } else {
       toast.error("Geolocalização não suportada pelo navegador.");
       setLocating(false);
+      // Fallback location
+      setLatitude(-23.55052);
+      setLongitude(-46.633308);
     }
+    
+    // Cleanup watch position
+    return () => {
+      if (currentWatchId !== null) {
+        navigator.geolocation.clearWatch(currentWatchId);
+      }
+    };
   }, [pontoEditar]);
 
   const handleAdd = () => {
@@ -85,6 +118,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
       nome,
       latitude,
       longitude,
+      altitude: altitude ?? undefined,
       raio,
       horarioExecucao,
       recorrente,
@@ -115,30 +149,59 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
 
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Localização (Raio: {raio}m)</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium">Localização (Raio: {raio}m)</label>
+              <button
+                type="button"
+                onClick={() => setIsSatellite(!isSatellite)}
+                className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+              >
+                {isSatellite ? 'Padrão' : 'Satélite'}
+              </button>
+            </div>
             {locating ? (
               <div className="h-48 w-full bg-muted/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
                 <span className="text-sm">Obtendo localização precisa...</span>
               </div>
             ) : latitude && longitude ? (
-              <MiniMap latitude={latitude} longitude={longitude} raio={raio} />
+              <MiniMap latitude={latitude} longitude={longitude} raio={raio} isSatellite={isSatellite} />
             ) : null}
+            
+            {/* Real-time coordinates display */}
+            {latitude && longitude && (
+              <div className="mt-3 bg-muted/30 p-3 rounded-xl border border-border">
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Latitude:</span>
+                    <p className="font-medium">{latitude.toFixed(6)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Longitude:</span>
+                    <p className="font-medium">{longitude.toFixed(6)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Altitude:</span>
+                    <p className="font-medium">{altitude ? altitude.toFixed(2) + 'm' : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="mt-4">
               <label className="block text-xs text-muted-foreground mb-1">Ajustar Raio (em metros)</label>
               <input
                 type="range"
-                min="10"
-                max="200"
-                step="5"
+                min="2"
+                max="20"
+                step="1"
                 value={raio}
                 onChange={(e) => setRaio(Number(e.target.value))}
                 className="w-full accent-primary"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>10m</span>
-                <span>200m</span>
+                <span>2m</span>
+                <span>20m</span>
               </div>
             </div>
           </div>

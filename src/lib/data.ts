@@ -277,6 +277,7 @@ export interface User {
   cpf?: string;
   cargo?: string;
   dataCadastro?: string;
+  mapconfig?: 'padrao' | 'satelite';
 }
 
 // ── Veículos ──
@@ -375,6 +376,7 @@ export interface PontoRota {
   nome: string;
   latitude: number;
   longitude: number;
+  altitude?: number; // em metros
   raio: number; // em metros
   horarioExecucao: string; // HH:mm
   recorrente: boolean;
@@ -386,6 +388,7 @@ export interface RotaGeoreferenciada {
   nome: string;
   pontos: PontoRota[];
   criadoEm?: string; // ISO string
+  atualizadoEm?: string; // ISO string
 }
 
 export interface PontoRonda {

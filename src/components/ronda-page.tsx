@@ -113,7 +113,7 @@ function generatePontos(rondaId: string, rota: string): PontoRonda[] {
 }
 
 export default function RondaPage() {
-  const { rondas, addRonda, updateRonda, removeRonda, user, rotasGeoreferenciadas } = useAppStore();
+  const { rondas, addRonda, updateRonda, removeRonda, user, rotasGeoreferenciadas, updateUser } = useAppStore();
 
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas');
@@ -122,6 +122,12 @@ export default function RondaPage() {
   // New ronda modal
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRota, setSelectedRota] = useState('');
+  
+  // Map config from user profile
+  const isSatellite = user?.mapconfig === 'satelite';
+  const setIsSatellite = (value: boolean) => {
+    updateUser({ mapconfig: value ? 'satelite' : 'padrao' });
+  };
 
   // Detail modal (read-only)
   const [detailOpen, setDetailOpen] = useState(false);
@@ -555,13 +561,23 @@ export default function RondaPage() {
             {selectedRota && rotasGeoreferenciadas.find(r => r.id === selectedRota) && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-sm">Mapa da Rota</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Mapa da Rota</Label>
+                    <button
+                      type="button"
+                      onClick={() => setIsSatellite(!isSatellite)}
+                      className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      {isSatellite ? 'Padrão' : 'Satélite'}
+                    </button>
+                  </div>
                   <RotaMap 
                     pontos={rotasGeoreferenciadas.find(r => r.id === selectedRota)!.pontos.map(p => ({
                       latitude: p.latitude,
                       longitude: p.longitude,
                       nome: p.nome
                     }))} 
+                    isSatellite={isSatellite}
                   />
                 </div>
 

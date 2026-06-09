@@ -622,6 +622,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       email: firebaseUser.email || '',
       cargo: 'Porteiro',
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
+      mapconfig: firestoreData?.mapconfig || 'padrao',
     };
     
     const targetPage = get().currentPage === 'login' ? 'dashboard' : get().currentPage;
