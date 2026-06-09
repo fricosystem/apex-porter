@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, MapPin, Map as MapIcon, Loader2, Save, Edit2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -30,6 +30,18 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
   const [altitude, setAltitude] = useState<number | null>(pontoEditar?.altitude || null);
   const [locating, setLocating] = useState(!pontoEditar);
   
+  // Mode state: 'gps' or 'manual'
+  const [inputMode, setInputMode] = useState<'gps' | 'manual'>(pontoEditar ? 'manual' : 'gps');
+  
+  // Manual input string states
+  const [manualLat, setManualLat] = useState<string>(pontoEditar?.latitude.toString() || '');
+  const [manualLng, setManualLng] = useState<string>(pontoEditar?.longitude.toString() || '');
+  const [manualAlt, setManualAlt] = useState<string>(pontoEditar?.altitude?.toString() || '');
+  
+  // Validation errors
+  const [latError, setLatError] = useState<string | null>(null);
+  const [lngError, setLngError] = useState<string | null>(null);
+  
   // Map config from user profile
   const isSatellite = user?.mapconfig === 'satelite';
   const setIsSatellite = (value: boolean) => {
@@ -46,10 +58,77 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
     { value: 'dom', label: 'Dom' },
   ];
 
+  // Use callback to stabilize validateAndUpdateManual
+  const validateAndUpdateManual = useCallback(() => {
+    setLatError(null);
+    setLngError(null);
+    
+    // If inputs are empty, don't show errors yet
+    if (!manualLat && !manualLng) {
+      setLatitude(null);
+      setLongitude(null);
+      setAltitude(null);
+      return;
+    }
+    
+    const latNum = parseFloat(manualLat);
+    const lngNum = parseFloat(manualLng);
+    const altNum = manualAlt ? parseFloat(manualAlt) : null;
+    
+    let valid = true;
+    
+    // Validate latitude
+    if (isNaN(latNum) || latNum < -90 || latNum > 90) {
+      setLatError("Latitude deve estar entre -90 e 90");
+      valid = false;
+    }
+    
+    // Validate longitude
+    if (isNaN(lngNum) || lngNum < -180 || lngNum > 180) {
+      setLngError("Longitude deve estar entre -180 e 180");
+      valid = false;
+    }
+    
+    if (valid) {
+      setLatitude(latNum);
+      setLongitude(lngNum);
+      setAltitude(altNum);
+    } else {
+      setLatitude(null);
+      setLongitude(null);
+      setAltitude(null);
+    }
+  }, [manualLat, manualLng, manualAlt]);
+
+  // Sync manual inputs when in manual mode
+  useEffect(() => {
+    if (inputMode === 'manual') {
+      // When switching to manual mode, validate and update coordinates
+      validateAndUpdateManual();
+    }
+  }, [inputMode, validateAndUpdateManual]);
+
+  // When editing an existing point, initialize manual inputs and validate
+  useEffect(() => {
+    if (pontoEditar) {
+      setManualLat(pontoEditar.latitude.toString());
+      setManualLng(pontoEditar.longitude.toString());
+      setManualAlt(pontoEditar.altitude?.toString() || '');
+    }
+  }, [pontoEditar]);
+
+  // When manual inputs change, validate and update
+  useEffect(() => {
+    if (inputMode === 'manual') {
+      validateAndUpdateManual();
+    }
+  }, [manualLat, manualLng, manualAlt, inputMode, validateAndUpdateManual]);
+
+  // GPS mode effect
   useEffect(() => {
     let currentWatchId: number | null = null;
     
-    if (!pontoEditar && 'geolocation' in navigator) {
+    if (inputMode === 'gps' && !pontoEditar && 'geolocation' in navigator) {
       // First try getCurrentPosition for immediate result
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -59,7 +138,11 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
           setLocating(false);
         },
         (error) => {
-          console.error("Erro ao obter geolocalização inicial:", error);
+          console.warn("Erro ao obter geolocalização inicial:", error);
+          setLocating(false);
+          // Fallback location
+          setLatitude(-23.55052);
+          setLongitude(-46.633308);
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
@@ -73,14 +156,13 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
           setLocating(false);
         },
         (error) => {
-          console.error("Erro ao observar geolocalização:", error);
-          // Don't show toast for watch errors - just log
+          console.warn("Erro ao observar geolocalização:", error);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
-    } else if (pontoEditar) {
+    } else if (inputMode === 'gps' && pontoEditar) {
       setLocating(false);
-    } else {
+    } else if (inputMode === 'gps') {
       toast.error("Geolocalização não suportada pelo navegador.");
       setLocating(false);
       // Fallback location
@@ -94,7 +176,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
         navigator.geolocation.clearWatch(currentWatchId);
       }
     };
-  }, [pontoEditar]);
+  }, [inputMode, pontoEditar]);
 
   const handleAdd = () => {
     if (!nome.trim()) {
@@ -105,10 +187,16 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
       toast.error("Horário de execução é obrigatório.");
       return;
     }
+    
+    if (inputMode === 'manual') {
+      validateAndUpdateManual();
+    }
+    
     if (latitude === null || longitude === null) {
-      toast.error("Aguarde a obtenção da localização.");
+      toast.error("Preencha as coordenadas corretamente.");
       return;
     }
+    
     if (recorrente && diasSemana.length === 0) {
       toast.error("Selecione pelo menos um dia da semana para recorrência.");
       return;
@@ -159,34 +247,137 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                 {isSatellite ? 'Padrão' : 'Satélite'}
               </button>
             </div>
-            {locating ? (
-              <div className="h-48 w-full bg-muted/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <span className="text-sm">Obtendo localização precisa...</span>
-              </div>
-            ) : latitude && longitude ? (
-              <MiniMap latitude={latitude} longitude={longitude} raio={raio} isSatellite={isSatellite} />
-            ) : null}
             
-            {/* Real-time coordinates display */}
-            {latitude && longitude && (
-              <div className="mt-3 bg-muted/30 p-3 rounded-xl border border-border">
-                <div className="grid grid-cols-3 gap-2 text-xs">
+            {/* Mode Selector Tabs */}
+            <div className="flex mb-4 bg-muted/30 rounded-xl p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setInputMode('gps')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                  inputMode === 'gps' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                <MapPin className="h-4 w-4" /> GPS Automático
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('manual')}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                  inputMode === 'manual' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                <Edit2 className="h-4 w-4" /> Manual
+              </button>
+            </div>
+            
+            <AnimatePresence mode="wait">
+              {/* GPS Mode */}
+              {inputMode === 'gps' && (
+                <motion.div
+                  key="gps"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-3"
+                >
+                  {locating ? (
+                    <div className="h-48 w-full bg-muted/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                      <span className="text-sm">Obtendo localização precisa...</span>
+                    </div>
+                  ) : latitude && longitude ? (
+                    <MiniMap latitude={latitude} longitude={longitude} raio={raio} isSatellite={isSatellite} />
+                  ) : null}
+                  
+                  {/* Real-time coordinates display */}
+                  {latitude && longitude && (
+                    <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Latitude:</span>
+                          <p className="font-medium">{latitude.toFixed(6)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Longitude:</span>
+                          <p className="font-medium">{longitude.toFixed(6)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Altitude:</span>
+                          <p className="font-medium">{altitude ? altitude.toFixed(2) + 'm' : 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              
+              {/* Manual Mode */}
+              {inputMode === 'manual' && (
+                <motion.div
+                  key="manual"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="space-y-3"
+                >
                   <div>
-                    <span className="text-muted-foreground">Latitude:</span>
-                    <p className="font-medium">{latitude.toFixed(6)}</p>
+                    <label className="block text-sm font-medium mb-1">Latitude *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={manualLat}
+                      onChange={(e) => {
+                        setManualLat(e.target.value);
+                        validateAndUpdateManual();
+                      }}
+                      placeholder="-23.550520"
+                      className={`w-full bg-background border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                        latError ? 'border-destructive focus:ring-destructive/50' : 'border-input focus:ring-primary/50'
+                      }`}
+                    />
+                    {latError && <p className="text-xs text-destructive mt-1">{latError}</p>}
                   </div>
+                  
                   <div>
-                    <span className="text-muted-foreground">Longitude:</span>
-                    <p className="font-medium">{longitude.toFixed(6)}</p>
+                    <label className="block text-sm font-medium mb-1">Longitude *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={manualLng}
+                      onChange={(e) => {
+                        setManualLng(e.target.value);
+                        validateAndUpdateManual();
+                      }}
+                      placeholder="-46.633308"
+                      className={`w-full bg-background border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                        lngError ? 'border-destructive focus:ring-destructive/50' : 'border-input focus:ring-primary/50'
+                      }`}
+                    />
+                    {lngError && <p className="text-xs text-destructive mt-1">{lngError}</p>}
                   </div>
+                  
                   <div>
-                    <span className="text-muted-foreground">Altitude:</span>
-                    <p className="font-medium">{altitude ? altitude.toFixed(2) + 'm' : 'N/A'}</p>
+                    <label className="block text-sm font-medium mb-1">Altitude (m)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={manualAlt}
+                      onChange={(e) => {
+                        setManualAlt(e.target.value);
+                        validateAndUpdateManual();
+                      }}
+                      placeholder="760.5"
+                      className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
                   </div>
-                </div>
-              </div>
-            )}
+                  
+                  {/* MiniMap for manual mode when lat/lng are valid */}
+                  {latitude && longitude && (
+                    <MiniMap latitude={latitude} longitude={longitude} raio={raio} isSatellite={isSatellite} />
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             <div className="mt-4">
               <label className="block text-xs text-muted-foreground mb-1">Ajustar Raio (em metros)</label>
