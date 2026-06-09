@@ -34,11 +34,11 @@ import type {
   Ronda,
   RotaGeoreferenciada,
   ChecklistTurno,
-  ChecklistTurno,
   InspecaoDiaria,
   ProtocoloEmergencia,
   AtivacaoProtocolo,
   Lembrete,
+  User,
 } from './data';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -531,4 +531,42 @@ export async function updateLembrete(id: string, data: Partial<Lembrete>): Promi
 
 export async function removeLembrete(id: string): Promise<void> {
   await deleteDocument(LEMBRETES_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// USUÁRIOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const USUARIOS_COL = 'usuarios';
+
+export function subscribeUsuarios(callback: (data: User[]) => void): Unsubscribe {
+  return subscribeCollection<User>(USUARIOS_COL, (users) => {
+    const usersWithDefaults = users.map(user => ({
+      ...user,
+      ativo: user.ativo ?? true,
+      permissoes: user.permissoes || [
+        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+      ]
+    }));
+    callback(usersWithDefaults);
+  });
+}
+
+export async function addUsuario(data: Omit<User, 'id'>): Promise<string> {
+  return addDocument(USUARIOS_COL, data as Record<string, unknown>);
+}
+
+export async function setUsuario(id: string, data: Omit<User, 'id'>): Promise<void> {
+  await setDocument(USUARIOS_COL, id, data as Record<string, unknown>);
+}
+
+export async function updateUsuario(id: string, data: Partial<User>): Promise<void> {
+  await updateDocument(USUARIOS_COL, id, data);
+}
+
+export async function removeUsuario(id: string): Promise<void> {
+  await deleteDocument(USUARIOS_COL, id);
 }

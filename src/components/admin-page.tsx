@@ -2,11 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Map as MapIcon, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Map as MapIcon, Trash2, Edit2, User, X, Check, EyeOff, Eye } from 'lucide-react';
 import AdminBottomNav, { AdminTab } from './admin-bottom-nav';
 import { useAppStore } from '@/lib/store';
 import { ModalNovaRota } from './modais-rota';
-import { RotaGeoreferenciada } from '@/lib/data';
+import { RotaGeoreferenciada, User as UserType, PageType } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminPage() {
   const [currentTab, setCurrentTab] = useState<AdminTab>('painel');
@@ -25,6 +37,7 @@ export default function AdminPage() {
           >
             {currentTab === 'painel' && <AdminPainelTab />}
             {currentTab === 'rondas' && <AdminRondasTab />}
+            {currentTab === 'usuarios' && <AdminUsuariosTab />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -112,5 +125,299 @@ function AdminRondasTab() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function AdminUsuariosTab() {
+  const { usuarios, updateUsuario, addUsuario } = useAppStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState<UserType | null>(null);
+
+  const handleNovoUsuario = () => {
+    const novoUsuario: UserType = {
+      id: Date.now().toString(),
+      nome: '',
+      email: '',
+      cargo: '',
+      dataCadastro: new Date().toISOString(),
+      ativo: true,
+      permissoes: [
+        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+      ]
+    };
+    setUsuarioSelecionado(novoUsuario);
+    setModalOpen(true);
+  };
+
+  const handleEditarUsuario = (usuario: UserType) => {
+    setUsuarioSelecionado(usuario);
+    setModalOpen(true);
+  };
+
+  const handleSalvarUsuario = (usuario: UserType) => {
+    const existe = usuarios.find(u => u.id === usuario.id);
+    if (existe) {
+      updateUsuario(usuario);
+    } else {
+      addUsuario(usuario);
+    }
+    setModalOpen(false);
+    setUsuarioSelecionado(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Gerenciar Usuários</h2>
+        <button
+          onClick={handleNovoUsuario}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Novo Usuário
+        </button>
+      </div>
+
+      <div className="space-y-3 mt-4">
+        {usuarios.map((usuario) => (
+          <div 
+            key={usuario.id} 
+            className="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => handleEditarUsuario(usuario)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{usuario.nome}</span>
+                  {usuario.ativo ? (
+                    <Badge variant="default" className="text-[10px] bg-emerald-500">Ativo</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-[10px]">Inativo</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{usuario.email}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{usuario.cargo}</p>
+              </div>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleEditarUsuario(usuario); }}
+              className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+
+        {usuarios.length === 0 && (
+          <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed border-border">
+            <User className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+            <p className="text-sm text-muted-foreground">Nenhum usuário cadastrado.</p>
+          </div>
+        )}
+      </div>
+
+      <ModalUsuario 
+        open={modalOpen} 
+        onClose={() => { setModalOpen(false); setUsuarioSelecionado(null); }} 
+        usuario={usuarioSelecionado}
+        onSalvar={handleSalvarUsuario}
+      />
+    </div>
+  );
+}
+
+interface ModalUsuarioProps {
+  open: boolean;
+  onClose: () => void;
+  usuario: UserType | null;
+  onSalvar: (usuario: UserType) => void;
+}
+
+function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
+  const { usuarios } = useAppStore();
+  const [formData, setFormData] = useState<UserType | null>(null);
+
+  useEffect(() => {
+    if (usuario) {
+      setFormData({
+        ...usuario,
+        ativo: usuario.ativo ?? true,
+        permissoes: usuario.permissoes || [
+          'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+          'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+          'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+          'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+        ]
+      });
+    }
+  }, [usuario]);
+
+  if (!formData) return null;
+
+  const handleTogglePermissao = (pagina: PageType) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const permissoes = prev.permissoes.includes(pagina)
+        ? prev.permissoes.filter(p => p !== pagina)
+        : [...prev.permissoes, pagina];
+      return { ...prev, permissoes };
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSalvar(formData);
+  };
+
+  const paginas: PageType[] = [
+    'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+    'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+    'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+    'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes', 'admin'
+  ];
+
+  const paginaLabels: Record<string, string> = {
+    'dashboard': 'Dashboard',
+    'fluxo': 'Fluxo',
+    'correspondencias': 'Correspondências',
+    'veiculos': 'Veículos',
+    'pre-autorizacao': 'Pré-autorização',
+    'relatorios': 'Relatórios',
+    'cadastros': 'Cadastros',
+    'avisos': 'Avisos',
+    'lista-negra': 'Lista Negra',
+    'achados-perdidos': 'Achados e Perdidos',
+    'ocorrencias': 'Ocorrências',
+    'ronda': 'Ronda',
+    'checklist-turno': 'Checklist de Turno',
+    'inspecao-diaria': 'Inspeção Diária',
+    'protocolos-emergencia': 'Protocolos de Emergência',
+    'configuracoes': 'Configurações',
+    'perfil': 'Perfil',
+    'lembretes': 'Lembretes',
+    'admin': 'Admin'
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            {usuario && usuarios.find(u => u.id === usuario.id) ? 'Editar Usuário' : 'Novo Usuário'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome</Label>
+            <Input
+              id="nome"
+              value={formData.nome}
+              onChange={(e) => setFormData(prev => prev ? { ...prev, nome: e.target.value } : prev)}
+              placeholder="Nome completo do usuário"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => prev ? { ...prev, email: e.target.value } : prev)}
+              placeholder="email@exemplo.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cargo">Cargo</Label>
+            <Input
+              id="cargo"
+              value={formData.cargo || ''}
+              onChange={(e) => setFormData(prev => prev ? { ...prev, cargo: e.target.value } : prev)}
+              placeholder="Cargo do usuário"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ativo"
+                checked={formData.ativo}
+                onCheckedChange={(checked) => setFormData(prev => prev ? { ...prev, ativo: checked } : prev)}
+              />
+              <Label htmlFor="ativo" className="cursor-pointer">Usuário Ativo</Label>
+            </div>
+            {formData.ativo ? (
+              <Badge variant="default" className="bg-emerald-500">Ativo</Badge>
+            ) : (
+              <Badge variant="destructive">Inativo</Badge>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Permissões</Label>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFormData(prev => prev ? { ...prev, permissoes: paginas } : prev)}
+                >
+                  <Check className="h-3 w-3 mr-1" />
+                  Todos
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setFormData(prev => prev ? { ...prev, permissoes: [] } : prev)}
+                >
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  Nenhum
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border rounded-lg p-3 bg-muted/30">
+              {paginas.map((pagina) => (
+                <div key={pagina} className="flex items-center gap-2">
+                  <Switch
+                    id={`permissao-${pagina}`}
+                    checked={formData.permissoes.includes(pagina)}
+                    onCheckedChange={() => handleTogglePermissao(pagina)}
+                  />
+                  <Label
+                    htmlFor={`permissao-${pagina}`}
+                    className="text-xs cursor-pointer"
+                  >
+                    {paginaLabels[pagina]}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+              <Check className="h-4 w-4 mr-2" />
+              Salvar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -6,10 +6,11 @@ import {
   LayoutDashboard,
   Footprints,
   LogOut,
+  Users,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
-export type AdminTab = 'painel' | 'rondas';
+export type AdminTab = 'painel' | 'rondas' | 'usuarios';
 
 interface AdminBottomNavProps {
   currentTab: AdminTab;
@@ -40,6 +41,26 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
           )}
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-[10px] font-medium leading-tight">Painel</span>
+        </button>
+
+        {/* Usuários */}
+        <button
+          onClick={() => onTabChange('usuarios')}
+          className={`relative flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+            currentTab === 'usuarios'
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {currentTab === 'usuarios' && (
+            <motion.div
+              layoutId="adminActiveTab"
+              className="absolute -top-px left-1/4 right-1/4 h-0.5 bg-primary rounded-full"
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            />
+          )}
+          <Users className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-tight">Usuários</span>
         </button>
 
         {/* Rondas (Center prominent button or regular) */}

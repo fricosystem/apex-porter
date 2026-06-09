@@ -32,7 +32,7 @@ import { Badge } from '@/components/ui/badge';
 
 // ── App Header ───────────────────────────────────────────────────────────────
 export default function AppHeader() {
-  const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill } = useAppStore();
+  const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill, currentPage } = useAppStore();
   const [ticketInput, setTicketInput] = useState('');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -146,13 +146,15 @@ export default function AppHeader() {
 
           {/* Right: Ações */}
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              className="text-primary-foreground hover:bg-white/10 h-9 w-9"
-              onClick={() => setTicketModalOpen(true)}
-            >
-              <Ticket className="h-5 w-5" />
-            </Button>
+            {currentPage !== 'admin' && (
+              <Button
+                variant="ghost"
+                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                onClick={() => setTicketModalOpen(true)}
+              >
+                <Ticket className="h-5 w-5" />
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

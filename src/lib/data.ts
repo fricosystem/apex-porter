@@ -278,6 +278,9 @@ export interface User {
   cargo?: string;
   dataCadastro?: string;
   mapconfig?: 'padrao' | 'satelite';
+  senha?: string; // Armazenada com hash em produção
+  ativo: boolean;
+  permissoes: PageType[]; // Páginas que o usuário pode acessar
 }
 
 // ── Veículos ──

@@ -17,6 +17,8 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, type FieldValue } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
+import { PageType } from './data';
+
 // ── Firestore user document shape ──
 export interface FirestoreUser {
   nome: string;
@@ -27,6 +29,9 @@ export interface FirestoreUser {
   ultimoLogin: Timestamp | FieldValue | null;
   settings?: any;
   mapconfig?: 'padrao' | 'satelite';
+  ativo?: boolean;
+  permissoes?: PageType[];
+  cargo?: string;
 }
 
 // ── Collection name ──
@@ -49,6 +54,14 @@ export async function updateUltimoLogin(uid: string): Promise<void> {
     // Non-critical — don't throw
   }
 }
+
+// ── Default permissions for new users ──
+const DEFAULT_PERMISSIONS: PageType[] = [
+  'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+  'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+  'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+  'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+];
 
 // ── Sign up with email + password + profile info ──
 export async function signUpWithEmail(
@@ -77,6 +90,9 @@ export async function signUpWithEmail(
       senha: password,
       dataCadastro: serverTimestamp(),
       ultimoLogin: serverTimestamp(),
+      ativo: true,
+      permissoes: DEFAULT_PERMISSIONS,
+      cargo,
     };
     await setDoc(doc(db, USUARIOS_COL, credential.user.uid), userDoc);
   } catch (err) {
@@ -131,10 +147,16 @@ export async function ensureUserProfile(
   try {
     const existing = await getDoc(doc(db, USUARIOS_COL, uid));
     if (existing.exists()) {
-      // Update ultimoLogin
-      await setDoc(doc(db, USUARIOS_COL, uid), {
+      // Update ultimoLogin and ensure required fields exist
+      const existingData = existing.data() as FirestoreUser;
+      const updateData: Partial<FirestoreUser> = {
         ultimoLogin: serverTimestamp(),
-      }, { merge: true });
+      };
+      // Add default values if they don't exist
+      if (existingData.ativo === undefined) updateData.ativo = true;
+      if (!existingData.permissoes) updateData.permissoes = DEFAULT_PERMISSIONS;
+      
+      await setDoc(doc(db, USUARIOS_COL, uid), updateData, { merge: true });
     } else {
       // Create full document
       const userDoc: FirestoreUser = {
@@ -143,6 +165,8 @@ export async function ensureUserProfile(
         senha: data.senha,
         dataCadastro: serverTimestamp(),
         ultimoLogin: serverTimestamp(),
+        ativo: true,
+        permissoes: DEFAULT_PERMISSIONS,
       };
       await setDoc(doc(db, USUARIOS_COL, uid), userDoc);
     }

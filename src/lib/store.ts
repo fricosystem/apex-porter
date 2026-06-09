@@ -124,6 +124,11 @@ import {
   setLembrete as setLembreteFS,
   updateLembrete as updateLembreteFS,
   removeLembrete as removeLembreteFS,
+  subscribeUsuarios,
+  addUsuario as addUsuarioFS,
+  setUsuario as setUsuarioFS,
+  updateUsuario as updateUsuarioFS,
+  removeUsuario as removeUsuarioFS,
 } from './firestore-collections';
 import type { Unsubscribe } from './firestore';
 
@@ -327,6 +332,13 @@ function startSubscriptions() {
     );
   }
 
+  // Subscribe to usuarios
+  unsubs.push(
+    subscribeUsuarios((data) => {
+      useAppStore.setState({ usuarios: data });
+    })
+  );
+
   // Phase 7 — Load system config from Firestore (one-time fetch, not real-time)
   loadSystemConfig().catch((err) => {
     console.warn('[Firestore] Falha ao carregar configurações do sistema:', err);
@@ -484,6 +496,12 @@ interface AppState {
   addLembrete: (lembrete: Lembrete) => void;
   updateLembrete: (lembrete: Lembrete) => void;
   removeLembrete: (id: string) => void;
+
+  // Usuários
+  usuarios: User[];
+  addUsuario: (usuario: User) => void;
+  updateUsuario: (usuario: User) => void;
+  removeUsuario: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -620,9 +638,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       id: firebaseUser.uid,
       nome: firestoreData?.nome || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuário',
       email: firebaseUser.email || '',
-      cargo: 'Porteiro',
+      cargo: firestoreData?.cargo || 'Porteiro',
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       mapconfig: firestoreData?.mapconfig || 'padrao',
+      ativo: firestoreData?.ativo ?? true,
+      permissoes: firestoreData?.permissoes || [
+        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+      ],
     };
     
     const targetPage = get().currentPage === 'login' ? 'dashboard' : get().currentPage;
@@ -1261,6 +1286,31 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({ lembretes: state.lembretes.filter((l) => l.id !== id) }));
     removeLembreteFS(id).catch((err) => {
       console.warn('[Firestore] Falha ao remover lembrete:', err);
+    });
+  },
+
+  // Usuários
+  usuarios: [],
+  addUsuario: (usuario) => {
+    set((state) => ({ usuarios: [...state.usuarios, usuario] }));
+    const { id, ...data } = usuario;
+    setUsuarioFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao adicionar usuário:', err);
+    });
+  },
+  updateUsuario: (usuario) => {
+    set((state) => ({
+      usuarios: state.usuarios.map((u) => (u.id === usuario.id ? usuario : u)),
+    }));
+    const { id, ...data } = usuario;
+    updateUsuarioFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao atualizar usuário:', err);
+    });
+  },
+  removeUsuario: (id) => {
+    set((state) => ({ usuarios: state.usuarios.filter((u) => u.id !== id) }));
+    removeUsuarioFS(id).catch((err) => {
+      console.warn('[Firestore] Falha ao remover usuário:', err);
     });
   },
 }));

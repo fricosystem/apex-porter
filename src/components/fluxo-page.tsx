@@ -32,7 +32,7 @@ import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib
 import RegistroModal from './registro-modal';
 import { toast } from 'sonner';
 
-type StatusFilter = 'aberto' | 'finalizado' | 'todos';
+type StatusFilter = 'aberto' | 'finalizado';
 
 const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   entregas1: Package,
@@ -627,7 +627,7 @@ export default function FluxoPage() {
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
-          <TabsList className="w-full grid grid-cols-3 h-10">
+          <TabsList className="w-full grid grid-cols-2 h-10">
             <TabsTrigger
               value="aberto"
               className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -639,12 +639,6 @@ export default function FluxoPage() {
               className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               Finalizados
-            </TabsTrigger>
-            <TabsTrigger
-              value="todos"
-              className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              Todos
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -660,9 +654,7 @@ export default function FluxoPage() {
             <p className="text-lg font-medium mb-1">
               {statusFilter === 'aberto'
                 ? 'Nenhum registro em aberto'
-                : statusFilter === 'finalizado'
-                  ? 'Nenhum registro finalizado'
-                  : 'Nenhum registro encontrado'}
+                : 'Nenhum registro finalizado'}
             </p>
             <p className="text-sm text-muted-foreground/70">
               Toque em Registrar Entrada para começar.
@@ -823,7 +815,7 @@ export default function FluxoPage() {
           className="w-full h-13 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold shadow-lg"
         >
           <Plus className="h-5 w-5 mr-2" />
-          Registrar Entrada
+          Novo Registro
         </Button>
       </div>
 
