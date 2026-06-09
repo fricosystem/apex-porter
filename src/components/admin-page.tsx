@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Map as MapIcon } from 'lucide-react';
+import { Plus, Map as MapIcon, Trash2, Edit2 } from 'lucide-react';
 import AdminBottomNav, { AdminTab } from './admin-bottom-nav';
 import { useAppStore } from '@/lib/store';
 import { ModalNovaRota } from './modais-rota';
+import { RotaGeoreferenciada } from '@/lib/data';
 
 export default function AdminPage() {
   const [currentTab, setCurrentTab] = useState<AdminTab>('painel');
@@ -45,8 +46,9 @@ function AdminPainelTab() {
 }
 
 function AdminRondasTab() {
-  const { rotasGeoreferenciadas } = useAppStore();
+  const { rotasGeoreferenciadas, removeRotaGeoreferenciada } = useAppStore();
   const [showNovaRota, setShowNovaRota] = useState(false);
+  const [rotaEditar, setRotaEditar] = useState<RotaGeoreferenciada | null>(null);
 
   return (
     <div className="space-y-4">
@@ -73,7 +75,20 @@ function AdminRondasTab() {
                 <p className="text-xs text-muted-foreground">{rota.pontos.length} pontos cadastrados</p>
               </div>
             </div>
-            {/* O botão de excluir foi removido conforme solicitado na Fase 1 */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setRotaEditar(rota)}
+                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => removeRotaGeoreferenciada(rota.id)}
+                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         ))}
 
@@ -88,6 +103,12 @@ function AdminRondasTab() {
       <AnimatePresence>
         {showNovaRota && (
           <ModalNovaRota onClose={() => setShowNovaRota(false)} />
+        )}
+        {rotaEditar && (
+          <ModalNovaRota 
+            onClose={() => setRotaEditar(null)} 
+            rotaEditar={rotaEditar}
+          />
         )}
       </AnimatePresence>
     </div>

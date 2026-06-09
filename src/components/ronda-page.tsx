@@ -8,6 +8,10 @@ import {
   CheckCircle2, AlertTriangle, Play, ChevronDown, ChevronUp,
   Navigation, Timer, User, CalendarDays,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Load map dynamically to avoid SSR issues
+const RotaMap = dynamic(() => import('./rota-map'), { ssr: false, loading: () => <div className="h-64 w-full bg-muted/50 rounded-xl flex items-center justify-center">Carregando mapa...</div> });
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -526,14 +530,14 @@ export default function RondaPage() {
 
       {/* New Ronda Dialog */}
       <Dialog open={modalOpen} onOpenChange={v => { if (!v) setModalOpen(false); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-full w-full h-full max-h-[100vh] m-0 rounded-none flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Navigation className="h-5 w-5 text-emerald-600" />
               Criar Ronda
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <div className="space-y-2">
               <Label>Rota *</Label>
               <Select value={selectedRota} onValueChange={setSelectedRota}>
@@ -548,31 +552,46 @@ export default function RondaPage() {
               </Select>
             </div>
 
-            {selectedRota && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Pontos que serão verificados</Label>
-                <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                  {rotasGeoreferenciadas.find(r => r.id === selectedRota)?.pontos.map((ponto, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      <MapPin className="h-3 w-3 text-emerald-600 shrink-0" />
-                      <span>{ponto.nome}</span>
-                      <span className="text-muted-foreground ml-auto">{ponto.horarioExecucao}</span>
-                    </div>
-                  ))}
+            {selectedRota && rotasGeoreferenciadas.find(r => r.id === selectedRota) && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm">Mapa da Rota</Label>
+                  <RotaMap 
+                    pontos={rotasGeoreferenciadas.find(r => r.id === selectedRota)!.pontos.map(p => ({
+                      latitude: p.latitude,
+                      longitude: p.longitude,
+                      nome: p.nome
+                    }))} 
+                  />
                 </div>
-              </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Pontos que serão verificados</Label>
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                    {rotasGeoreferenciadas.find(r => r.id === selectedRota)!.pontos.map((ponto, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3 text-emerald-600 shrink-0" />
+                        <span>{ponto.nome}</span>
+                        <span className="text-muted-foreground ml-auto">{ponto.horarioExecucao}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="space-y-2">
-              <Label>Porteiro</Label>
-              <Input
-                value={user?.nome || 'Porteiro'}
-                readOnly
-                className="bg-muted/50"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Porteiro</Label>
+                <Input
+                  value={user?.nome || 'Porteiro'}
+                  readOnly
+                  className="bg-muted/50"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 p-4 border-t border-border">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreateRonda} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Play className="h-4 w-4 mr-2" />

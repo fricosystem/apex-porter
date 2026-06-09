@@ -373,3 +373,8 @@ img, a, button, [role="button"] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Ocultar legenda/attribution do Leaflet */
+.leaflet-control-attribution {
+  display: none !important;
+}

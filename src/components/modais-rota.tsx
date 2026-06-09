@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, MapPin, Map as MapIcon, Loader2, Save } from 'lucide-react';
+import { Plus, X, MapPin, Map as MapIcon, Loader2, Save, Edit2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { PontoRota, RotaGeoreferenciada } from '@/lib/data';
 import { useAppStore } from '@/lib/store';
@@ -14,17 +14,18 @@ const MiniMap = dynamic(() => import('./mini-map'), { ssr: false, loading: () =>
 interface ModalNovoPontoProps {
   onClose: () => void;
   onAdd: (ponto: Omit<PontoRota, 'id'>) => void;
+  pontoEditar?: PontoRota;
 }
 
-function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
-  const [nome, setNome] = useState('');
-  const [horarioExecucao, setHorarioExecucao] = useState('');
-  const [raio, setRaio] = useState(50);
-  const [recorrente, setRecorrente] = useState(false);
-  const [diasSemana, setDiasSemana] = useState<string[]>([]);
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [locating, setLocating] = useState(true);
+function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
+  const [nome, setNome] = useState(pontoEditar?.nome || '');
+  const [horarioExecucao, setHorarioExecucao] = useState(pontoEditar?.horarioExecucao || '');
+  const [raio, setRaio] = useState(pontoEditar?.raio || 50);
+  const [recorrente, setRecorrente] = useState(pontoEditar?.recorrente || false);
+  const [diasSemana, setDiasSemana] = useState<string[]>(pontoEditar?.diasSemana || []);
+  const [latitude, setLatitude] = useState<number | null>(pontoEditar?.latitude || null);
+  const [longitude, setLongitude] = useState<number | null>(pontoEditar?.longitude || null);
+  const [locating, setLocating] = useState(!pontoEditar);
 
   const diasOptions = [
     { value: 'seg', label: 'Seg' },
@@ -37,7 +38,7 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
   ];
 
   useEffect(() => {
-    if ('geolocation' in navigator) {
+    if (!pontoEditar && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLatitude(position.coords.latitude);
@@ -54,11 +55,13 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
         },
         { enableHighAccuracy: true }
       );
+    } else if (pontoEditar) {
+      setLocating(false);
     } else {
       toast.error("Geolocalização não suportada pelo navegador.");
       setLocating(false);
     }
-  }, []);
+  }, [pontoEditar]);
 
   const handleAdd = () => {
     if (!nome.trim()) {
@@ -104,7 +107,7 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
         className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-bold text-lg">Novo Ponto da Rota</h3>
+          <h3 className="font-bold text-lg">{pontoEditar ? 'Editar Ponto da Rota' : 'Novo Ponto da Rota'}</h3>
           <button onClick={onClose} className="p-2 bg-muted/50 rounded-full hover:bg-muted transition-colors">
             <X className="h-5 w-5" />
           </button>
@@ -124,12 +127,12 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
             
             <div className="mt-4">
               <label className="block text-xs text-muted-foreground mb-1">Ajustar Raio (em metros)</label>
-              <input 
-                type="range" 
-                min="10" 
-                max="200" 
-                step="5" 
-                value={raio} 
+              <input
+                type="range"
+                min="10"
+                max="200"
+                step="5"
+                value={raio}
                 onChange={(e) => setRaio(Number(e.target.value))}
                 className="w-full accent-primary"
               />
@@ -189,8 +192,8 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
                         type="button"
                         onClick={() => toggleDia(dia.value)}
                         className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                          diasSemana.includes(dia.value) 
-                            ? 'bg-primary text-primary-foreground' 
+                          diasSemana.includes(dia.value)
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         }`}
                       >
@@ -209,8 +212,8 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
             onClick={handleAdd}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Plus className="h-5 w-5" />
-            Adicionar Ponto
+            <Save className="h-5 w-5" />
+            {pontoEditar ? 'Salvar Ponto' : 'Adicionar Ponto'}
           </button>
         </div>
       </motion.div>
@@ -220,14 +223,16 @@ function ModalNovoPonto({ onClose, onAdd }: ModalNovoPontoProps) {
 
 interface ModalNovaRotaProps {
   onClose: () => void;
+  rotaEditar?: RotaGeoreferenciada;
 }
 
-export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
-  const [nomeRota, setNomeRota] = useState('');
-  const [pontos, setPontos] = useState<PontoRota[]>([]);
+export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
+  const [nomeRota, setNomeRota] = useState(rotaEditar?.nome || '');
+  const [pontos, setPontos] = useState<PontoRota[]>(rotaEditar?.pontos || []);
   const [showNovoPonto, setShowNovoPonto] = useState(false);
+  const [pontoParaEditar, setPontoParaEditar] = useState<PontoRota | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const { addRotaGeoreferenciada } = useAppStore();
+  const { addRotaGeoreferenciada, updateRotaGeoreferenciada } = useAppStore();
 
   const handleSaveRota = async () => {
     if (!nomeRota.trim()) {
@@ -241,31 +246,54 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
 
     setIsSaving(true);
     try {
-      const novaRota: RotaGeoreferenciada = {
-        id: crypto.randomUUID(), // Local ID, Firestore will override with its own ID based on our data.ts/store logic or we use this
-        nome: nomeRota,
-        pontos,
-        criadoEm: new Date().toISOString(),
-      };
-      
-      // Store will add to Firestore
-      addRotaGeoreferenciada(novaRota);
-      toast.success("Rota criada com sucesso!");
+      if (rotaEditar) {
+        const rotaAtualizada: RotaGeoreferenciada = {
+          ...rotaEditar,
+          nome: nomeRota,
+          pontos,
+          atualizadoEm: new Date().toISOString(),
+        };
+        updateRotaGeoreferenciada(rotaAtualizada);
+        toast.success("Rota atualizada com sucesso!");
+      } else {
+        const novaRota: RotaGeoreferenciada = {
+          id: crypto.randomUUID(),
+          nome: nomeRota,
+          pontos,
+          criadoEm: new Date().toISOString(),
+        };
+        addRotaGeoreferenciada(novaRota);
+        toast.success("Rota criada com sucesso!");
+      }
       onClose();
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao criar rota.");
+      toast.error("Erro ao salvar rota.");
       setIsSaving(false);
     }
   };
 
   const handleAddPonto = (pontoData: Omit<PontoRota, 'id'>) => {
-    const novoPonto: PontoRota = {
-      ...pontoData,
-      id: crypto.randomUUID(),
-    };
-    setPontos([...pontos, novoPonto]);
+    if (pontoParaEditar) {
+      // Editando ponto existente
+      setPontos(pontos.map(p => 
+        p.id === pontoParaEditar.id ? { ...pontoData, id: pontoParaEditar.id } : p
+      ));
+      setPontoParaEditar(null);
+    } else {
+      // Adicionando novo ponto
+      const novoPonto: PontoRota = {
+        ...pontoData,
+        id: crypto.randomUUID(),
+      };
+      setPontos([...pontos, novoPonto]);
+    }
     setShowNovoPonto(false);
+  };
+
+  const handleEditarPonto = (ponto: PontoRota) => {
+    setPontoParaEditar(ponto);
+    setShowNovoPonto(true);
   };
 
   return (
@@ -280,7 +308,7 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="font-bold text-xl flex items-center gap-2">
               <MapIcon className="h-6 w-6 text-primary" />
-              Nova Rota Georeferenciada
+              {rotaEditar ? 'Editar Rota Georeferenciada' : 'Nova Rota Georeferenciada'}
             </h2>
             <button onClick={onClose} className="p-2 bg-muted/50 rounded-full hover:bg-muted transition-colors">
               <X className="h-5 w-5" />
@@ -303,7 +331,10 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium">Pontos da Rota</label>
                 <button
-                  onClick={() => setShowNovoPonto(true)}
+                  onClick={() => {
+                    setPontoParaEditar(null);
+                    setShowNovoPonto(true);
+                  }}
                   className="flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
                 >
                   <Plus className="h-3 w-3" />
@@ -338,12 +369,20 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
                           </div>
                         )}
                       </div>
-                      <button 
-                        onClick={() => setPontos(pontos.filter(p => p.id !== ponto.id))}
-                        className="text-destructive p-1 hover:bg-destructive/10 rounded-md"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditarPonto(ponto)}
+                          className="text-muted-foreground p-1 hover:text-primary hover:bg-primary/10 rounded-md"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setPontos(pontos.filter(p => p.id !== ponto.id))}
+                          className="text-destructive p-1 hover:bg-destructive/10 rounded-md"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -358,7 +397,7 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
               className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-              Criar Rota
+              {rotaEditar ? 'Salvar Alterações' : 'Criar Rota'}
             </button>
           </div>
         </motion.div>
@@ -366,7 +405,14 @@ export function ModalNovaRota({ onClose }: ModalNovaRotaProps) {
 
       <AnimatePresence>
         {showNovoPonto && (
-          <ModalNovoPonto onClose={() => setShowNovoPonto(false)} onAdd={handleAddPonto} />
+          <ModalNovoPonto 
+            onClose={() => {
+              setShowNovoPonto(false);
+              setPontoParaEditar(null);
+            }} 
+            onAdd={handleAddPonto}
+            pontoEditar={pontoParaEditar || undefined}
+          />
         )}
       </AnimatePresence>
     </>
