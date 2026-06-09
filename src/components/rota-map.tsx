@@ -20,6 +20,35 @@ interface RotaMapProps {
   }>;
 }
 
+function FixMapSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    // Invalidate size to fix tile loading issues in modals
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 600);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
 function FitBounds({ pontos }: { pontos: Array<{ latitude: number; longitude: number }> }) {
   const map = useMap();
 
@@ -40,9 +69,13 @@ export default function RotaMap({ pontos }: RotaMapProps) {
   const center = bounds[0];
   const polylinePositions = bounds;
 
+  // Force re-render with key based on pontos
+  const mapKey = pontos.map(p => `${p.latitude}-${p.longitude}`).join('|');
+
   return (
     <div className="h-64 w-full rounded-xl overflow-hidden border border-border">
       <MapContainer
+        key={mapKey}
         center={center}
         zoom={15}
         scrollWheelZoom={true}
@@ -53,8 +86,9 @@ export default function RotaMap({ pontos }: RotaMapProps) {
           url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
           maxZoom={22}
         />
+        <FixMapSize />
         <FitBounds pontos={pontos} />
-        <Polyline positions={polylinePositions} color="#059669" weight={3} />
+        <Polyline positions={polylinePositions} color="#059669" weight={4} />
         {pontos.map((ponto, idx) => (
           <Marker key={idx} position={[ponto.latitude, ponto.longitude]} />
         ))}
