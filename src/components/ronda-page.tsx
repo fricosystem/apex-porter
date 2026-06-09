@@ -689,9 +689,18 @@ export default function RondaPage() {
                             ) : (
                               <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                             )}
-                            <span className="font-medium text-sm truncate">{ponto.ponto}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-sm truncate">{ponto.ponto}</span>
+                              {ponto.latitude && ponto.longitude && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  Raio de verificação: {ponto.raio || 50}m
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+
+
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
@@ -805,7 +814,14 @@ export default function RondaPage() {
                             ) : (
                               <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                             )}
-                            <span className="font-medium text-base truncate">{ponto.ponto}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-base truncate">{ponto.ponto}</span>
+                              {ponto.latitude && ponto.longitude && (
+                                <span className="text-xs text-muted-foreground">
+                                  Raio de verificação: {ponto.raio || 50}m
+                                </span>
+                              )}
+                            </div>
                           </div>
                           
                           {showCheckin || !isChecked ? (
@@ -820,6 +836,18 @@ export default function RondaPage() {
                             </Button>
                           ) : null}
                         </div>
+
+                        {/* Geolocation info */}
+                        {ponto.latitude && ponto.longitude && (
+                          <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                            <div className="flex items-center justify-between text-xs">
+                              <Label className="text-[10px] text-muted-foreground">Distância Atual</Label>
+                              <p className={`font-bold text-xs ${dist >= 0 ? (dist <= (ponto.raio || 50) ? 'text-emerald-600' : 'text-amber-600') : 'text-muted-foreground'}`}>
+                                {dist >= 0 ? `${Math.round(dist)}m` : '—'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
@@ -883,7 +911,12 @@ export default function RondaPage() {
               {/* Finalizar button */}
               <Button
                 onClick={handleFinalizar}
-                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-lg"
+                disabled={countChecked(selectedRonda) !== selectedRonda.pontos.length}
+                className={`w-full h-12 font-semibold text-base shadow-lg ${
+                  countChecked(selectedRonda) === selectedRonda.pontos.length
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
               >
                 <CheckCircle2 className="h-5 w-5 mr-2" />
                 Finalizar Ronda
