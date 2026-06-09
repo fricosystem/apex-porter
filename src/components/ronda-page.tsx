@@ -137,6 +137,9 @@ export default function RondaPage() {
   const [executionOpen, setExecutionOpen] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
+  
+  // Confirmation modal for finalizing ronda
+  const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
 
   // Watch position
   useEffect(() => {
@@ -266,6 +269,19 @@ export default function RondaPage() {
     if (!selectedRonda) return;
     const checked = selectedRonda.pontos.filter(p => p.horarioReal).length;
     const total = selectedRonda.pontos.length;
+    
+    if (checked < total) {
+      // Show confirmation
+      setConfirmFinalizeOpen(true);
+    } else {
+      finalizeRonda();
+    }
+  };
+
+  const finalizeRonda = () => {
+    if (!selectedRonda) return;
+    const checked = selectedRonda.pontos.filter(p => p.horarioReal).length;
+    const total = selectedRonda.pontos.length;
     const status: StatusRonda = checked === total ? 'concluida' : 'parcial';
     const updated: Ronda = {
       ...selectedRonda,
@@ -275,6 +291,7 @@ export default function RondaPage() {
     updateRonda(updated);
     toast.success(status === 'concluida' ? 'Ronda concluída com sucesso!' : 'Ronda finalizada parcialmente');
     setExecutionOpen(false);
+    setConfirmFinalizeOpen(false);
     setSelectedRonda(null);
   };
 
@@ -319,24 +336,24 @@ export default function RondaPage() {
         <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.05 }}>
           <Card className="bg-slate-50 dark:bg-slate-800/50 border-0">
             <CardContent className="p-4 text-center">
+              <p className="text-xs text-muted-foreground">Total de Rondas</p>
               <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{stats.total}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total de Rondas</p>
             </CardContent>
           </Card>
         </motion.div>
         <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
           <Card className="bg-amber-50 dark:bg-amber-900/20 border-0">
             <CardContent className="p-4 text-center">
+              <p className="text-xs text-muted-foreground">Em Andamento</p>
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.emAndamento}</p>
-              <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mt-0.5">Em Andamento</p>
             </CardContent>
           </Card>
         </motion.div>
         <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}>
           <Card className="bg-emerald-50 dark:bg-emerald-900/20 border-0">
             <CardContent className="p-4 text-center">
+              <p className="text-xs text-muted-foreground">Concluídas</p>
               <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.concluidas}</p>
-              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 mt-0.5">Concluídas</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -345,16 +362,16 @@ export default function RondaPage() {
       {/* Search + Filter bar */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Buscar por rota ou porteiro..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            className="pl-9 h-10 bg-muted/50 border-0 focus-visible:ring-1"
+            className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
           />
         </div>
         <Select value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
-          <SelectTrigger className="w-full sm:w-44 h-10 bg-muted/50 border-0">
+          <SelectTrigger className="w-full sm:w-44 h-11 text-sm bg-muted/50 border-0">
             <SelectValue placeholder="Filtrar status" />
           </SelectTrigger>
           <SelectContent>
@@ -376,7 +393,7 @@ export default function RondaPage() {
           <p className="text-sm text-muted-foreground/70">Toque em Criar Ronda para iniciar um patrulhamento.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filtered.map((ronda, idx) => {
             const checked = countChecked(ronda);
             const total = ronda.pontos.length;
@@ -396,7 +413,7 @@ export default function RondaPage() {
                   <CardContent className="p-0">
                     {/* Card header — clickable */}
                     <div
-                      className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                      className="p-3.5 cursor-pointer hover:bg-muted/30 transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : ronda.id)}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -405,23 +422,23 @@ export default function RondaPage() {
                             <StatusIcon className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-semibold text-sm truncate">{ronda.rota}</h3>
-                              <Badge className={`${statusColors[ronda.status]} text-[10px] px-2 py-0`}>
+                            <div className="flex items-center gap-2 flex-wrap mb-2.5">
+                              <h3 className="font-bold text-lg truncate">{ronda.rota}</h3>
+                              <Badge className={`${statusColors[ronda.status]} text-xs px-2 py-0.5`}>
                                 {statusLabels[ronda.status]}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-3 mt-1.5 text-base text-muted-foreground flex-wrap">
                               <span className="flex items-center gap-1">
-                                <CalendarDays className="h-3.5 w-3.5" />
+                                <CalendarDays className="h-4 w-4" />
                                 {ronda.data}
                               </span>
                               <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
+                                <Clock className="h-4 w-4" />
                                 {ronda.horarioInicio}{ronda.horarioFim ? ` — ${ronda.horarioFim}` : ''}
                               </span>
                               <span className="flex items-center gap-1">
-                                <User className="h-3.5 w-3.5" />
+                                <User className="h-4 w-4" />
                                 {ronda.porteiro}
                               </span>
                             </div>
@@ -429,11 +446,11 @@ export default function RondaPage() {
                             {/* Progress bar */}
                             <div className="mt-2.5">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-medium text-muted-foreground">
+                                <span className="text-base font-medium text-muted-foreground">
                                   {checked}/{total} pontos verificados
                                 </span>
                                 {irregularidades > 0 && (
-                                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[10px] px-1.5 py-0">
+                                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs px-2 py-0.5">
                                     <AlertTriangle className="h-3 w-3 mr-0.5" />
                                     {irregularidades} irregularidade{irregularidades > 1 ? 's' : ''}
                                   </Badge>
@@ -457,32 +474,32 @@ export default function RondaPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              className="h-9 w-9 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                               onClick={e => { e.stopPropagation(); handleOpenExecution(ronda); }}
                             >
-                              <Play className="h-4 w-4" />
+                              <Play className="h-5 w-5" />
                             </Button>
                           )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-muted-foreground"
+                            className="h-9 w-9 p-0 text-muted-foreground"
                             onClick={e => { e.stopPropagation(); handleOpenDetail(ronda); }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-5 w-5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                            className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
                             onClick={e => { e.stopPropagation(); handleDelete(ronda.id); }}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                           {isExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            <ChevronUp className="h-5 w-5 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
                           )}
                         </div>
                       </div>
@@ -495,19 +512,19 @@ export default function RondaPage() {
                         animate={{ height: 'auto', opacity: 1 }}
                         className="border-t border-border/50 bg-muted/20"
                       >
-                        <div className="p-4 space-y-1.5">
+                        <div className="p-3.5 space-y-1.5">
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                             Pontos da Ronda
                           </p>
                           {ronda.pontos.map(ponto => (
                             <div
                               key={ponto.id}
-                              className="flex items-center gap-2 text-xs py-1"
+                              className="flex items-center gap-2 text-base py-1"
                             >
                               {ponto.horarioReal ? (
-                                <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${ponto.status === 'irregularidade' ? 'text-red-500' : 'text-emerald-500'}`} />
+                                <CheckCircle2 className={`h-4 w-4 shrink-0 ${ponto.status === 'irregularidade' ? 'text-red-500' : 'text-emerald-500'}`} />
                               ) : (
-                                <div className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                                <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                               )}
                               <span className="font-medium min-w-0 truncate flex-1">{ponto.ponto}</span>
                               <span className="text-muted-foreground shrink-0">
@@ -519,7 +536,7 @@ export default function RondaPage() {
                                 </span>
                               )}
                               {ponto.status === 'irregularidade' && (
-                                <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
                               )}
                             </div>
                           ))}
@@ -679,22 +696,32 @@ export default function RondaPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[10px] text-muted-foreground">Previsto</Label>
-                            <Input value={ponto.horarioPrevisto} readOnly className="h-8 text-xs bg-muted/50" />
+                            <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
+                              <p className="text-base font-medium">{ponto.horarioPrevisto}</p>
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <Label className="text-[10px] text-muted-foreground">Atual</Label>
-                            <Input value={ponto.horarioReal} readOnly className="h-8 text-xs bg-muted/50" />
+                            <div className={`rounded-lg px-3 py-2 border ${ponto.horarioReal ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-muted/50 border-border'}`}>
+                              <p className={`text-base font-medium ${ponto.horarioReal ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
+                                {ponto.horarioReal || '—'}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[10px] text-muted-foreground">Status</Label>
-                            <Input value={ponto.status === 'ok' ? 'OK' : 'Irregularidade'} readOnly className="h-8 text-xs bg-muted/50" />
+                            <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
+                              <p className="text-base font-medium">{ponto.status === 'ok' ? 'OK' : 'Irregularidade'}</p>
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <Label className="text-[10px] text-muted-foreground">Observação</Label>
-                            <Input value={ponto.observacao} readOnly className="h-8 text-xs bg-muted/50" />
+                            <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
+                              <p className="text-base font-medium">{ponto.observacao || '—'}</p>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -711,8 +738,8 @@ export default function RondaPage() {
       <Dialog open={executionOpen} onOpenChange={handleCloseExecution}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Play className="h-5 w-5 text-emerald-600" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Play className="h-6 w-6 text-emerald-600" />
               Execução da Ronda
             </DialogTitle>
           </DialogHeader>
@@ -720,31 +747,34 @@ export default function RondaPage() {
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
                 <div className="flex justify-between items-start gap-2">
-                  <span className="text-sm font-medium text-muted-foreground shrink-0">Rota</span>
-                  <span className="text-sm text-foreground text-right font-medium">{selectedRonda.rota}</span>
+                  <span className="text-base font-medium text-muted-foreground shrink-0">Rota</span>
+                  <span className="text-base text-foreground text-right font-medium">{selectedRonda.rota}</span>
                 </div>
               </div>
 
               {/* Progress summary */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">
+                <span className="text-base font-semibold">
                   {countChecked(selectedRonda)}/{selectedRonda.pontos.length} pontos verificados
                 </span>
                 {countIrregularidades(selectedRonda) > 0 && (
-                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
+                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-sm px-3 py-1">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
                     {countIrregularidades(selectedRonda)} irregularidade{countIrregularidades(selectedRonda) > 1 ? 's' : ''}
                   </Badge>
                 )}
               </div>
 
               {/* Pontos checklist */}
-              <div className="space-y-2.5">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Pontos de Verificação (Geolocalizados)
                 </p>
-                {selectedRonda.pontos.map((ponto) => {
+                {selectedRonda.pontos.map((ponto, index) => {
                   const isChecked = !!ponto.horarioReal;
+                  
+                  // Check if all previous pontos are checked (sequential enable)
+                  const previousChecked = index === 0 || selectedRonda.pontos.slice(0, index).every(p => !!p.horarioReal);
                   
                   // Geofencing Check
                   let inRadius = false;
@@ -761,89 +791,86 @@ export default function RondaPage() {
 
                   const timeValid = isTimeValidForCheckin(ponto.horarioPrevisto);
                   
-                  // Check-in visível até 5 min antes, inativo se fora do raio
+                  // Check-in visível até 5 min antes, inativo se fora do raio OR previous not checked
                   const showCheckin = !isChecked && timeValid;
-                  const canCheckin = inRadius && showCheckin;
+                  const canCheckin = inRadius && showCheckin && previousChecked;
 
                   return (
                     <Card key={ponto.id} className={`overflow-hidden border ${ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
-                      <CardContent className="p-3 space-y-2.5">
+                      <CardContent className="p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {isChecked ? (
-                              <CheckCircle2 className={`h-4 w-4 shrink-0 ${ponto.status === 'irregularidade' ? 'text-red-500' : 'text-emerald-500'}`} />
+                              <CheckCircle2 className={`h-5 w-5 shrink-0 ${ponto.status === 'irregularidade' ? 'text-red-500' : 'text-emerald-500'}`} />
                             ) : (
-                              <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                              <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                             )}
-                            <span className="font-medium text-sm truncate">{ponto.ponto}</span>
+                            <span className="font-medium text-base truncate">{ponto.ponto}</span>
                           </div>
                           
                           {showCheckin || !isChecked ? (
                             <Button
                               size="sm"
                               disabled={!canCheckin}
-                              className={`h-7 text-xs ${canCheckin ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                              className={`h-9 text-sm px-4 ${canCheckin ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
                               onClick={() => canCheckin && handleCheckin(ponto.id)}
                             >
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {canCheckin ? 'Check-in' : (!timeValid ? 'Aguardando horário' : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS'))}
+                              <MapPin className="h-4 w-4 mr-1.5" />
+                              {canCheckin ? 'Check-in' : (!timeValid ? 'Aguardando horário' : (!previousChecked ? 'Aguardando ponto anterior' : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS')))}
                             </Button>
                           ) : null}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Previsto</Label>
-                            <Input
-                              value={ponto.horarioPrevisto}
-                              readOnly
-                              className="h-8 text-xs bg-muted/50"
-                            />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Previsto</Label>
+                            <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
+                              <p className="text-base font-medium">{ponto.horarioPrevisto}</p>
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Atual</Label>
-                            <Input
-                              type="time"
-                              value={ponto.horarioReal}
-                              readOnly
-                              className="h-8 text-xs bg-muted/50"
-                            />
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Atual</Label>
+                            <div className={`rounded-lg px-3 py-2 border ${ponto.horarioReal ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-muted/50 border-border'}`}>
+                              <p className={`text-base font-medium ${ponto.horarioReal ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
+                                {ponto.horarioReal || '—'}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Status</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Status</Label>
                             <Select
                               value={ponto.status}
                               onValueChange={v => updatePontoField(ponto.id, 'status', v)}
                             >
-                              <SelectTrigger className={`h-8 text-xs ${ponto.status === 'irregularidade' ? 'border-red-300' : 'border-emerald-300'}`}>
+                              <SelectTrigger className={`h-10 text-sm ${ponto.status === 'irregularidade' ? 'border-red-300' : 'border-emerald-300'}`}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="ok">
                                   <span className="flex items-center gap-1.5">
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                     OK
                                   </span>
                                 </SelectItem>
                                 <SelectItem value="irregularidade">
                                   <span className="flex items-center gap-1.5">
-                                    <AlertTriangle className="h-3 w-3 text-red-500" />
+                                    <AlertTriangle className="h-4 w-4 text-red-500" />
                                     Irregularidade
                                   </span>
                                 </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Observação</Label>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Observação</Label>
                             <Input
                               value={ponto.observacao}
                               onChange={e => updatePontoField(ponto.id, 'observacao', e.target.value)}
                               placeholder="Observações..."
-                              className="h-8 text-xs"
+                              className="h-10 text-sm"
                             />
                           </div>
                         </div>
@@ -863,6 +890,31 @@ export default function RondaPage() {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Modal for Finalizing Ronda */}
+      <Dialog open={confirmFinalizeOpen} onOpenChange={v => setConfirmFinalizeOpen(v)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+              Finalizar Ronda Parcialmente?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-base text-muted-foreground">
+              Você ainda não verificou todos os pontos da ronda. Deseja finalizar a ronda parcialmente?
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmFinalizeOpen(false)} className="text-base">
+              Cancelar
+            </Button>
+            <Button onClick={finalizeRonda} className="bg-amber-600 hover:bg-amber-700 text-white text-base">
+              Finalizar Parcialmente
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>

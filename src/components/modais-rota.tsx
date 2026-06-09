@@ -229,20 +229,20 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
         className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-bold text-lg">{pontoEditar ? 'Editar Ponto da Rota' : 'Novo Ponto da Rota'}</h3>
+          <h3 className="font-bold text-xl">{pontoEditar ? 'Editar Ponto da Rota' : 'Novo Ponto da Rota'}</h3>
           <button onClick={onClose} className="p-2 bg-muted/50 rounded-full hover:bg-muted transition-colors">
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </button>
         </div>
 
         <div className="p-4 overflow-y-auto flex-1 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">Localização (Raio: {raio}m)</label>
+              <label className="text-base font-medium">Localização (Raio: {raio}m)</label>
               <button
                 type="button"
                 onClick={() => setIsSatellite(!isSatellite)}
-                className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                className="flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
               >
                 {isSatellite ? 'Padrão' : 'Satélite'}
               </button>
@@ -253,20 +253,20 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
               <button
                 type="button"
                 onClick={() => setInputMode('gps')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                className={`flex-1 py-2.5 px-3 rounded-lg text-base font-medium transition-colors flex items-center justify-center gap-1.5 ${
                   inputMode === 'gps' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'
                 }`}
               >
-                <MapPin className="h-4 w-4" /> GPS Automático
+                <MapPin className="h-5 w-5" /> GPS Automático
               </button>
               <button
                 type="button"
                 onClick={() => setInputMode('manual')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                className={`flex-1 py-2.5 px-3 rounded-lg text-base font-medium transition-colors flex items-center justify-center gap-1.5 ${
                   inputMode === 'manual' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted/50'
                 }`}
               >
-                <Edit2 className="h-4 w-4" /> Manual
+                <Edit2 className="h-5 w-5" /> Manual
               </button>
             </div>
             
@@ -282,8 +282,8 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                 >
                   {locating ? (
                     <div className="h-48 w-full bg-muted/50 rounded-xl flex flex-col items-center justify-center text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                      <span className="text-sm">Obtendo localização precisa...</span>
+                      <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                      <span className="text-base">Obtendo localização precisa...</span>
                     </div>
                   ) : latitude && longitude ? (
                     <MiniMap latitude={latitude} longitude={longitude} raio={raio} isSatellite={isSatellite} />
@@ -292,7 +292,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                   {/* Real-time coordinates display */}
                   {latitude && longitude && (
                     <div className="bg-muted/30 p-3 rounded-xl border border-border">
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="grid grid-cols-3 gap-3 text-base">
                         <div>
                           <span className="text-muted-foreground">Latitude:</span>
                           <p className="font-medium">{latitude.toFixed(6)}</p>
@@ -321,7 +321,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                   className="space-y-3"
                 >
                   <div>
-                    <label className="block text-sm font-medium mb-1">Latitude *</label>
+                    <label className="block text-base font-medium mb-1.5">Latitude *</label>
                     <input
                       type="number"
                       step="any"
@@ -331,15 +331,15 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                         validateAndUpdateManual();
                       }}
                       placeholder="-23.550520"
-                      className={`w-full bg-background border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                      className={`w-full bg-background border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 ${
                         latError ? 'border-destructive focus:ring-destructive/50' : 'border-input focus:ring-primary/50'
                       }`}
                     />
-                    {latError && <p className="text-xs text-destructive mt-1">{latError}</p>}
+                    {latError && <p className="text-sm text-destructive mt-1.5">{latError}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Longitude *</label>
+                    <label className="block text-base font-medium mb-1.5">Longitude *</label>
                     <input
                       type="number"
                       step="any"
@@ -349,15 +349,15 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                         validateAndUpdateManual();
                       }}
                       placeholder="-46.633308"
-                      className={`w-full bg-background border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 ${
+                      className={`w-full bg-background border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 ${
                         lngError ? 'border-destructive focus:ring-destructive/50' : 'border-input focus:ring-primary/50'
                       }`}
                     />
-                    {lngError && <p className="text-xs text-destructive mt-1">{lngError}</p>}
+                    {lngError && <p className="text-sm text-destructive mt-1.5">{lngError}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Altitude (m)</label>
+                    <label className="block text-base font-medium mb-1.5">Altitude (m)</label>
                     <input
                       type="number"
                       step="any"
@@ -367,7 +367,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                         validateAndUpdateManual();
                       }}
                       placeholder="760.5"
-                      className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   
@@ -380,7 +380,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
             </AnimatePresence>
             
             <div className="mt-4">
-              <label className="block text-xs text-muted-foreground mb-1">Ajustar Raio (em metros)</label>
+              <label className="block text-sm text-muted-foreground mb-1.5">Ajustar Raio (em metros)</label>
               <input
                 type="range"
                 min="2"
@@ -390,7 +390,7 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                 onChange={(e) => setRaio(Number(e.target.value))}
                 className="w-full accent-primary"
               />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <div className="flex justify-between text-sm text-muted-foreground mt-1.5">
                 <span>2m</span>
                 <span>20m</span>
               </div>
@@ -399,34 +399,34 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Nome do Ponto *</label>
+              <label className="block text-base font-medium mb-1.5">Nome do Ponto *</label>
               <input
                 type="text"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex: Portaria Principal"
-                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Horário de Execução *</label>
+              <label className="block text-base font-medium mb-1.5">Horário de Execução *</label>
               <input
                 type="time"
                 value={horarioExecucao}
                 onChange={(e) => setHorarioExecucao(e.target.value)}
-                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
 
-            <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-border">
-              <label className="text-sm font-medium">Recorrente</label>
+            <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-border">
+              <label className="text-base font-medium">Recorrente</label>
               <button
                 type="button"
                 onClick={() => setRecorrente(!recorrente)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${recorrente ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                className={`w-12 h-7 rounded-full transition-colors relative ${recorrente ? 'bg-primary' : 'bg-muted-foreground/30'}`}
               >
-                <div className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${recorrente ? 'left-6' : 'left-1'}`} />
+                <div className={`absolute top-1 bg-white w-5 h-5 rounded-full transition-transform ${recorrente ? 'left-6' : 'left-1'}`} />
               </button>
             </div>
 
@@ -438,14 +438,14 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <label className="block text-sm font-medium mb-2">Dias da semana</label>
+                  <label className="block text-base font-medium mb-2.5">Dias da semana</label>
                   <div className="flex flex-wrap gap-2">
                     {diasOptions.map(dia => (
                       <button
                         key={dia.value}
                         type="button"
                         onClick={() => toggleDia(dia.value)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                           diasSemana.includes(dia.value)
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -464,9 +464,9 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
         <div className="p-4 border-t border-border bg-muted/20">
           <button
             onClick={handleAdd}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-bold text-base hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Save className="h-5 w-5" />
+            <Save className="h-6 w-6" />
             {pontoEditar ? 'Salvar Ponto' : 'Adicionar Ponto'}
           </button>
         </div>
@@ -565,33 +565,33 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
               {rotaEditar ? 'Editar Rota Georeferenciada' : 'Nova Rota Georeferenciada'}
             </h2>
             <button onClick={onClose} className="p-2 bg-muted/50 rounded-full hover:bg-muted transition-colors">
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
           </div>
 
           <div className="p-4 overflow-y-auto flex-1 space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-1">Nome da Rota *</label>
+              <label className="block text-base font-medium mb-1.5">Nome da Rota *</label>
               <input
                 type="text"
                 value={nomeRota}
                 onChange={(e) => setNomeRota(e.target.value)}
                 placeholder="Ex: Rota Externa Norte"
-                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium">Pontos da Rota</label>
+                <label className="block text-base font-medium">Pontos da Rota</label>
                 <button
                   onClick={() => {
                     setPontoParaEditar(null);
                     setShowNovoPonto(true);
                   }}
-                  className="flex items-center gap-1 text-xs font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-4 w-4" />
                   Adicionar Ponto
                 </button>
               </div>
@@ -599,24 +599,24 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
               <div className="space-y-3">
                 {pontos.length === 0 ? (
                   <div className="text-center py-8 bg-muted/30 rounded-xl border border-dashed border-border">
-                    <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                    <p className="text-sm text-muted-foreground">Nenhum ponto adicionado.</p>
+                    <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-50" />
+                    <p className="text-base text-muted-foreground">Nenhum ponto adicionado.</p>
                   </div>
                 ) : (
                   pontos.map((ponto, idx) => (
-                    <div key={ponto.id} className="bg-background border border-border rounded-xl p-3 flex items-start gap-3 shadow-sm">
-                      <div className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                    <div key={ponto.id} className="bg-background border border-border rounded-xl p-4 flex items-start gap-3 shadow-sm">
+                      <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5">
                         {idx + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{ponto.nome}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="font-semibold text-base truncate">{ponto.nome}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
                           Horário: {ponto.horarioExecucao} | Raio: {ponto.raio}m
                         </p>
                         {ponto.recorrente && (
-                          <div className="flex gap-1 mt-2">
+                          <div className="flex gap-1.5 mt-2">
                             {ponto.diasSemana?.map(dia => (
-                              <span key={dia} className="text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded capitalize">
+                              <span key={dia} className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded capitalize">
                                 {dia}
                               </span>
                             ))}
