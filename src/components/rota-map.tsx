@@ -19,6 +19,7 @@ interface RotaMapProps {
     latitude: number;
     longitude: number;
     nome: string;
+    status?: 'ok' | 'irregularidade' | 'pending';
   }>;
   isSatellite?: boolean;
 }
@@ -65,7 +66,7 @@ function FitBounds({ pontos }: { pontos: Array<{ latitude: number; longitude: nu
   return null;
 }
 
-function MarkerWithTooltip({ ponto }: { ponto: { nome: string; latitude: number; longitude: number } }) {
+function MarkerWithTooltip({ ponto }: { ponto: { nome: string; latitude: number; longitude: number; status?: 'ok' | 'irregularidade' | 'pending' } }) {
   const [showTooltip, setShowTooltip] = useState(true);
 
   useEffect(() => {
@@ -86,16 +87,39 @@ function MarkerWithTooltip({ ponto }: { ponto: { nome: string; latitude: number;
     return () => clearTimeout(timeout);
   };
 
+  // Custom marker colors
+  const getMarkerColor = () => {
+    switch (ponto.status) {
+      case 'ok':
+      case 'ok':
+        return '#10b981'; // emerald-500
+      case 'irregularidade':
+        return '#ef4444'; // red-500
+      case 'pending':
+      default:
+        return '#6b7280'; // gray-500
+    }
+  };
+
+  const markerColor = getMarkerColor();
+  const customIcon = L.divIcon({
+    className: 'custom-div-icon',
+    html: `<div style="background-color: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">•</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+
   return (
     <Marker
       position={[ponto.latitude, ponto.longitude]}
+      icon={customIcon}
       eventHandlers={{ click: handleClick }}
     >
       {showTooltip && (
         <Tooltip
           permanent={true}
           direction="top"
-          offset={[0, -25]}
+          offset={[0, -30]}
           opacity={1}
         >
           <div className="bg-gray-900 text-white px-2 py-1 rounded text-xs font-medium shadow-lg">

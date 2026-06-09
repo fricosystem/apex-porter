@@ -140,6 +140,10 @@ export default function RondaPage() {
   
   // Confirmation modal for finalizing ronda
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
+  
+  // Confirmation modal for deleting ronda
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Watch position
   useEffect(() => {
@@ -229,8 +233,17 @@ export default function RondaPage() {
 
   // Handle delete
   const handleDelete = (id: string) => {
-    removeRonda(id);
-    toast.success('Ronda removida');
+    setDeleteId(id);
+    setConfirmDeleteOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (deleteId) {
+      removeRonda(deleteId);
+      toast.success('Ronda removida');
+      setConfirmDeleteOpen(false);
+      setDeleteId(null);
+    }
   };
 
   // Handle open detail (read-only view)
@@ -636,7 +649,7 @@ export default function RondaPage() {
 
       {/* Ronda Detail Modal (Read-Only) */}
       <Dialog open={detailOpen} onOpenChange={handleCloseDetail}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="max-w-full w-full h-full max-h-[100vh] m-0 rounded-none flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-emerald-600" />
@@ -644,7 +657,7 @@ export default function RondaPage() {
             </DialogTitle>
           </DialogHeader>
           {selectedRonda && (
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="flex justify-center">
                 <Badge className={`${statusColors[selectedRonda.status]} text-sm px-4 py-1`}>
                   {statusLabels[selectedRonda.status]}
@@ -745,7 +758,7 @@ export default function RondaPage() {
 
       {/* Ronda Execution Modal */}
       <Dialog open={executionOpen} onOpenChange={handleCloseExecution}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="max-w-full w-full h-full max-h-[100vh] m-0 rounded-none flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Play className="h-6 w-6 text-emerald-600" />
@@ -753,7 +766,7 @@ export default function RondaPage() {
             </DialogTitle>
           </DialogHeader>
           {selectedRonda && (
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
                 <div className="flex justify-between items-start gap-2">
                   <span className="text-base font-medium text-muted-foreground shrink-0">Rota</span>
@@ -773,6 +786,17 @@ export default function RondaPage() {
                   </Badge>
                 )}
               </div>
+
+              {/* Map */}
+              <RotaMap
+                pontos={selectedRonda.pontos.map(p => ({
+                  latitude: p.latitude,
+                  longitude: p.longitude,
+                  nome: p.ponto,
+                  status: p.horarioReal ? (p.status === 'irregularidade' ? 'irregularidade' : 'ok') : 'pending'
+                }))}
+                isSatellite={isSatellite}
+              />
 
               {/* Pontos checklist */}
               <div className="space-y-3">
@@ -837,17 +861,7 @@ export default function RondaPage() {
                           ) : null}
                         </div>
 
-                        {/* Geolocation info */}
-                        {ponto.latitude && ponto.longitude && (
-                          <div className="bg-muted/30 rounded-lg p-3 border border-border">
-                            <div className="flex items-center justify-between text-xs">
-                              <Label className="text-[10px] text-muted-foreground">Distância Atual</Label>
-                              <p className={`font-bold text-xs ${dist >= 0 ? (dist <= (ponto.raio || 50) ? 'text-emerald-600' : 'text-amber-600') : 'text-muted-foreground'}`}>
-                                {dist >= 0 ? `${Math.round(dist)}m` : '—'}
-                              </p>
-                            </div>
-                          </div>
-                        )}
+
 
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
@@ -908,6 +922,28 @@ export default function RondaPage() {
                 })}
               </div>
 
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-muted-foreground">
+                    Progresso: {countChecked(selectedRonda)}/{selectedRonda.pontos.length} pontos
+                  </span>
+                  <span className="font-bold text-emerald-600">
+                    {Math.round((countChecked(selectedRonda) / selectedRonda.pontos.length) * 100)}%
+                  </span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(countChecked(selectedRonda) / selectedRonda.pontos.length) * 100}%` }}
+                    transition={{ duration: 0.3 }}
+                    className={`h-full rounded-full ${
+                      countChecked(selectedRonda) === selectedRonda.pontos.length ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}
+                  />
+                </div>
+              </div>
+
               {/* Finalizar button */}
               <Button
                 onClick={handleFinalizar}
@@ -928,7 +964,7 @@ export default function RondaPage() {
 
       {/* Confirmation Modal for Finalizing Ronda */}
       <Dialog open={confirmFinalizeOpen} onOpenChange={v => setConfirmFinalizeOpen(v)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="!fixed !inset-auto !top-[50%] !left-[50%] !translate-x-[-50%] !translate-y-[-50%] !w-auto !h-auto !max-w-sm !m-auto !rounded-xl !border !px-6 !py-5 !shadow-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <AlertTriangle className="h-6 w-6 text-amber-600" />
@@ -946,6 +982,31 @@ export default function RondaPage() {
             </Button>
             <Button onClick={finalizeRonda} className="bg-amber-600 hover:bg-amber-700 text-white text-base">
               Finalizar Parcialmente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Modal for Deleting Ronda */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={v => setConfirmDeleteOpen(v)}>
+        <DialogContent className="!fixed !inset-auto !top-[50%] !left-[50%] !translate-x-[-50%] !translate-y-[-50%] !w-auto !h-auto !max-w-sm !m-auto !rounded-xl !border !px-6 !py-5 !shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+              Excluir Ronda?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-base text-muted-foreground">
+              Tem certeza que deseja excluir esta ronda? Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)} className="text-base">
+              Cancelar
+            </Button>
+            <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white text-base">
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>
