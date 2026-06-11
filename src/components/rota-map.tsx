@@ -59,7 +59,7 @@ function FitBounds({ pontos }: { pontos: Array<{ latitude: number; longitude: nu
   useEffect(() => {
     if (pontos.length > 0) {
       const bounds = pontos.map(p => [p.latitude, p.longitude]);
-      map.fitBounds(bounds, { padding: [30, 30] });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 20 });
     }
   }, [pontos, map]);
 

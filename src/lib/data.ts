@@ -392,6 +392,8 @@ export interface RotaGeoreferenciada {
   pontos: PontoRota[];
   criadoEm?: string; // ISO string
   atualizadoEm?: string; // ISO string
+  recorrente?: boolean;
+  diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
 }
 
 export interface PontoRonda {
@@ -410,12 +412,17 @@ export interface PontoRonda {
 export interface Ronda {
   id: string;
   rota: string;
+  rotaId?: string; // ID da RotaGeoreferenciada
   data: string;
   horarioInicio: string;
   horarioFim: string;
   status: StatusRonda;
   porteiro: string;
   pontos: PontoRonda[];
+  recorrente?: boolean;
+  diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+  semanaAno?: number; // Semana do ano para recorrência
+  ano?: number;
 }
 
 export const ROTAS_RONDA = [

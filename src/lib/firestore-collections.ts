@@ -545,10 +545,9 @@ export function subscribeUsuarios(callback: (data: User[]) => void): Unsubscribe
       ...user,
       ativo: user.ativo ?? true,
       permissoes: user.permissoes || [
-        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+        'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+        'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+        'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
       ]
     }));
     callback(usersWithDefaults);

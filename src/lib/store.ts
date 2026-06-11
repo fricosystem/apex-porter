@@ -558,8 +558,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       const userCargo = (profile?.cargo || 'PORTEIRO').toUpperCase();
       const userPermissoes = profile?.permissoes || [];
 
-      // Check if user has any permissions (unless they're DESENVOLVEDOR, DIRETOR, or PORTEIRO)
-      const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO';
+      // Permissões padrão para PORTEIRO
+      const PERMISSOES_PORTEIRO: PageType[] = [
+        'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+        'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+        'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
+      ];
+
+      // Se for PORTEIRO e não tem permissões, usamos as padrão
+      const permissoes = userCargo === 'PORTEIRO' && userPermissoes.length === 0 
+        ? PERMISSOES_PORTEIRO 
+        : userPermissoes;
+
+      // Check if user has any permissions (unless they're DESENVOLVEDOR or DIRETOR)
+      const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR';
       if (!hasFullAccess && userPermissoes.length === 0) {
         await signOutFirebase(); // Sign out immediately
         set({ authLoading: false, authError: 'Usuário sem permissões. Por favor, entre em contato com o RH.' });
@@ -573,7 +585,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         cargo: userCargo,
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
         ativo: true,
-        permissoes: userPermissoes,
+        permissoes,
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
@@ -592,6 +604,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ authLoading: true, authError: null });
     try {
       const firebaseUser = await signUpWithEmail(nome, email, password, cargo, cpf);
+      // PERMISSOES padrão para PORTEIRO (same as we had before)
+      const PERMISSOES_PORTEIRO: PageType[] = [
+        'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+        'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+        'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
+      ];
       const user: User = {
         id: firebaseUser.uid,
         nome,
@@ -599,6 +617,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         ...(cpf ? { cpf } : {}),
         cargo: cargo || 'PORTEIRO',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
+        ativo: true,
+        permissoes: PERMISSOES_PORTEIRO
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
@@ -655,7 +675,28 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setAuthFromFirebase: (firebaseUser: FirebaseUser, firestoreData?: FirestoreUser | null) => {
     const cargo = (firestoreData?.cargo || 'PORTEIRO').toUpperCase();
-    const hasFullAccess = cargo === 'DESENVOLVEDOR' || cargo === 'DIRETOR' || cargo === 'PORTEIRO';
+    const hasFullAccess = cargo === 'DESENVOLVEDOR' || cargo === 'DIRETOR';
+    
+    // Permissões padrão para PORTEIRO
+    const PERMISSOES_PORTEIRO = [
+      'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+      'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+      'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
+    ];
+
+    let permissoes;
+    if (hasFullAccess) {
+      permissoes = [
+        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes', 'admin'
+      ];
+    } else if (cargo === 'PORTEIRO') {
+      permissoes = firestoreData?.permissoes || PERMISSOES_PORTEIRO;
+    } else {
+      permissoes = firestoreData?.permissoes || [];
+    }
     
     const user: User = {
       id: firebaseUser.uid,
@@ -665,14 +706,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       mapconfig: firestoreData?.mapconfig || 'padrao',
       ativo: firestoreData?.ativo ?? true,
-      permissoes: hasFullAccess 
-        ? [
-            'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-            'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-            'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-            'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes', 'admin'
-          ]
-        : firestoreData?.permissoes || [],
+      permissoes,
     };
     
     const targetPage = get().currentPage === 'login' ? 'dashboard' : get().currentPage;

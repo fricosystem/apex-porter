@@ -38,9 +38,9 @@ function PageRenderer() {
   // Check if current page is allowed
   const isPageAllowed = (page: string) => {
     if (page === 'login' || page === 'perfil') return true;
-    // Allow full access to DESENVOLVEDOR, DIRETOR, and PORTEIRO
+    // Allow full access to DESENVOLVEDOR and DIRETOR
     const userCargo = (user?.cargo || '').toUpperCase();
-    if (userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO') return true;
+    if (userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR') return true;
     // For other roles, check permissions
     return userPermissions.includes(page as any);
   };
@@ -217,7 +217,7 @@ export default function Home() {
     if (!isAuthenticated || !user) return;
     
     const userCargo = (user.cargo || '').toUpperCase();
-    const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO';
+    const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR';
     if (!hasFullAccess && (user.permissoes.length === 0 || !user.ativo)) {
       logout();
     }

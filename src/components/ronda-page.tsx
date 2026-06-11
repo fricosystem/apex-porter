@@ -56,6 +56,39 @@ function getCurrentTime(): string {
   return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 }
 
+function getCurrentDate(): string {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
+
+function getWeekNumber(d: Date): number {
+  // Copy date so don't modify original
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  // Set to nearest Thursday: current date + 4 - current day number
+  // Make Sunday's day number 7
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  // Get first day of year
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate full weeks to nearest Thursday
+  const weekNo = Math.ceil((((d.valueOf() - yearStart.valueOf()) / 86400000) + 1) / 7);
+  return weekNo;
+}
+
+function getDayName(date: Date): string {
+  const days = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+  return days[date.getDay()];
+}
+
+const diaLabels: Record<string, string> = {
+  dom: 'Dom',
+  seg: 'Seg',
+  ter: 'Ter',
+  qua: 'Qua',
+  qui: 'Qui',
+  sex: 'Sex',
+  sab: 'Sáb'
+};
+
 function deg2rad(deg: number) {
   return deg * (Math.PI / 180);
 }
@@ -137,6 +170,7 @@ export default function RondaPage() {
   const [executionOpen, setExecutionOpen] = useState(false);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
+  const [rondaIniciada, setRondaIniciada] = useState(false);
   
   // Confirmation modal for finalizing ronda
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
@@ -158,6 +192,58 @@ export default function RondaPage() {
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [executionOpen]);
+
+  // Auto-create weekly recurring rondas
+  useEffect(() => {
+    const today = new Date();
+    const currentWeek = getWeekNumber(today);
+    const currentYear = today.getFullYear();
+    const todayDay = getDayName(today);
+
+    rotasGeoreferenciadas.forEach(rota => {
+      if (rota.recorrente && rota.diasSemana && rota.diasSemana.length > 0) {
+        // Check if we already have a ronda for this week
+        const existingRonda = rondas.find(
+          r => r.rotaId === rota.id && 
+               r.semanaAno === currentWeek && 
+               r.ano === currentYear
+        );
+        if (!existingRonda) {
+          // Create a new ronda for this week
+          const id = `rn_${Date.now()}_${rota.id}`;
+          const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
+            id: `pt_${Date.now()}_${idx}`,
+            rondaId: id,
+            ponto: p.nome,
+            horarioPrevisto: p.horarioExecucao,
+            horarioReal: '',
+            status: 'ok' as const,
+            observacao: '',
+            latitude: p.latitude,
+            longitude: p.longitude,
+            raio: p.raio,
+          }));
+
+          const ronda: Ronda = {
+            id,
+            rota: rota.nome,
+            rotaId: rota.id,
+            data: format(today, 'yyyy-MM-dd'),
+            horarioInicio: '',
+            horarioFim: '',
+            status: 'em_andamento',
+            porteiro: user?.nome || 'Porteiro',
+            pontos,
+            recorrente: true,
+            diasSemana: rota.diasSemana,
+            semanaAno: currentWeek,
+            ano: currentYear
+          };
+          addRonda(ronda);
+        }
+      }
+    });
+  }, [rotasGeoreferenciadas, rondas, addRonda, user]);
 
   // Stats
   const stats = useMemo(() => ({
@@ -202,6 +288,7 @@ export default function RondaPage() {
       return;
     }
 
+    const today = new Date();
     const id = `rn_${Date.now()}`;
     const pontos: PontoRonda[] = rotaData.pontos.map((p, idx) => ({
       id: `pt_${Date.now()}_${idx}`,
@@ -219,12 +306,17 @@ export default function RondaPage() {
     const ronda: Ronda = {
       id,
       rota: rotaData.nome,
-      data: format(new Date(), 'yyyy-MM-dd'),
-      horarioInicio: getCurrentTime(),
+      rotaId: rotaData.id,
+      data: format(today, 'yyyy-MM-dd'),
+      horarioInicio: '', // Será preenchido quando iniciar a ronda
       horarioFim: '',
       status: 'em_andamento',
       porteiro: user?.nome || 'Porteiro',
       pontos,
+      recorrente: rotaData.recorrente,
+      diasSemana: rotaData.diasSemana,
+      semanaAno: getWeekNumber(today),
+      ano: today.getFullYear()
     };
     addRonda(ronda);
     toast.success('Ronda criada!');
@@ -255,7 +347,21 @@ export default function RondaPage() {
   // Handle open execution
   const handleOpenExecution = (ronda: Ronda) => {
     setSelectedRonda({ ...ronda, pontos: ronda.pontos.map(p => ({ ...p })) });
+    const anyChecked = ronda.pontos.some(p => !!p.horarioReal);
+    setRondaIniciada(anyChecked);
     setExecutionOpen(true);
+  };
+
+  // Start ronda
+  const handleStartRonda = () => {
+    if (!selectedRonda) return;
+    setSelectedRonda({
+      ...selectedRonda,
+      horarioInicio: getCurrentTime(),
+      data: getCurrentDate() // Garante que a data é atual
+    });
+    setRondaIniciada(true);
+    toast.success('Ronda iniciada!');
   };
 
   // Check-in a ponto
@@ -430,18 +536,35 @@ export default function RondaPage() {
                       onClick={() => setExpandedId(isExpanded ? null : ronda.id)}
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <div className="p-2.5 rounded-xl bg-muted shrink-0">
-                            <StatusIcon className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap mb-2.5">
-                              <h3 className="font-bold text-lg truncate">{ronda.rota}</h3>
-                              <Badge className={`${statusColors[ronda.status]} text-xs px-2 py-0.5`}>
-                                {statusLabels[ronda.status]}
-                              </Badge>
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className="p-2.5 rounded-xl bg-muted shrink-0">
+                              <StatusIcon className="h-5 w-5 text-muted-foreground" />
                             </div>
-                            <div className="flex items-center gap-3 mt-1.5 text-base text-muted-foreground flex-wrap">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap mb-2.5">
+                                <h3 className="font-bold text-lg truncate">{ronda.rota}</h3>
+                                <Badge className={`${statusColors[ronda.status]} text-xs px-2 py-0.5`}>
+                                  {statusLabels[ronda.status]}
+                                </Badge>
+                              </div>
+                              {/* Dias da Semana para recorrentes */}
+                              {ronda.recorrente && ronda.diasSemana && (
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {Object.keys(diaLabels).map(dia => {
+                                    const isIncluded = ronda.diasSemana?.includes(dia);
+                                    const isChecked = ronda.pontos.every(p => !!p.horarioReal);
+                                    return (
+                                      <Badge 
+                                        key={dia} 
+                                        className={`text-xs px-1.5 py-0.5 ${isIncluded ? (isChecked ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300') : 'bg-gray-100 text-gray-400 dark:bg-gray-800/30 dark:text-gray-500'}`}
+                                      >
+                                        {diaLabels[dia]}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-3 mt-1.5 text-base text-muted-foreground flex-wrap">
                               <span className="flex items-center gap-1">
                                 <CalendarDays className="h-4 w-4" />
                                 {ronda.data}
@@ -789,9 +912,9 @@ export default function RondaPage() {
 
               {/* Map */}
               <RotaMap
-                pontos={selectedRonda.pontos.map(p => ({
-                  latitude: p.latitude,
-                  longitude: p.longitude,
+                pontos={selectedRonda.pontos.filter(p => p.latitude && p.longitude).map(p => ({
+                  latitude: p.latitude as number,
+                  longitude: p.longitude as number,
                   nome: p.ponto,
                   status: p.horarioReal ? (p.status === 'irregularidade' ? 'irregularidade' : 'ok') : 'pending'
                 }))}
@@ -803,7 +926,22 @@ export default function RondaPage() {
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Pontos de Verificação (Geolocalizados)
                 </p>
+                {!rondaIniciada && (
+                  <Button 
+                    onClick={handleStartRonda}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    Iniciar Ronda
+                  </Button>
+                )}
+                {rondaIniciada && (
+                  <></>
+                )}
                 {selectedRonda.pontos.map((ponto, index) => {
+                  // Encontra o índice do primeiro ponto não verificado
+                  const firstUncheckedIndex = selectedRonda.pontos.findIndex(p => !p.horarioReal);
+                  const isCurrentPonto = firstUncheckedIndex === index;
                   const isChecked = !!ponto.horarioReal;
                   
                   // Check if all previous pontos are checked (sequential enable)
@@ -828,8 +966,11 @@ export default function RondaPage() {
                   const showCheckin = !isChecked && timeValid;
                   const canCheckin = inRadius && showCheckin && previousChecked;
 
+                  // Se a ronda estiver iniciada, só mostra o ponto atual ou os já verificados
+                  if (rondaIniciada && !isChecked && !isCurrentPonto) return null;
+                  
                   return (
-                    <Card key={ponto.id} className={`overflow-hidden border ${ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
+                    <Card key={ponto.id} className={`overflow-hidden border ${isCurrentPonto ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">

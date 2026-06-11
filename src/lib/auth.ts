@@ -57,10 +57,9 @@ export async function updateUltimoLogin(uid: string): Promise<void> {
 
 // ── Default permissions for new users ──
 const DEFAULT_PERMISSIONS: PageType[] = [
-  'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-  'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-  'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-  'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
+  'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+  'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+  'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
 ];
 
 // ── Sign up with email + password + profile info ──

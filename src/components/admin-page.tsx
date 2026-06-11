@@ -7,6 +7,7 @@ import AdminBottomNav, { AdminTab } from './admin-bottom-nav';
 import { useAppStore } from '@/lib/store';
 import { ModalNovaRota } from './modais-rota';
 import { RotaGeoreferenciada, User as UserType, PageType } from '@/lib/data';
+import { signUpWithEmail, getAuthErrorMessage } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -132,40 +133,47 @@ function AdminUsuariosTab() {
   const { usuarios, updateUsuario, addUsuario } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<UserType | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleNovoUsuario = () => {
-    const novoUsuario: UserType = {
-      id: Date.now().toString(),
-      nome: '',
-      email: '',
-      cargo: '',
-      dataCadastro: new Date().toISOString(),
-      ativo: true,
-      permissoes: [
-        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
-      ]
-    };
-    setUsuarioSelecionado(novoUsuario);
+    // Quando criar novo usuário, passamos null para o ModalUsuario
+    setUsuarioSelecionado(null);
+    setError(null);
     setModalOpen(true);
   };
 
   const handleEditarUsuario = (usuario: UserType) => {
     setUsuarioSelecionado(usuario);
+    setError(null);
     setModalOpen(true);
   };
 
-  const handleSalvarUsuario = (usuario: UserType) => {
+  const handleSalvarUsuario = async (usuario: UserType, senha?: string) => {
     const existe = usuarios.find(u => u.id === usuario.id);
     if (existe) {
       updateUsuario(usuario);
+      setModalOpen(false);
+      setUsuarioSelecionado(null);
     } else {
-      addUsuario(usuario);
+      if (!senha) {
+        setError('Senha é obrigatória para criar um novo usuário');
+        return;
+      }
+      try {
+        const firebaseUser = await signUpWithEmail(usuario.nome, usuario.email, senha, usuario.cargo);
+        addUsuario({ 
+          ...usuario, 
+          id: firebaseUser.uid, 
+          dataCadastro: new Date().toISOString(),
+          ativo: true
+        });
+        setModalOpen(false);
+        setUsuarioSelecionado(null);
+        setError(null);
+      } catch (err: any) {
+        setError(getAuthErrorMessage(err?.code || 'auth/default'));
+      }
     }
-    setModalOpen(false);
-    setUsuarioSelecionado(null);
   };
 
   return (
@@ -227,6 +235,8 @@ function AdminUsuariosTab() {
         onClose={() => { setModalOpen(false); setUsuarioSelecionado(null); }} 
         usuario={usuarioSelecionado}
         onSalvar={handleSalvarUsuario}
+        error={error}
+        setError={setError}
       />
     </div>
   );
@@ -236,25 +246,45 @@ interface ModalUsuarioProps {
   open: boolean;
   onClose: () => void;
   usuario: UserType | null;
-  onSalvar: (usuario: UserType) => void;
+  onSalvar: (usuario: UserType, senha?: string) => void;
+  error?: string | null;
+  setError?: (error: string | null) => void;
+  loading?: boolean;
 }
 
-function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
+function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loading: externalLoading }: ModalUsuarioProps) {
   const { usuarios } = useAppStore();
   const [formData, setFormData] = useState<UserType | null>(null);
+  const [senha, setSenha] = useState('');
+  const [internalLoading, setInternalLoading] = useState(false);
+  const loading = externalLoading || internalLoading;
+
+  // Permissões padrão para PORTEIRO
+  const PERMISSOES_PORTEIRO = [
+    'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
+    'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
+    'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
+  ];
 
   useEffect(() => {
     if (usuario) {
+      const cargo = (usuario.cargo || '').toUpperCase();
       setFormData({
         ...usuario,
         ativo: usuario.ativo ?? true,
-        permissoes: usuario.permissoes || [
-          'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-          'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-          'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-          'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
-        ]
+        permissoes: usuario.permissoes || (cargo === 'PORTEIRO' ? PERMISSOES_PORTEIRO : [])
       });
+    } else {
+      // Novo usuário - padrão PORTEIRO
+      setFormData({
+        id: '',
+        nome: '',
+        email: '',
+        cargo: 'PORTEIRO',
+        ativo: true,
+        permissoes: PERMISSOES_PORTEIRO
+      });
+      setSenha('');
     }
   }, [usuario]);
 
@@ -270,9 +300,15 @@ function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSalvar(formData);
+    if (setError) setError(null);
+    setInternalLoading(true);
+    try {
+      await onSalvar(formData, !usuario ? senha : undefined);
+    } finally {
+      setInternalLoading(false);
+    }
   };
 
   const paginas: PageType[] = [
@@ -315,6 +351,11 @@ function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md border border-destructive/30">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
             <Input
@@ -343,10 +384,24 @@ function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
             <Input
               id="cargo"
               value={formData.cargo || ''}
-              onChange={(e) => setFormData(prev => prev ? { ...prev, cargo: e.target.value } : prev)}
+              onChange={(e) => setFormData(prev => prev ? { ...prev, cargo: e.target.value.toUpperCase() } : prev)}
               placeholder="Cargo do usuário"
             />
           </div>
+
+          {!usuario && (
+            <div className="space-y-2">
+              <Label htmlFor="senha">Senha</Label>
+              <Input
+                id="senha"
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="Senha para o novo usuário"
+                required
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -408,11 +463,15 @@ function ModalUsuario({ open, onClose, usuario, onSalvar }: ModalUsuarioProps) {
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-              <Check className="h-4 w-4 mr-2" />
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
+              {loading ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
               Salvar
             </Button>
           </DialogFooter>
