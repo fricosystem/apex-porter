@@ -654,20 +654,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setAuthFromFirebase: (firebaseUser: FirebaseUser, firestoreData?: FirestoreUser | null) => {
+    const cargo = firestoreData?.cargo || 'Porteiro';
+    const hasFullAccess = cargo === 'DESENVOLVEDOR' || cargo === 'DIRETOR';
+    
     const user: User = {
       id: firebaseUser.uid,
       nome: firestoreData?.nome || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuário',
       email: firebaseUser.email || '',
-      cargo: firestoreData?.cargo || 'PORTEIRO',
+      cargo,
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       mapconfig: firestoreData?.mapconfig || 'padrao',
       ativo: firestoreData?.ativo ?? true,
-      permissoes: firestoreData?.permissoes || [
-        'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
-        'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
-        'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
-        'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes'
-      ],
+      permissoes: hasFullAccess 
+        ? [
+            'dashboard', 'fluxo', 'correspondencias', 'veiculos', 'pre-autorizacao',
+            'relatorios', 'cadastros', 'avisos', 'lista-negra', 'achados-perdidos',
+            'ocorrencias', 'ronda', 'checklist-turno', 'inspecao-diaria',
+            'protocolos-emergencia', 'configuracoes', 'perfil', 'lembretes', 'admin'
+          ]
+        : firestoreData?.permissoes || [],
     };
     
     const targetPage = get().currentPage === 'login' ? 'dashboard' : get().currentPage;
