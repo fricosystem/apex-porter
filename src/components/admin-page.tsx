@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Map as MapIcon, Trash2, Edit2, User, X, Check, EyeOff, Eye, MapPin } from 'lucide-react';
+import { Plus, Map as MapIcon, Trash2, Edit2, User, X, Check, EyeOff, Eye, MapPin, Briefcase } from 'lucide-react';
 import AdminBottomNav, { AdminTab } from './admin-bottom-nav';
 import { useAppStore } from '@/lib/store';
 import { ModalNovaRota } from './modais-rota';
-import { RotaGeoreferenciada, User as UserType, PageType, Posto } from '@/lib/data';
+import { RotaGeoreferenciada, User as UserType, PageType, Posto, Cargo, Ronda } from '@/lib/data';
 import { signUpWithEmail, getAuthErrorMessage } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,7 @@ export default function AdminPage() {
             {currentTab === 'rondas' && <AdminRondasTab />}
             {currentTab === 'usuarios' && <AdminUsuariosTab />}
             {currentTab === 'postos' && <AdminPostosTab />}
+            {currentTab === 'cargos' && <AdminCargosTab />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -68,25 +69,63 @@ function AdminPainelTab() {
 }
 
 function AdminRondasTab() {
-  const { rotasGeoreferenciadas, removeRotaGeoreferenciada } = useAppStore();
+  const { rotasGeoreferenciadas, removeRotaGeoreferenciada, postos, user, rondas } = useAppStore();
   const [showNovaRota, setShowNovaRota] = useState(false);
   const [rotaEditar, setRotaEditar] = useState<RotaGeoreferenciada | null>(null);
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Rotas de Ronda</h2>
-        <button
-          onClick={() => setShowNovaRota(true)}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Rota
-        </button>
-      </div>
+  const getPostoNome = (postoId?: string) => {
+    if (!postoId) return 'Não atribuído';
+    const posto = postos.find(p => p.id === postoId);
+    return posto ? posto.nome : 'Não atribuído';
+  };
 
-      <div className="space-y-3 mt-4">
-        {rotasGeoreferenciadas.map((rota) => (
+  // Filtrar rotas por posto do usuário
+  const rotasFiltradas = rotasGeoreferenciadas.filter(rota => {
+    if (!user?.postoId) return true; // Se usuário não tem posto, mostra todas
+    return rota.postoId === user.postoId;
+  });
+
+  // Filtrar rondas por posto do usuário
+  const rondasFiltradas = rondas.filter(ronda => {
+    if (!user?.postoId) return true; // Se usuário não tem posto, mostra todas
+    return ronda.postoId === user.postoId;
+  });
+
+  const getStatusLabel = (status: Ronda['status']) => {
+    const labels = {
+      'em_andamento': 'Em Andamento',
+      'concluida': 'Concluída',
+      'parcial': 'Parcial'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status: Ronda['status']) => {
+    const colors = {
+      'em_andamento': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      'concluida': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+      'parcial': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Rotas de Ronda */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Rotas de Ronda</h2>
+          <button
+            onClick={() => setShowNovaRota(true)}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Rota
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {rotasFiltradas.map((rota) => (
           <div key={rota.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2 rounded-lg">
@@ -94,7 +133,9 @@ function AdminRondasTab() {
               </div>
               <div>
                 <span className="font-medium text-sm">{rota.nome}</span>
-                <p className="text-xs text-muted-foreground">{rota.pontos.length} pontos cadastrados</p>
+                <p className="text-xs text-muted-foreground">
+                  {rota.pontos.length} pontos cadastrados | Posto: {getPostoNome(rota.postoId)}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -114,12 +155,51 @@ function AdminRondasTab() {
           </div>
         ))}
 
-        {rotasGeoreferenciadas.length === 0 && (
+        {rotasFiltradas.length === 0 && (
           <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed border-border">
             <MapIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
             <p className="text-sm text-muted-foreground">Nenhuma rota cadastrada.</p>
           </div>
         )}
+        </div>
+      </div>
+
+      {/* Registros de Ronda */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold">Registros de Ronda</h2>
+
+        <div className="space-y-3">
+          {rondasFiltradas.map((ronda) => (
+            <div key={ronda.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{ronda.rota}</span>
+                    <Badge className={getStatusColor(ronda.status)}>
+                      {getStatusLabel(ronda.status)}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {ronda.data} • {ronda.porteiro} • Posto: {getPostoNome(ronda.postoId)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {ronda.pontos.filter(p => p.horarioReal).length}/{ronda.pontos.length} pontos verificados
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {rondasFiltradas.length === 0 && (
+            <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed border-border">
+              <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+              <p className="text-sm text-muted-foreground">Nenhum registro de ronda.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -138,7 +218,7 @@ function AdminRondasTab() {
 }
 
 function AdminUsuariosTab() {
-  const { usuarios, updateUsuario, addUsuario } = useAppStore();
+  const { usuarios, updateUsuario, addUsuario, postos } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<UserType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -187,6 +267,12 @@ function AdminUsuariosTab() {
     }
   };
 
+  const getPostoNome = (postoId?: string) => {
+    if (!postoId) return 'Não atribuído';
+    const posto = postos.find(p => p.id === postoId);
+    return posto ? posto.nome : 'Não atribuído';
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -221,7 +307,15 @@ function AdminUsuariosTab() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{usuario.email}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{usuario.cargo}</p>
+                <div className="flex flex-wrap gap-2 mt-0.5">
+                  {usuario.cargo && (
+                    <span className="text-xs text-muted-foreground">{usuario.cargo}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {getPostoNome(usuario.postoId)}
+                  </span>
+                </div>
               </div>
             </div>
             <button
@@ -264,7 +358,7 @@ interface ModalUsuarioProps {
 }
 
 function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loading: externalLoading }: ModalUsuarioProps) {
-  const { usuarios, postos } = useAppStore();
+  const { usuarios, postos, cargos } = useAppStore();
   const [formData, setFormData] = useState<UserType | null>(null);
   const [senha, setSenha] = useState('');
   const [internalLoading, setInternalLoading] = useState(false);
@@ -392,12 +486,21 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
 
           <div className="space-y-2">
             <Label htmlFor="cargo">Cargo</Label>
-            <Input
-              id="cargo"
+            <Select
               value={formData.cargo || ''}
-              onChange={(e) => setFormData(prev => prev ? { ...prev, cargo: e.target.value.toUpperCase() } : prev)}
-              placeholder="Cargo do colaborador"
-            />
+              onValueChange={(value) => setFormData(prev => prev ? { ...prev, cargo: value } : prev)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um cargo" />
+              </SelectTrigger>
+              <SelectContent>
+                {cargos.filter(c => c.ativo).map((cargo) => (
+                  <SelectItem key={cargo.id} value={cargo.nome}>
+                    {cargo.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -500,6 +603,182 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
               ) : (
                 <Check className="h-4 w-4 mr-2" />
               )}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AdminCargosTab() {
+  const { cargos, addCargo, updateCargo, removeCargo } = useAppStore();
+  const [showModal, setShowModal] = useState(false);
+  const [cargoEditar, setCargoEditar] = useState<Cargo | null>(null);
+
+  const handleNovoCargo = () => {
+    setCargoEditar(null);
+    setShowModal(true);
+  };
+
+  const handleEditarCargo = (cargo: Cargo) => {
+    setCargoEditar(cargo);
+    setShowModal(true);
+  };
+
+  const handleSalvarCargo = (cargo: Cargo) => {
+    if (cargos.find(c => c.id === cargo.id)) {
+      updateCargo(cargo);
+    } else {
+      addCargo(cargo);
+    }
+    setShowModal(false);
+    setCargoEditar(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Gerenciar Cargos</h2>
+        <button
+          onClick={handleNovoCargo}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Novo Cargo
+        </button>
+      </div>
+
+      <div className="space-y-3 mt-4">
+        {cargos.map((cargo) => (
+          <div key={cargo.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Briefcase className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{cargo.nome}</span>
+                  {cargo.ativo ? (
+                    <Badge variant="default" className="text-[10px] bg-emerald-500">Ativo</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-[10px]">Inativo</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleEditarCargo(cargo)}
+                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => removeCargo(cargo.id)}
+                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {cargos.length === 0 && (
+          <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed border-border">
+            <Briefcase className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+            <p className="text-sm text-muted-foreground">Nenhum cargo cadastrado.</p>
+          </div>
+        )}
+      </div>
+
+      <ModalCargo
+        open={showModal}
+        onClose={() => { setShowModal(false); setCargoEditar(null); }}
+        cargo={cargoEditar}
+        onSalvar={handleSalvarCargo}
+      />
+    </div>
+  );
+}
+
+interface ModalCargoProps {
+  open: boolean;
+  onClose: () => void;
+  cargo: Cargo | null;
+  onSalvar: (cargo: Cargo) => void;
+}
+
+function ModalCargo({ open, onClose, cargo, onSalvar }: ModalCargoProps) {
+  const { cargos } = useAppStore();
+  const [formData, setFormData] = useState<Cargo>({
+    id: '',
+    nome: '',
+    ativo: true,
+  });
+
+  useEffect(() => {
+    if (cargo) {
+      setFormData(cargo);
+    } else {
+      setFormData({
+        id: `cargo-${Date.now()}`,
+        nome: '',
+        ativo: true,
+      });
+    }
+  }, [cargo]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSalvar(formData);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="w-full h-[95vh] max-w-full p-6 overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-primary" />
+            {cargo && cargos.find(c => c.id === cargo.id) ? 'Editar Cargo' : 'Novo Cargo'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1 h-full">
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome do Cargo</Label>
+            <Input
+              id="nome"
+              value={formData.nome}
+              onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+              placeholder="Ex: Porteiro"
+              required
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ativo"
+                checked={formData.ativo}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ativo: checked }))}
+              />
+              <Label htmlFor="ativo" className="cursor-pointer">Cargo Ativo</Label>
+            </div>
+            {formData.ativo ? (
+              <Badge variant="default" className="bg-emerald-500">Ativo</Badge>
+            ) : (
+              <Badge variant="destructive">Inativo</Badge>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+              <Check className="h-4 w-4 mr-2" />
               Salvar
             </Button>
           </DialogFooter>
@@ -620,7 +899,7 @@ function ModalPosto({ open, onClose, posto, onSalvar }: ModalPostoProps) {
       setFormData(posto);
     } else {
       setFormData({
-        id: `posto-${Date.now()}`,
+        id: crypto.randomUUID(),
         nome: '',
         ativo: true,
       });

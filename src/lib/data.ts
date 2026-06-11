@@ -276,6 +276,12 @@ export interface Posto {
   ativo: boolean;
 }
 
+export interface Cargo {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
 export interface User {
   id: string;
   nome: string;
@@ -401,6 +407,7 @@ export interface RotaGeoreferenciada {
   atualizadoEm?: string; // ISO string
   recorrente?: boolean;
   diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+  postoId?: string; // ID do posto associado
 }
 
 export interface PontoRonda {

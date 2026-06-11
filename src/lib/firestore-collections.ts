@@ -173,6 +173,32 @@ export async function removePosto(id: string): Promise<void> {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CARGOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const CARGOS_COL = 'cargos';
+
+export function subscribeCargos(callback: (data: Cargo[]) => void): Unsubscribe {
+  return subscribeCollection<Cargo>(CARGOS_COL, callback);
+}
+
+export async function addCargo(data: Omit<Cargo, 'id'>): Promise<string> {
+  return addDocument(CARGOS_COL, data as Record<string, unknown>);
+}
+
+export async function setCargo(id: string, data: Omit<Cargo, 'id'>): Promise<void> {
+  await setDocument(CARGOS_COL, id, data as Record<string, unknown>);
+}
+
+export async function updateCargo(id: string, data: Partial<Cargo>): Promise<void> {
+  await updateDocument(CARGOS_COL, id, data);
+}
+
+export async function removeCargo(id: string): Promise<void> {
+  await deleteDocument(CARGOS_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // REGISTROS DE FLUXO (Phase 3)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

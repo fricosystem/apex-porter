@@ -11,6 +11,7 @@ import type {
   Pessoa,
   Ramal,
   Posto,
+  Cargo,
   Aviso,
   ListaNegraEntry,
   AchadosPerdidosItem,
@@ -66,6 +67,11 @@ import {
   setPosto as setPostoFS,
   updatePosto as updatePostoFS,
   removePosto as removePostoFS,
+  subscribeCargos,
+  addCargo as addCargoFS,
+  setCargo as setCargoFS,
+  updateCargo as updateCargoFS,
+  removeCargo as removeCargoFS,
   // Phase 3 — Fluxo + Veículos + Pré-Autorizações
   subscribeRegistrosFluxo,
   setRegistroFluxo as setRegistroFluxoFS,
@@ -242,6 +248,13 @@ function startSubscriptions() {
   unsubs.push(
     subscribePostos((data) => {
       useAppStore.setState({ postos: data });
+    })
+  );
+
+  // Subscribe to cargos
+  unsubs.push(
+    subscribeCargos((data) => {
+      useAppStore.setState({ cargos: data });
     })
   );
 
@@ -425,6 +438,12 @@ interface AppState {
   addPosto: (posto: Posto) => void;
   removePosto: (id: string) => void;
   updatePosto: (posto: Posto) => void;
+
+  // Cargos
+  cargos: Cargo[];
+  addCargo: (cargo: Cargo) => void;
+  removeCargo: (id: string) => void;
+  updateCargo: (cargo: Cargo) => void;
 
   // Avisos
   avisos: Aviso[];
@@ -980,6 +999,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { id, ...data } = posto;
     updatePostoFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao atualizar posto:', err);
+    });
+  },
+
+  // Cargos (Firestore-backed)
+  cargos: [],
+  addCargo: (cargo) => {
+    set((state) => ({ cargos: [...state.cargos, cargo] }));
+    const { id, ...data } = cargo;
+    addCargoFS(data).then((newId) => {
+      if (id !== newId) {
+        set((state) => ({
+          cargos: state.cargos.map((c) => (c.id === id ? { ...c, id: newId } : c)),
+        }));
+      }
+    }).catch((err) => {
+      console.warn('[Firestore] Falha ao adicionar cargo:', err);
+    });
+  },
+  removeCargo: (id) => {
+    set((state) => ({ cargos: state.cargos.filter((c) => c.id !== id) }));
+    removeCargoFS(id).catch((err) => {
+      console.warn('[Firestore] Falha ao remover cargo:', err);
+    });
+  },
+  updateCargo: (cargo) => {
+    set((state) => ({
+      cargos: state.cargos.map((c) => (c.id === cargo.id ? cargo : c)),
+    }));
+    const { id, ...data } = cargo;
+    updateCargoFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao atualizar cargo:', err);
     });
   },
 

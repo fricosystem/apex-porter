@@ -24,10 +24,11 @@ import {
   ShieldBan,
   Search,
   Settings,
+  Briefcase,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
-export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos';
+export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos' | 'cargos';
 
 interface NavItem {
   page: any;
@@ -36,6 +37,7 @@ interface NavItem {
 }
 
 const SECONDARY_NAV: NavItem[] = [
+  { page: 'cargos', label: 'Cargos', icon: Briefcase },
   { page: 'cadastros', label: 'Cadastros', icon: Users },
   { page: 'avisos', label: 'Avisos', icon: Bell },
   { page: 'lista-negra', label: 'Lista Negra', icon: ShieldBan },
@@ -55,7 +57,11 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
   const [moreOpen, setMoreOpen] = useState(false);
 
   const handleNavClick = (page: any) => {
-    setCurrentPage(page);
+    if (page === 'cargos') {
+      onTabChange('cargos');
+    } else {
+      setCurrentPage(page);
+    }
     setMoreOpen(false);
   };
 
@@ -90,7 +96,11 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
                   <button
                     key={item.page}
                     onClick={() => handleNavClick(item.page)}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-colors ${
+                      item.page === 'cargos' && currentTab === 'cargos'
+                        ? 'text-primary bg-primary/10'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
                   >
                     <item.icon className="h-5 w-5" />
                     <span className="text-[10px] font-medium leading-tight text-center">

@@ -73,10 +73,12 @@ function transformToUpperCase<T>(obj: T): T {
     }
     const newObj: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
-      if (DONT_UPPERCASE_KEYS.has(key)) {
-        newObj[key] = value;
-      } else {
-        newObj[key] = transformToUpperCase(value);
+      if (value !== undefined) { // Ignora campos undefined para não enviar para Firestore
+        if (DONT_UPPERCASE_KEYS.has(key)) {
+          newObj[key] = value;
+        } else {
+          newObj[key] = transformToUpperCase(value);
+        }
       }
     }
     return newObj as unknown as T;

@@ -7,6 +7,13 @@ import dynamic from 'next/dynamic';
 import { PontoRota, RotaGeoreferenciada } from '@/lib/data';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 // Load map dynamically to avoid SSR issues
 const MiniMap = dynamic(() => import('./mini-map'), { ssr: false, loading: () => <div className="h-48 w-full bg-muted/50 rounded-xl flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> });
@@ -481,16 +488,21 @@ interface ModalNovaRotaProps {
 }
 
 export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
+  const { addRotaGeoreferenciada, updateRotaGeoreferenciada, postos, user } = useAppStore();
   const [nomeRota, setNomeRota] = useState(rotaEditar?.nome || '');
+  const [postoId, setPostoId] = useState(rotaEditar?.postoId || user?.postoId || '');
   const [pontos, setPontos] = useState<PontoRota[]>(rotaEditar?.pontos || []);
   const [showNovoPonto, setShowNovoPonto] = useState(false);
   const [pontoParaEditar, setPontoParaEditar] = useState<PontoRota | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const { addRotaGeoreferenciada, updateRotaGeoreferenciada } = useAppStore();
 
   const handleSaveRota = async () => {
     if (!nomeRota.trim()) {
       toast.error("Informe o nome da rota.");
+      return;
+    }
+    if (!postoId) {
+      toast.error("Selecione um posto para a rota.");
       return;
     }
     if (pontos.length === 0) {
@@ -504,6 +516,7 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
         const rotaAtualizada: RotaGeoreferenciada = {
           ...rotaEditar,
           nome: nomeRota,
+          postoId: postoId || undefined,
           pontos,
           atualizadoEm: new Date().toISOString(),
         };
@@ -513,6 +526,7 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
         const novaRota: RotaGeoreferenciada = {
           id: crypto.randomUUID(),
           nome: nomeRota,
+          postoId: postoId || undefined,
           pontos,
           criadoEm: new Date().toISOString(),
         };
@@ -579,6 +593,22 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
                 placeholder="Ex: Rota Externa Norte"
                 className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
+            </div>
+
+            <div>
+              <label className="block text-base font-medium mb-1.5">Posto *</label>
+              <Select value={postoId} onValueChange={setPostoId}>
+                <SelectTrigger className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base">
+                  <SelectValue placeholder="Selecione um posto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {postos.map((posto) => (
+                    <SelectItem key={posto.id} value={posto.id}>
+                      {posto.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

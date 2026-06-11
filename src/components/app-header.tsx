@@ -165,16 +165,6 @@ export default function AppHeader() {
                 <Ticket className="h-5 w-5" />
               </Button>
             )}
-            {currentPage === 'admin' && (
-              <Button
-                variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 h-9 px-3"
-                onClick={() => setCurrentPage('dashboard')}
-              >
-                <LogOut className="h-4 w-4 mr-1.5" />
-                <span className="text-sm">Sair</span>
-              </Button>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -207,6 +197,15 @@ export default function AppHeader() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            {currentPage === 'admin' && (
+              <Button
+                variant="ghost"
+                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                onClick={() => setCurrentPage('dashboard')}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>

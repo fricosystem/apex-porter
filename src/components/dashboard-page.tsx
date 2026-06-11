@@ -761,7 +761,7 @@ export default function DashboardPage() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="h-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-28"
+      className="h-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-40"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -810,8 +810,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI Cards (2 rows of 4) ── */}
-      {kpis.filter((k) => k.value > 0).length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {kpis.filter((k) => k.value > 0).map((kpi) => (
             <motion.div key={kpi.title} variants={item}>
               <Card className="overflow-hidden">
@@ -830,11 +829,9 @@ export default function DashboardPage() {
             </motion.div>
           ))}
         </div>
-      )}
 
       {/* ── Charts Row 1: Original (Entradas vs Saídas + Tendência Semanal) ── */}
-      {(entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) || tendenciaSemanal.some((d) => d.movimentacoes > 0)) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
             <motion.div variants={item}>
               <Card>
@@ -929,11 +926,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 2: Checklists por Status + Fluxo por Período ── */}
-      {(checklistsPorStatus.length > 0 || fluxoPorPeriodo.some((d) => d.fluxo > 0)) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {checklistsPorStatus.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1028,11 +1023,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 3: Fluxo por Categoria (real data) + Empresas mais frequentes ── */}
-      {(fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) || empresasMaisFrequentes.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) && (
             <motion.div variants={item}>
               <Card>
@@ -1071,6 +1064,7 @@ export default function DashboardPage() {
             </motion.div>
           )}
 
+
           {empresasMaisFrequentes.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1108,11 +1102,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 4: Ocorrências por tipo + Ocorrências por gravidade ── */}
-      {(ocorrenciasPorTipo.length > 0 || ocorrenciasPorGravidade.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ocorrenciasPorTipo.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1148,6 +1140,7 @@ export default function DashboardPage() {
               </Card>
             </motion.div>
           )}
+
 
           {ocorrenciasPorGravidade.length > 0 && (
             <motion.div variants={item}>
@@ -1193,11 +1186,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 5: Ocorrências por status + Veículos por tipo ── */}
-      {(ocorrenciasPorStatus.length > 0 || veiculosPorTipo.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ocorrenciasPorStatus.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1286,11 +1277,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 6: Pessoas por tipo + Pré-autorizações por status ── */}
-      {(pessoasPorTipo.length > 0 || preAuthPorStatus.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {pessoasPorTipo.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1379,11 +1368,9 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Charts Row 7: Achados e Perdidos + Inspeções por status ── */}
-      {(achadosPorStatus.length > 0 || inspecoesPorStatus.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {achadosPorStatus.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1472,14 +1459,12 @@ export default function DashboardPage() {
             </motion.div>
           )}
         </div>
-      )}
 
       {/* ── Summary Cards Row ── */}
-      {(listaNegraFiltered.length > 0 || avisosFiltered.filter((a) => a.fixado).length > 0 || preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Lista Negra */}
         {listaNegraFiltered.length > 0 && (
-          <motion.div variants={item}>
+        <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -1512,7 +1497,7 @@ export default function DashboardPage() {
 
         {/* Avisos Fixados */}
         {avisosFiltered.filter((a) => a.fixado).length > 0 && (
-          <motion.div variants={item}>
+        <motion.div variants={item}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -1547,7 +1532,7 @@ export default function DashboardPage() {
 
         {/* Últimas Pré-Autorizações */}
         {preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0 && (
-          <motion.div variants={item}>
+        <motion.div variants={item}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -1578,7 +1563,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
         </div>
-      )}
     </motion.div>
   );
 }
