@@ -420,6 +420,7 @@ export interface Ronda {
   id: string;
   rota: string;
   rotaId?: string; // ID da RotaGeoreferenciada
+  postoId?: string; // ID do posto associado
   data: string;
   horarioInicio: string;
   horarioFim: string;

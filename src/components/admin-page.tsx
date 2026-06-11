@@ -159,12 +159,14 @@ function AdminUsuariosTab() {
   const handleSalvarUsuario = async (usuario: UserType, senha?: string) => {
     const existe = usuarios.find(u => u.id === usuario.id);
     if (existe) {
-      updateUsuario(usuario);
+      // If we have a new password, add it to the user object
+      const usuarioToSave = senha ? { ...usuario, senha } : usuario;
+      updateUsuario(usuarioToSave);
       setModalOpen(false);
       setUsuarioSelecionado(null);
     } else {
       if (!senha) {
-        setError('Senha é obrigatória para criar um novo usuário');
+        setError('Senha é obrigatória para criar um novo colaborador');
         return;
       }
       try {
@@ -173,7 +175,8 @@ function AdminUsuariosTab() {
           ...usuario, 
           id: firebaseUser.uid, 
           dataCadastro: new Date().toISOString(),
-          ativo: true
+          ativo: true,
+          senha
         });
         setModalOpen(false);
         setUsuarioSelecionado(null);
@@ -313,7 +316,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
     if (setError) setError(null);
     setInternalLoading(true);
     try {
-      await onSalvar(formData, !usuario ? senha : undefined);
+      await onSalvar(formData, senha || undefined);
     } finally {
       setInternalLoading(false);
     }
@@ -397,19 +400,17 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
             />
           </div>
 
-          {!usuario && (
-            <div className="space-y-2">
-              <Label htmlFor="senha">Senha</Label>
-              <Input
-                id="senha"
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="Senha para o novo colaborador"
-                required
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="senha">Senha</Label>
+            <Input
+              id="senha"
+              type="text"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder={usuario ? "Nova senha (opcional)" : "Senha para o novo colaborador"}
+              required={!usuario}
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="posto">Posto</Label>

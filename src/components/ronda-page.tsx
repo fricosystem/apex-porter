@@ -228,6 +228,7 @@ export default function RondaPage() {
             id,
             rota: rota.nome,
             rotaId: rota.id,
+            postoId: user?.postoId,
             data: format(today, 'yyyy-MM-dd'),
             horarioInicio: '',
             horarioFim: '',
@@ -246,15 +247,20 @@ export default function RondaPage() {
   }, [rotasGeoreferenciadas, rondas, addRonda, user]);
 
   // Stats
-  const stats = useMemo(() => ({
-    total: rondas.length,
-    emAndamento: rondas.filter(r => r.status === 'em_andamento').length,
-    concluidas: rondas.filter(r => r.status === 'concluida').length,
-  }), [rondas]);
+  const stats = useMemo(() => {
+    const userRondas = rondas.filter(r => !user?.postoId || r.postoId === user.postoId);
+    return {
+      total: userRondas.length,
+      emAndamento: userRondas.filter(r => r.status === 'em_andamento').length,
+      concluidas: userRondas.filter(r => r.status === 'concluida').length,
+    };
+  }, [rondas, user]);
 
   // Filtered
   const filtered = useMemo(() => {
     return rondas.filter(r => {
+      // Only show rondas with postoId matching current user's postoId (if user has a posto)
+      if (user?.postoId && r.postoId !== user.postoId) return false;
       if (statusFilter === 'em_andamento' && r.status !== 'em_andamento') return false;
       if (statusFilter === 'concluida' && r.status !== 'concluida') return false;
       if (statusFilter === 'parcial' && r.status !== 'parcial') return false;
@@ -264,7 +270,7 @@ export default function RondaPage() {
       }
       return true;
     });
-  }, [rondas, busca, statusFilter]);
+  }, [rondas, busca, statusFilter, user]);
 
   // Helper: count checked pontos
   const countChecked = (ronda: Ronda) => ronda.pontos.filter(p => p.horarioReal).length;
@@ -307,6 +313,7 @@ export default function RondaPage() {
       id,
       rota: rotaData.nome,
       rotaId: rotaData.id,
+      postoId: user?.postoId,
       data: format(today, 'yyyy-MM-dd'),
       horarioInicio: '', // Será preenchido quando iniciar a ronda
       horarioFim: '',
