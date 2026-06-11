@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, UserPlus, KeyRound, ArrowLeft, CreditCard } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, KeyRound, ArrowLeft, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -293,15 +293,7 @@ export default function LoginPage() {
                     </Button>
                   </form>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => switchMode('register')}
-                      className="text-emerald-400/70 hover:text-emerald-300 text-xs transition-colors flex items-center gap-1"
-                    >
-                      <UserPlus className="h-3 w-3" />
-                      Criar conta
-                    </button>
+                  <div className="mt-4 flex items-center justify-center">
                     <button
                       type="button"
                       onClick={() => switchMode('reset')}

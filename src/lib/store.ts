@@ -538,6 +538,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Fetch profile (returns null if not found or error — that's OK)
       const profile = await fetchUserProfile(firebaseUser.uid);
 
+      // Check if user is active
+      const ativo = profile?.ativo ?? true;
+      if (!ativo) {
+        await signOutFirebase(); // Sign out immediately
+        set({ authLoading: false, authError: 'Usuário inativo. Por favor, entre em contato com o RH.' });
+        return false;
+      }
+
       // If no profile in Firestore, try to create it
       // (handles the case where registration created Auth user but Firestore write failed)
       if (!profile) {
@@ -554,6 +562,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         email: firebaseUser.email || email,
         cargo: 'Porteiro',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
+        ativo: true,
+        permissoes: profile?.permissoes || [],
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
