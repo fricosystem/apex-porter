@@ -187,13 +187,13 @@ function AdminUsuariosTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Gerenciar Usuários</h2>
+        <h2 className="text-xl font-bold">Gerenciar Colaboradores</h2>
         <button
           onClick={handleNovoUsuario}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Novo Usuário
+          Novo Colaborador
         </button>
       </div>
 
@@ -354,7 +354,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
-            {usuario && usuarios.find(u => u.id === usuario.id) ? 'Editar Usuário' : 'Novo Usuário'}
+            {usuario && usuarios.find(u => u.id === usuario.id) ? 'Editar Colaborador' : 'Novo Colaborador'}
           </DialogTitle>
         </DialogHeader>
 
@@ -370,7 +370,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData(prev => prev ? { ...prev, nome: e.target.value } : prev)}
-              placeholder="Nome completo do usuário"
+              placeholder="Nome completo do colaborador"
               required
             />
           </div>
@@ -393,7 +393,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
               id="cargo"
               value={formData.cargo || ''}
               onChange={(e) => setFormData(prev => prev ? { ...prev, cargo: e.target.value.toUpperCase() } : prev)}
-              placeholder="Cargo do usuário"
+              placeholder="Cargo do colaborador"
             />
           </div>
 
@@ -405,7 +405,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
                 type="password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
-                placeholder="Senha para o novo usuário"
+                placeholder="Senha para o novo colaborador"
                 required
               />
             </div>

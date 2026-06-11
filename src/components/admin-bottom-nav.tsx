@@ -123,7 +123,7 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
               />
             )}
             <Users className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-tight">Usuários</span>
+            <span className="text-[10px] font-medium leading-tight">Colaboradores</span>
           </button>
 
           {/* Postos */}
