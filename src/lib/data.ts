@@ -270,6 +270,12 @@ export interface AchadosPerdidosItem {
   observacoes?: string;
 }
 
+export interface Posto {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
 export interface User {
   id: string;
   nome: string;
@@ -281,6 +287,7 @@ export interface User {
   senha?: string; // Armazenada com hash em produção
   ativo: boolean;
   permissoes: PageType[]; // Páginas que o usuário pode acessar
+  postoId?: string; // ID do posto associado
 }
 
 // ── Veículos ──

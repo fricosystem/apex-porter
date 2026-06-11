@@ -39,6 +39,7 @@ import type {
   AtivacaoProtocolo,
   Lembrete,
   User,
+  Posto,
 } from './data';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -143,6 +144,32 @@ export async function updateRamal(id: string, data: Partial<Ramal>): Promise<voi
 
 export async function removeRamal(id: string): Promise<void> {
   await deleteDocument(RAMAIS_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// POSTOS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const POSTOS_COL = 'postos';
+
+export function subscribePostos(callback: (data: Posto[]) => void): Unsubscribe {
+  return subscribeCollection<Posto>(POSTOS_COL, callback);
+}
+
+export async function addPosto(data: Omit<Posto, 'id'>): Promise<string> {
+  return addDocument(POSTOS_COL, data as Record<string, unknown>);
+}
+
+export async function setPosto(id: string, data: Omit<Posto, 'id'>): Promise<void> {
+  await setDocument(POSTOS_COL, id, data as Record<string, unknown>);
+}
+
+export async function updatePosto(id: string, data: Partial<Posto>): Promise<void> {
+  await updateDocument(POSTOS_COL, id, data);
+}
+
+export async function removePosto(id: string): Promise<void> {
+  await deleteDocument(POSTOS_COL, id);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

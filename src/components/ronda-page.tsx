@@ -276,7 +276,7 @@ export default function RondaPage() {
     setModalOpen(true);
   };
 
-  const handleCreateRonda = () => {
+  const handleCreateRonda = async () => {
     if (!selectedRota) {
       toast.error('Selecione uma rota');
       return;
@@ -318,6 +318,8 @@ export default function RondaPage() {
       semanaAno: getWeekNumber(today),
       ano: today.getFullYear()
     };
+    
+    console.log('Criando ronda:', ronda);
     addRonda(ronda);
     toast.success('Ronda criada!');
     setModalOpen(false);
@@ -346,8 +348,10 @@ export default function RondaPage() {
 
   // Handle open execution
   const handleOpenExecution = (ronda: Ronda) => {
-    setSelectedRonda({ ...ronda, pontos: ronda.pontos.map(p => ({ ...p })) });
-    const anyChecked = ronda.pontos.some(p => !!p.horarioReal);
+    // Get the latest version from store
+    const latestRonda = rondas.find(r => r.id === ronda.id) || ronda;
+    setSelectedRonda({ ...latestRonda, pontos: latestRonda.pontos.map(p => ({ ...p })) });
+    const anyChecked = latestRonda.pontos.some(p => !!p.horarioReal);
     setRondaIniciada(anyChecked);
     setExecutionOpen(true);
   };
@@ -355,11 +359,13 @@ export default function RondaPage() {
   // Start ronda
   const handleStartRonda = () => {
     if (!selectedRonda) return;
-    setSelectedRonda({
+    const updatedRonda = {
       ...selectedRonda,
       horarioInicio: getCurrentTime(),
       data: getCurrentDate() // Garante que a data é atual
-    });
+    };
+    setSelectedRonda(updatedRonda);
+    updateRonda(updatedRonda);
     setRondaIniciada(true);
     toast.success('Ronda iniciada!');
   };
@@ -370,7 +376,9 @@ export default function RondaPage() {
     const updatedPontos = selectedRonda.pontos.map(p =>
       p.id === pontoId ? { ...p, horarioReal: getCurrentTime() } : p
     );
-    setSelectedRonda({ ...selectedRonda, pontos: updatedPontos });
+    const updatedRonda = { ...selectedRonda, pontos: updatedPontos };
+    setSelectedRonda(updatedRonda);
+    updateRonda(updatedRonda);
     toast.success('Check-in realizado no ponto!');
   };
 
@@ -380,7 +388,9 @@ export default function RondaPage() {
     const updatedPontos = selectedRonda.pontos.map(p =>
       p.id === pontoId ? { ...p, [field]: value } : p
     );
-    setSelectedRonda({ ...selectedRonda, pontos: updatedPontos });
+    const updatedRonda = { ...selectedRonda, pontos: updatedPontos };
+    setSelectedRonda(updatedRonda);
+    updateRonda(updatedRonda);
   };
 
   // Finalizar ronda
@@ -1027,8 +1037,9 @@ export default function RondaPage() {
                             <Select
                               value={ponto.status}
                               onValueChange={v => updatePontoField(ponto.id, 'status', v)}
+                              disabled={!isCurrentPonto && isChecked}
                             >
-                              <SelectTrigger className={`h-10 text-sm ${ponto.status === 'irregularidade' ? 'border-red-300' : 'border-emerald-300'}`}>
+                              <SelectTrigger className={`h-10 text-sm ${ponto.status === 'irregularidade' ? 'border-red-300' : 'border-emerald-300'} ${(!isCurrentPonto && isChecked) ? 'opacity-60 cursor-not-allowed' : ''}`}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -1054,6 +1065,7 @@ export default function RondaPage() {
                               onChange={e => updatePontoField(ponto.id, 'observacao', e.target.value)}
                               placeholder="Observações..."
                               className="h-10 text-sm"
+                              disabled={!isCurrentPonto && isChecked}
                             />
                           </div>
                         </div>

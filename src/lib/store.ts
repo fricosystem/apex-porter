@@ -10,6 +10,7 @@ import type {
   Departamento,
   Pessoa,
   Ramal,
+  Posto,
   Aviso,
   ListaNegraEntry,
   AchadosPerdidosItem,
@@ -60,6 +61,11 @@ import {
   setRamal as setRamalFS,
   updateRamal as updateRamalFS,
   removeRamal as removeRamalFS,
+  subscribePostos,
+  addPosto as addPostoFS,
+  setPosto as setPostoFS,
+  updatePosto as updatePostoFS,
+  removePosto as removePostoFS,
   // Phase 3 — Fluxo + Veículos + Pré-Autorizações
   subscribeRegistrosFluxo,
   setRegistroFluxo as setRegistroFluxoFS,
@@ -93,6 +99,7 @@ import {
   removeAviso as removeAvisoFS,
   // Phase 6 — Rondas + Checklists + Inspeções
   subscribeRondas,
+  addRonda as addRondaFS,
   setRonda as setRondaFS,
   updateRonda as updateRondaFS,
   removeRonda as removeRondaFS,
@@ -228,6 +235,13 @@ function startSubscriptions() {
   unsubs.push(
     subscribeRamais((data) => {
       useAppStore.setState({ ramais: data });
+    })
+  );
+
+  // Subscribe to postos
+  unsubs.push(
+    subscribePostos((data) => {
+      useAppStore.setState({ postos: data });
     })
   );
 
@@ -405,6 +419,12 @@ interface AppState {
   updateRamal: (ramal: Ramal) => void;
   buscaRamais: string;
   setBuscaRamais: (busca: string) => void;
+
+  // Postos
+  postos: Posto[];
+  addPosto: (posto: Posto) => void;
+  removePosto: (id: string) => void;
+  updatePosto: (posto: Posto) => void;
 
   // Avisos
   avisos: Aviso[];
@@ -938,6 +958,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   buscaRamais: '',
   setBuscaRamais: (busca) => set({ buscaRamais: busca }),
 
+  // Postos (Firestore-backed)
+  postos: [],
+  addPosto: (posto) => {
+    set((state) => ({ postos: [...state.postos, posto] }));
+    const { id, ...data } = posto;
+    setPostoFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao adicionar posto:', err);
+    });
+  },
+  removePosto: (id) => {
+    set((state) => ({ postos: state.postos.filter((p) => p.id !== id) }));
+    removePostoFS(id).catch((err) => {
+      console.warn('[Firestore] Falha ao remover posto:', err);
+    });
+  },
+  updatePosto: (posto) => {
+    set((state) => ({
+      postos: state.postos.map((p) => (p.id === posto.id ? posto : p)),
+    }));
+    const { id, ...data } = posto;
+    updatePostoFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao atualizar posto:', err);
+    });
+  },
+
   // Avisos (Firestore-backed — Phase 5)
   avisos: [],
   addAviso: (aviso) => {
@@ -1097,8 +1142,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   addRonda: (ronda) => {
     set((state) => ({ rondas: [...state.rondas, ronda] }));
     const { id, ...data } = ronda;
+    console.log('[Store] Adicionando ronda ao Firestore:', id, data);
     setRondaFS(id, data).catch((err) => {
-      console.warn('[Firestore] Falha ao adicionar ronda:', err);
+      console.error('[Firestore] Falha ao adicionar ronda:', err);
     });
   },
   updateRonda: (ronda) => {
