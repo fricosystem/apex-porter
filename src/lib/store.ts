@@ -560,7 +560,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         id: firebaseUser.uid,
         nome: profile?.nome || firebaseUser.displayName || email.split('@')[0],
         email: firebaseUser.email || email,
-        cargo: 'Porteiro',
+        cargo: profile?.cargo || 'Porteiro',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
         ativo: true,
         permissoes: profile?.permissoes || [],

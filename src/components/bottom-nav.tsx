@@ -81,6 +81,8 @@ export default function BottomNav() {
   const isPageAllowed = (page: PageType) => {
     // Pages that are always allowed: login and perfil
     if (page === 'login' || page === 'perfil') return true;
+    // Allow full access to DESENVOLVEDOR and DIRETOR
+    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
     // Otherwise check permissions
     return userPermissions.includes(page);
   };

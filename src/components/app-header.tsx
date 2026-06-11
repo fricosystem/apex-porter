@@ -37,6 +37,8 @@ export default function AppHeader() {
   
   const isPageAllowed = (page: string) => {
     if (page === 'login' || page === 'perfil') return true;
+    // Allow full access to DESENVOLVEDOR and DIRETOR
+    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
     return userPermissions.includes(page as any);
   };
   const [ticketInput, setTicketInput] = useState('');
