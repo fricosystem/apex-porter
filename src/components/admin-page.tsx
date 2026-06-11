@@ -353,7 +353,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-full h-[95vh] max-w-full p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
@@ -361,7 +361,7 @@ function ModalUsuario({ open, onClose, usuario, onSalvar, error, setError, loadi
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1 h-full">
           {error && (
             <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md border border-destructive/30">
               {error}
@@ -634,7 +634,7 @@ function ModalPosto({ open, onClose, posto, onSalvar }: ModalPostoProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full h-[95vh] max-w-full p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
@@ -642,7 +642,7 @@ function ModalPosto({ open, onClose, posto, onSalvar }: ModalPostoProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 flex-1 h-full">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome do Posto</Label>
             <Input
