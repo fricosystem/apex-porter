@@ -83,8 +83,9 @@ export default function BottomNav() {
     if (!user?.ativo) return false;
     // Pages that are always allowed: login and perfil
     if (page === 'login' || page === 'perfil') return true;
-    // Allow full access to DESENVOLVEDOR and DIRETOR
-    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
+    // Allow full access to DESENVOLVEDOR, DIRETOR, and PORTEIRO
+    const userCargo = (user?.cargo || '').toUpperCase();
+    if (userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO') return true;
     // Otherwise check permissions
     return userPermissions.includes(page);
   };

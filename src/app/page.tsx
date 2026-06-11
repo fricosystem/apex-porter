@@ -38,8 +38,9 @@ function PageRenderer() {
   // Check if current page is allowed
   const isPageAllowed = (page: string) => {
     if (page === 'login' || page === 'perfil') return true;
-    // Allow full access to DESENVOLVEDOR and DIRETOR
-    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
+    // Allow full access to DESENVOLVEDOR, DIRETOR, and PORTEIRO
+    const userCargo = (user?.cargo || '').toUpperCase();
+    if (userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO') return true;
     // For other roles, check permissions
     return userPermissions.includes(page as any);
   };
@@ -49,7 +50,7 @@ function PageRenderer() {
     if (currentPage !== 'login' && currentPage !== 'perfil' && !isPageAllowed(currentPage)) {
       setCurrentPage('dashboard');
     }
-  }, [currentPage, userPermissions, setCurrentPage]);
+  }, [currentPage, userPermissions, user, setCurrentPage]);
 
   const pages: Record<string, React.ReactNode> = {
     dashboard: <DashboardPage />,
@@ -215,7 +216,8 @@ export default function Home() {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     
-    const hasFullAccess = user.cargo === 'DESENVOLVEDOR' || user.cargo === 'DIRETOR';
+    const userCargo = (user.cargo || '').toUpperCase();
+    const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO';
     if (!hasFullAccess && (user.permissoes.length === 0 || !user.ativo)) {
       logout();
     }

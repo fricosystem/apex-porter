@@ -555,11 +555,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         updateUltimoLogin(firebaseUser.uid);
       }
 
-      const userCargo = profile?.cargo || 'PORTEIRO';
+      const userCargo = (profile?.cargo || 'PORTEIRO').toUpperCase();
       const userPermissoes = profile?.permissoes || [];
 
-      // Check if user has any permissions (unless they're DESENVOLVEDOR or DIRETOR)
-      const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR';
+      // Check if user has any permissions (unless they're DESENVOLVEDOR, DIRETOR, or PORTEIRO)
+      const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO';
       if (!hasFullAccess && userPermissoes.length === 0) {
         await signOutFirebase(); // Sign out immediately
         set({ authLoading: false, authError: 'Usuário sem permissões. Por favor, entre em contato com o RH.' });
@@ -654,8 +654,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setAuthFromFirebase: (firebaseUser: FirebaseUser, firestoreData?: FirestoreUser | null) => {
-    const cargo = firestoreData?.cargo || 'Porteiro';
-    const hasFullAccess = cargo === 'DESENVOLVEDOR' || cargo === 'DIRETOR';
+    const cargo = (firestoreData?.cargo || 'PORTEIRO').toUpperCase();
+    const hasFullAccess = cargo === 'DESENVOLVEDOR' || cargo === 'DIRETOR' || cargo === 'PORTEIRO';
     
     const user: User = {
       id: firebaseUser.uid,

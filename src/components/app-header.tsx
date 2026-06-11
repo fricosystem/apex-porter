@@ -38,8 +38,9 @@ export default function AppHeader() {
   const isPageAllowed = (page: string) => {
     if (!user?.ativo) return false;
     if (page === 'login' || page === 'perfil') return true;
-    // Allow full access to DESENVOLVEDOR and DIRETOR
-    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
+    // Allow full access to DESENVOLVEDOR, DIRETOR, and PORTEIRO
+    const userCargo = (user?.cargo || '').toUpperCase();
+    if (userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR' || userCargo === 'PORTEIRO') return true;
     return userPermissions.includes(page as any);
   };
   const [ticketInput, setTicketInput] = useState('');
