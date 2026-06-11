@@ -169,7 +169,7 @@ export default function AppHeader() {
               <Button
                 variant="ghost"
                 className="text-primary-foreground hover:bg-white/10 h-9 px-3"
-                onClick={handleLogout}
+                onClick={() => setCurrentPage('dashboard')}
               >
                 <LogOut className="h-4 w-4 mr-1.5" />
                 <span className="text-sm">Sair</span>
