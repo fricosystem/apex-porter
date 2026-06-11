@@ -165,6 +165,16 @@ export default function AppHeader() {
                 <Ticket className="h-5 w-5" />
               </Button>
             )}
+            {currentPage === 'admin' && (
+              <Button
+                variant="ghost"
+                className="text-primary-foreground hover:bg-white/10 h-9 px-3"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-1.5" />
+                <span className="text-sm">Sair</span>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -189,10 +199,12 @@ export default function AppHeader() {
                     Configurações
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
+                {currentPage !== 'admin' && (
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -59,7 +59,7 @@ export default function AdminPage() {
 function AdminPainelTab() {
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">Painel de Administração</h2>
+      <h2 className="text-xl font-bold">Dashboard</h2>
       <p className="text-muted-foreground text-sm">
         Bem-vindo à área administrativa. Selecione uma opção no menu abaixo.
       </p>
