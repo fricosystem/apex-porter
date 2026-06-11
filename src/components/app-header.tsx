@@ -36,6 +36,7 @@ export default function AppHeader() {
   const userPermissions = user?.permissoes || [];
   
   const isPageAllowed = (page: string) => {
+    if (!user?.ativo) return false;
     if (page === 'login' || page === 'perfil') return true;
     // Allow full access to DESENVOLVEDOR and DIRETOR
     if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;

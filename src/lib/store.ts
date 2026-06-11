@@ -21,7 +21,6 @@ import type {
   ChecklistTurno,
   InspecaoDiaria,
   ProtocoloEmergencia,
-  ProtocoloEmergencia,
   AtivacaoProtocolo,
   Lembrete,
   RotaGeoreferenciada,
@@ -556,14 +555,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         updateUltimoLogin(firebaseUser.uid);
       }
 
+      const userCargo = profile?.cargo || 'PORTEIRO';
+      const userPermissoes = profile?.permissoes || [];
+
+      // Check if user has any permissions (unless they're DESENVOLVEDOR or DIRETOR)
+      const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR';
+      if (!hasFullAccess && userPermissoes.length === 0) {
+        await signOutFirebase(); // Sign out immediately
+        set({ authLoading: false, authError: 'Usuário sem permissões. Por favor, entre em contato com o RH.' });
+        return false;
+      }
+
       const user: User = {
         id: firebaseUser.uid,
         nome: profile?.nome || firebaseUser.displayName || email.split('@')[0],
         email: firebaseUser.email || email,
-        cargo: profile?.cargo || 'Porteiro',
+        cargo: userCargo,
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
         ativo: true,
-        permissoes: profile?.permissoes || [],
+        permissoes: userPermissoes,
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
@@ -587,7 +597,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         nome,
         email: firebaseUser.email || email,
         ...(cpf ? { cpf } : {}),
-        cargo: cargo || 'Porteiro',
+        cargo: cargo || 'PORTEIRO',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');

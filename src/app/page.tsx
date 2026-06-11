@@ -39,7 +39,8 @@ function PageRenderer() {
   const isPageAllowed = (page: string) => {
     if (page === 'login' || page === 'perfil') return true;
     // Allow full access to DESENVOLVEDOR and DIRETOR
-    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR' || user?.cargo === 'PORTEIRO') return true;
+    if (user?.cargo === 'DESENVOLVEDOR' || user?.cargo === 'DIRETOR') return true;
+    // For other roles, check permissions
     return userPermissions.includes(page as any);
   };
 
@@ -133,7 +134,7 @@ function TacticalParticles() {
 }
 
 export default function Home() {
-  const { isAuthenticated, currentPage, authInitialized, setAuthFromFirebase, settings } = useAppStore();
+  const { isAuthenticated, currentPage, authInitialized, setAuthFromFirebase, settings, user, logout } = useAppStore();
   const { setTheme } = useTheme();
   const [showLoading, setShowLoading] = useState(true);
 
@@ -209,6 +210,16 @@ export default function Home() {
     settings.autoDarkTheme,
     setTheme
   ]);
+
+  // ── Auto-logout if user doesn't have permissions ──
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    
+    const hasFullAccess = user.cargo === 'DESENVOLVEDOR' || user.cargo === 'DIRETOR';
+    if (!hasFullAccess && (user.permissoes.length === 0 || !user.ativo)) {
+      logout();
+    }
+  }, [isAuthenticated, user, logout]);
 
   // ── Firebase Auth State Observer ──
   // Restores session on page refresh (persists login via Firebase Auth)

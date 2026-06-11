@@ -79,6 +79,8 @@ export default function BottomNav() {
 
   // Check if page is allowed
   const isPageAllowed = (page: PageType) => {
+    // If user is inactive, don't allow anything
+    if (!user?.ativo) return false;
     // Pages that are always allowed: login and perfil
     if (page === 'login' || page === 'perfil') return true;
     // Allow full access to DESENVOLVEDOR and DIRETOR
