@@ -71,14 +71,31 @@ const SECONDARY_NAV: NavItem[] = [
 ];
 
 export default function BottomNav() {
-  const { currentPage, setCurrentPage } = useAppStore();
+  const { currentPage, setCurrentPage, user } = useAppStore();
   const [moreOpen, setMoreOpen] = useState(false);
+  const userPermissions = user?.permissoes || [];
 
   const isActive = (page: PageType) => currentPage === page;
 
+  // Check if page is allowed
+  const isPageAllowed = (page: PageType) => {
+    // Pages that are always allowed: login and perfil
+    if (page === 'login' || page === 'perfil') return true;
+    // Otherwise check permissions
+    return userPermissions.includes(page);
+  };
+
+  // Filter nav items to only show allowed pages
+  const filteredLeftNav = LEFT_NAV.filter(item => isPageAllowed(item.page));
+  const filteredCenterNav = isPageAllowed(CENTER_NAV.page) ? CENTER_NAV : null;
+  const filteredRightNav = RIGHT_NAV.filter(item => isPageAllowed(item.page));
+  const filteredSecondaryNav = SECONDARY_NAV.filter(item => isPageAllowed(item.page));
+
   const handleNavClick = (page: PageType) => {
-    setCurrentPage(page);
-    setMoreOpen(false);
+    if (isPageAllowed(page)) {
+      setCurrentPage(page);
+      setMoreOpen(false);
+    }
   };
 
   return (
@@ -108,7 +125,7 @@ export default function BottomNav() {
           >
             <div className="bg-popover border border-border rounded-2xl shadow-xl p-3 max-w-md mx-auto">
               <div className="grid grid-cols-4 gap-2">
-                {SECONDARY_NAV.map((item) => (
+                {filteredSecondaryNav.map((item) => (
                   <button
                     key={item.page}
                     onClick={() => handleNavClick(item.page)}
@@ -134,7 +151,7 @@ export default function BottomNav() {
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-popover border-t border-border shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {/* Left items */}
-          {LEFT_NAV.map((item) => (
+          {filteredLeftNav.map((item) => (
             <button
               key={item.page}
               onClick={() => handleNavClick(item.page)}
@@ -156,29 +173,31 @@ export default function BottomNav() {
             </button>
           ))}
 
-          {/* Center prominent button — Fluxo */}
-          <button
-            onClick={() => handleNavClick(CENTER_NAV.page)}
-            className="flex flex-col items-center justify-center min-w-0 flex-1 -mt-5 transition-transform active:scale-95"
-          >
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${
-                isActive(CENTER_NAV.page)
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
-              }`}
+          {/* Center prominent button — Fluxo (only if allowed) */}
+          {filteredCenterNav && (
+            <button
+              onClick={() => handleNavClick(filteredCenterNav.page)}
+              className="flex flex-col items-center justify-center min-w-0 flex-1 -mt-5 transition-transform active:scale-95"
             >
-              <CENTER_NAV.icon className="h-7 w-7" />
-            </div>
-            <span className={`text-[10px] font-semibold leading-tight mt-1 ${
-              isActive(CENTER_NAV.page) ? 'text-emerald-600' : 'text-muted-foreground'
-            }`}>
-              {CENTER_NAV.label}
-            </span>
-          </button>
+              <div
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${
+                  isActive(filteredCenterNav.page)
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                }`}
+              >
+                <filteredCenterNav.icon className="h-7 w-7" />
+              </div>
+              <span className={`text-[10px] font-semibold leading-tight mt-1 ${
+                isActive(filteredCenterNav.page) ? 'text-emerald-600' : 'text-muted-foreground'
+              }`}>
+                {filteredCenterNav.label}
+              </span>
+            </button>
+          )}
 
           {/* Right items */}
-          {RIGHT_NAV.map((item) => (
+          {filteredRightNav.map((item) => (
             <button
               key={item.page}
               onClick={() => handleNavClick(item.page)}
@@ -200,18 +219,20 @@ export default function BottomNav() {
             </button>
           ))}
 
-          {/* Mais button */}
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
-              moreOpen || SECONDARY_NAV.some((item) => isActive(item.page))
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            <span className="text-[10px] font-medium leading-tight">Mais</span>
-          </button>
+          {/* Mais button (only if there are secondary nav items) */}
+          {filteredSecondaryNav.length > 0 && (
+            <button
+              onClick={() => setMoreOpen(!moreOpen)}
+              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+                moreOpen || filteredSecondaryNav.some((item) => isActive(item.page))
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <span className="text-[10px] font-medium leading-tight">Mais</span>
+            </button>
+          )}
         </div>
       </nav>
     </>

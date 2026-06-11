@@ -33,6 +33,12 @@ import { Badge } from '@/components/ui/badge';
 // ── App Header ───────────────────────────────────────────────────────────────
 export default function AppHeader() {
   const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill, currentPage } = useAppStore();
+  const userPermissions = user?.permissoes || [];
+  
+  const isPageAllowed = (page: string) => {
+    if (page === 'login' || page === 'perfil') return true;
+    return userPermissions.includes(page as any);
+  };
   const [ticketInput, setTicketInput] = useState('');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -173,10 +179,12 @@ export default function AppHeader() {
                   <UserIcon className="mr-2 h-4 w-4" />
                   Meu Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCurrentPage('configuracoes')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configurações
-                </DropdownMenuItem>
+                {isPageAllowed('configuracoes') && (
+                  <DropdownMenuItem onClick={() => setCurrentPage('configuracoes')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Configurações
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair

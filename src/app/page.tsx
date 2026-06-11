@@ -32,7 +32,21 @@ import AppHeader from '@/components/app-header';
 import BottomNav from '@/components/bottom-nav';
 
 function PageRenderer() {
-  const { currentPage } = useAppStore();
+  const { currentPage, user, setCurrentPage } = useAppStore();
+  const userPermissions = user?.permissoes || [];
+
+  // Check if current page is allowed
+  const isPageAllowed = (page: string) => {
+    if (page === 'login' || page === 'perfil') return true;
+    return userPermissions.includes(page as any);
+  };
+
+  // Redirect if page not allowed
+  useEffect(() => {
+    if (currentPage !== 'login' && currentPage !== 'perfil' && !isPageAllowed(currentPage)) {
+      setCurrentPage('dashboard');
+    }
+  }, [currentPage, userPermissions, setCurrentPage]);
 
   const pages: Record<string, React.ReactNode> = {
     dashboard: <DashboardPage />,
@@ -59,17 +73,19 @@ function PageRenderer() {
     admin: <AdminPage />,
   };
 
+  const currentPageToRender = isPageAllowed(currentPage) ? currentPage : 'dashboard';
+  
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={currentPage}
+        key={currentPageToRender}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
         className="h-full"
       >
-        {pages[currentPage] || <DashboardPage />}
+        {pages[currentPageToRender] || <DashboardPage />}
       </motion.div>
     </AnimatePresence>
   );
