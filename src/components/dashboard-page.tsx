@@ -1256,11 +1256,8 @@ export default function DashboardPage() {
                             <Cell key={`oc-status-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['ocorrenciasStatus']}
-                          active={activeChartStates['ocorrenciasStatus'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
@@ -1349,11 +1346,8 @@ export default function DashboardPage() {
                             <Cell key={`pes-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['pessoasTipo']}
-                          active={activeChartStates['pessoasTipo'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
@@ -1394,11 +1388,8 @@ export default function DashboardPage() {
                             <Cell key={`pa-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['preAuthStatus']}
-                          active={activeChartStates['preAuthStatus'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
@@ -1442,11 +1433,8 @@ export default function DashboardPage() {
                             <Cell key={`ap-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['achadosStatus']}
-                          active={activeChartStates['achadosStatus'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>

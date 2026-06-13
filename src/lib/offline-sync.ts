@@ -1,5 +1,5 @@
 import { get, set, keys, del } from 'idb-keyval';
-import { Ronda } from './store-types';
+import { Ronda } from './data';
 import { addRonda } from './firestore-collections';
 
 const RONDAS_PREFIX = 'offline_ronda_';
@@ -16,7 +16,7 @@ export async function getOfflineRondas(): Promise<any[]> {
     const allKeys = await keys();
     const rondaKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(RONDAS_PREFIX));
     
-    const rondas = [];
+    const rondas: any[] = [];
     for (const key of rondaKeys) {
       const data = await get(key);
       if (data) {
