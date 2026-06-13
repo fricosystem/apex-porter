@@ -385,7 +385,7 @@ export interface Ocorrencia {
 }
 
 // ── Ronda / Patrulhamento (Geolocalização) ──
-export type StatusRonda = 'em_andamento' | 'concluida' | 'parcial';
+export type StatusRonda = 'aguardando' | 'em_andamento' | 'concluida' | 'parcial';
 
 export interface PontoRota {
   id: string;
@@ -408,6 +408,8 @@ export interface RotaGeoreferenciada {
   recorrente?: boolean;
   diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
   postoId?: string; // ID do posto associado
+  horariosPlantao?: string[]; // Ex: ['00:00', '02:00', '04:00', '06:00']
+  minutosAlerta?: number; // Padrão: 10 (minutos antes de cada horário)
 }
 
 export interface PontoRonda {
@@ -421,6 +423,7 @@ export interface PontoRonda {
   latitude?: number;
   longitude?: number;
   raio?: number;
+  fotoUrl?: string;
 }
 
 export interface Ronda {
@@ -438,6 +441,9 @@ export interface Ronda {
   diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
   semanaAno?: number; // Semana do ano para recorrência
   ano?: number;
+  horarioPlantao?: string; // Ex: '00:00'
+  cicloCompleto?: boolean; // true quando todos os horários do plantão foram concluídos
+  fotoUrl?: string; // URL da foto tirada na abertura geral da ronda (opcional)
 }
 
 export const ROTAS_RONDA = [

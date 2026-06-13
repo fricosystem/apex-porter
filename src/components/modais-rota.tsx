@@ -496,6 +496,25 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
   const [pontoParaEditar, setPontoParaEditar] = useState<PontoRota | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const diasOptions = [
+    { value: 'seg', label: 'Seg' },
+    { value: 'ter', label: 'Ter' },
+    { value: 'qua', label: 'Qua' },
+    { value: 'qui', label: 'Qui' },
+    { value: 'sex', label: 'Sex' },
+    { value: 'sab', label: 'Sáb' },
+    { value: 'dom', label: 'Dom' },
+  ];
+
+  const [recorrente, setRecorrente] = useState(rotaEditar?.recorrente || false);
+  const [diasSemana, setDiasSemana] = useState<string[]>(rotaEditar?.diasSemana || []);
+  const [horariosPlantao, setHorariosPlantao] = useState(rotaEditar?.horariosPlantao?.join(', ') || '00:00, 02:00, 04:00, 06:00');
+  const [minutosAlerta, setMinutosAlerta] = useState(rotaEditar?.minutosAlerta || 10);
+
+  const toggleDiaRota = (dia: string) => {
+    setDiasSemana(prev => prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]);
+  };
+
   const handleSaveRota = async () => {
     if (!nomeRota.trim()) {
       toast.error("Informe o nome da rota.");
@@ -510,6 +529,13 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
       return;
     }
 
+    if (recorrente && diasSemana.length === 0) {
+      toast.error("Selecione pelo menos um dia para recorrência.");
+      return;
+    }
+    
+    const horariosArray = horariosPlantao.split(',').map(h => h.trim()).filter(h => h.length > 0);
+
     setIsSaving(true);
     try {
       if (rotaEditar) {
@@ -518,6 +544,10 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
           nome: nomeRota,
           postoId: postoId || undefined,
           pontos,
+          recorrente,
+          diasSemana: recorrente ? diasSemana : undefined,
+          horariosPlantao: recorrente ? horariosArray : undefined,
+          minutosAlerta,
           atualizadoEm: new Date().toISOString(),
         };
         updateRotaGeoreferenciada(rotaAtualizada);
@@ -528,6 +558,10 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
           nome: nomeRota,
           postoId: postoId || undefined,
           pontos,
+          recorrente,
+          diasSemana: recorrente ? diasSemana : undefined,
+          horariosPlantao: recorrente ? horariosArray : undefined,
+          minutosAlerta,
           criadoEm: new Date().toISOString(),
         };
         addRotaGeoreferenciada(novaRota);
@@ -610,6 +644,73 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-border">
+              <label className="text-base font-medium">Auto-Gerar Rondas (Recorrente)</label>
+              <button
+                type="button"
+                onClick={() => setRecorrente(!recorrente)}
+                className={`w-12 h-7 rounded-full transition-colors relative ${recorrente ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+              >
+                <div className={`absolute top-1 bg-white w-5 h-5 rounded-full transition-transform ${recorrente ? 'left-6' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {recorrente && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden space-y-4"
+                >
+                  <div>
+                    <label className="block text-base font-medium mb-2.5">Dias da semana da execução</label>
+                    <div className="flex flex-wrap gap-2">
+                      {diasOptions.map(dia => (
+                        <button
+                          key={dia.value}
+                          type="button"
+                          onClick={() => toggleDiaRota(dia.value)}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            diasSemana.includes(dia.value)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          {dia.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium mb-1.5">Horários do Plantão (separados por vírgula)</label>
+                    <input
+                      type="text"
+                      value={horariosPlantao}
+                      onChange={(e) => setHorariosPlantao(e.target.value)}
+                      placeholder="Ex: 00:00, 02:00, 04:00, 06:00"
+                      className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O sistema criará automaticamente uma ronda para cada horário definido nos dias selecionados.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-medium mb-1.5">Alerta Sonoro/Visual (Minutos Antes)</label>
+                    <input
+                      type="number"
+                      value={minutosAlerta}
+                      onChange={(e) => setMinutosAlerta(Number(e.target.value))}
+                      placeholder="Ex: 10"
+                      className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div>
               <div className="flex items-center justify-between mb-3">

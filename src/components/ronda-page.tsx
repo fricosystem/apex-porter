@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import {
   Plus, Search, Inbox, Clock, MapPin, Shield, Eye, Trash2,
   CheckCircle2, AlertTriangle, Play, ChevronDown, ChevronUp,
-  Navigation, Timer, User, CalendarDays,
+  Navigation, Timer, User, CalendarDays, Camera,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -34,18 +34,21 @@ import { toast } from 'sonner';
 type StatusFilter = 'todas' | 'em_andamento' | 'concluida' | 'parcial';
 
 const statusLabels: Record<StatusRonda, string> = {
+  aguardando: 'Aguardando',
   em_andamento: 'Em Andamento',
   concluida: 'Concluída',
   parcial: 'Parcial',
 };
 
 const statusColors: Record<StatusRonda, string> = {
+  aguardando: 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
   em_andamento: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   concluida: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   parcial: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
 };
 
 const statusIcons: Record<StatusRonda, React.ElementType> = {
+  aguardando: Clock,
   em_andamento: Timer,
   concluida: CheckCircle2,
   parcial: AlertTriangle,
@@ -151,6 +154,7 @@ export default function RondaPage() {
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'hoje' | 'historico'>('hoje');
 
   // New ronda modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -179,6 +183,9 @@ export default function RondaPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Alerta pré-ronda
+  const [alertaAtivo, setAlertaAtivo] = useState<{ rotaNome: string; horario: string; segundosRestantes: number } | null>(null);
+
   // Watch position
   useEffect(() => {
     if (!executionOpen) return;
@@ -193,57 +200,121 @@ export default function RondaPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [executionOpen]);
 
-  // Auto-create daily recurring rondas
+  // Auto-create daily recurring rondas per shift hour
   useEffect(() => {
-    const today = new Date();
-    const dateString = format(today, 'yyyy-MM-dd');
-    const todayDay = getDayName(today);
-    const currentWeek = getWeekNumber(today);
-    const currentYear = today.getFullYear();
+    const checkAndCreateRondas = () => {
+      const today = new Date();
+      const dateString = format(today, 'yyyy-MM-dd');
+      const todayDay = getDayName(today);
+      const currentWeek = getWeekNumber(today);
+      const currentYear = today.getFullYear();
+      const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
-    rotasGeoreferenciadas.forEach(rota => {
-      if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
-        // Check if we already have a ronda for TODAY
-        const existingRonda = rondas.find(
-          r => r.rotaId === rota.id && r.data === dateString
-        );
-        if (!existingRonda) {
-          // Create a new ronda for today
-          const id = `rn_${Date.now()}_${rota.id}`;
-          const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
-            id: `pt_${Date.now()}_${idx}`,
-            rondaId: id,
-            ponto: p.nome,
-            horarioPrevisto: p.horarioExecucao,
-            horarioReal: '',
-            status: 'ok' as const,
-            observacao: '',
-            latitude: p.latitude,
-            longitude: p.longitude,
-            raio: p.raio,
-          }));
+      rotasGeoreferenciadas.forEach(rota => {
+        if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
+          if (rota.horariosPlantao && rota.horariosPlantao.length > 0) {
+            rota.horariosPlantao.forEach(horario => {
+              const [h, m] = horario.split(':').map(Number);
+              const plantaoMinutes = h * 60 + m;
 
-          const ronda: Ronda = {
-            id,
-            rota: rota.nome,
-            rotaId: rota.id,
-            postoId: rota.postoId, // Default to the route's posto
-            data: dateString,
-            horarioInicio: '',
-            horarioFim: '',
-            status: 'em_andamento',
-            porteiro: 'A Definir', // Will be set when a guard starts it
-            pontos,
-            recorrente: true,
-            diasSemana: rota.diasSemana,
-            semanaAno: currentWeek,
-            ano: currentYear
-          };
-          addRonda(ronda);
+              // Check if it is time to create (or past time)
+              if (currentMinutes >= plantaoMinutes) {
+                // Check if already exists for this date and shift hour
+                const existingRonda = rondas.find(
+                  r => r.rotaId === rota.id && r.data === dateString && r.horarioPlantao === horario
+                );
+
+                if (!existingRonda) {
+                  // Create a new ronda for this shift hour
+                  const id = `rn_${Date.now()}_${rota.id}_${horario.replace(':', '')}`;
+                  const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
+                    id: `pt_${Date.now()}_${idx}`,
+                    rondaId: id,
+                    ponto: p.nome,
+                    horarioPrevisto: p.horarioExecucao,
+                    horarioReal: '',
+                    status: 'ok' as const,
+                    observacao: '',
+                    latitude: p.latitude,
+                    longitude: p.longitude,
+                    raio: p.raio,
+                  }));
+
+                  const ronda: Ronda = {
+                    id,
+                    rota: rota.nome,
+                    rotaId: rota.id,
+                    postoId: rota.postoId,
+                    data: dateString,
+                    horarioInicio: '',
+                    horarioFim: '',
+                    status: 'aguardando',
+                    porteiro: 'A Definir',
+                    pontos,
+                    recorrente: true,
+                    diasSemana: rota.diasSemana,
+                    semanaAno: currentWeek,
+                    ano: currentYear,
+                    horarioPlantao: horario,
+                    cicloCompleto: false
+                  };
+                  addRonda(ronda);
+                }
+              }
+            });
+          }
         }
-      }
-    });
+      });
+    };
+
+    // Run immediately and then every minute
+    checkAndCreateRondas();
+    const intervalId = setInterval(checkAndCreateRondas, 60000);
+    return () => clearInterval(intervalId);
   }, [rotasGeoreferenciadas, rondas, addRonda]);
+
+  // Alerta de proximidade de plantão (10 min antes)
+  useEffect(() => {
+    const checkAlerts = () => {
+      const today = new Date();
+      const todayDay = getDayName(today);
+      const currentSeconds = today.getHours() * 3600 + today.getMinutes() * 60 + today.getSeconds();
+
+      let proximoAlerta = null;
+
+      for (const rota of rotasGeoreferenciadas) {
+        // Filtrar apenas do posto logado
+        if (user?.postoId && rota.postoId !== user.postoId) continue;
+
+        if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay) && rota.horariosPlantao) {
+          const minutosAlerta = rota.minutosAlerta || 10;
+          
+          for (const horario of rota.horariosPlantao) {
+            const [h, m] = horario.split(':').map(Number);
+            const plantaoSeconds = h * 3600 + m * 60;
+            const diffSeconds = plantaoSeconds - currentSeconds;
+            
+            // Se faltam <= minutosAlerta e ainda é no futuro (diffSeconds > 0)
+            if (diffSeconds > 0 && diffSeconds <= minutosAlerta * 60) {
+              proximoAlerta = {
+                rotaNome: rota.nome,
+                horario,
+                segundosRestantes: diffSeconds
+              };
+              break; // Pega o primeiro alerta que achar no futuro
+            }
+          }
+        }
+        if (proximoAlerta) break;
+      }
+
+      setAlertaAtivo(proximoAlerta);
+    };
+
+    checkAlerts();
+    const intervalId = setInterval(checkAlerts, 1000);
+    return () => clearInterval(intervalId);
+  }, [rotasGeoreferenciadas, user?.postoId]);
 
   // Stats
   const stats = useMemo(() => {
@@ -258,18 +329,32 @@ export default function RondaPage() {
   // Filtered
   const filtered = useMemo(() => {
     return rondas.filter(r => {
-      // Only show rondas with postoId matching current user's postoId (if user has a posto)
       if (user?.postoId && r.postoId !== user.postoId) return false;
-      if (statusFilter === 'em_andamento' && r.status !== 'em_andamento') return false;
-      if (statusFilter === 'concluida' && r.status !== 'concluida') return false;
-      if (statusFilter === 'parcial' && r.status !== 'parcial') return false;
-      if (busca) {
-        const s = busca.toLowerCase();
-        return [r.rota, r.porteiro].some(f => f.toLowerCase().includes(s));
+
+      // Filter by Tab
+      if (activeTab === 'hoje') {
+         if (r.status !== 'aguardando' && r.status !== 'em_andamento') return false;
+      } else {
+         if (r.status !== 'concluida' && r.status !== 'parcial') return false;
       }
+
+      if (busca && !r.rota.toLowerCase().includes(busca.toLowerCase()) && !r.porteiro.toLowerCase().includes(busca.toLowerCase())) {
+        return false;
+      }
+
+      if (statusFilter !== 'todas' && r.status !== statusFilter) return false;
+
       return true;
+    }).sort((a, b) => {
+      if (activeTab === 'historico') {
+         return new Date(b.data + 'T' + (b.horarioFim || '00:00')).getTime() - new Date(a.data + 'T' + (a.horarioFim || '00:00')).getTime();
+      }
+      // Hoje: sort by time
+      const aTime = a.horarioPlantao ? a.horarioPlantao : (a.horarioInicio || '00:00');
+      const bTime = b.horarioPlantao ? b.horarioPlantao : (b.horarioInicio || '00:00');
+      return aTime.localeCompare(bTime);
     });
-  }, [rondas, busca, statusFilter, user]);
+  }, [rondas, user, busca, statusFilter, activeTab]);
 
   // Helper: count checked pontos
   const countChecked = (ronda: Ronda) => ronda.pontos.filter(p => p.horarioReal).length;
@@ -378,15 +463,15 @@ export default function RondaPage() {
   };
 
   // Check-in a ponto
-  const handleCheckin = (pontoId: string) => {
+  const handleCheckinWithPhoto = (pontoId: string, photoBase64: string) => {
     if (!selectedRonda) return;
     const updatedPontos = selectedRonda.pontos.map(p =>
-      p.id === pontoId ? { ...p, horarioReal: getCurrentTime() } : p
+      p.id === pontoId ? { ...p, horarioReal: getCurrentTime(), fotoUrl: photoBase64 } : p
     );
     const updatedRonda = { ...selectedRonda, pontos: updatedPontos };
     setSelectedRonda(updatedRonda);
     updateRonda(updatedRonda);
-    toast.success('Check-in realizado no ponto!');
+    toast.success('Check-in e foto realizados com sucesso!');
   };
 
   // Update ponto field
@@ -464,6 +549,33 @@ export default function RondaPage() {
         {/* Botão de criar ronda removido para esta tela (agora apenas no Admin) */}
       </div>
 
+      {/* Banner de Alerta Pré-Ronda */}
+      {alertaAtivo && (
+        <motion.div
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="bg-amber-500 text-white rounded-xl p-4 shadow-lg shadow-amber-500/20 border border-amber-400 relative overflow-hidden flex items-center justify-between"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="bg-white/20 p-2.5 rounded-full animate-pulse">
+              <Clock className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-50 uppercase tracking-wider mb-0.5">Alerta de Plantão</p>
+              <p className="text-base font-bold">Ronda: {alertaAtivo.rotaNome}</p>
+            </div>
+          </div>
+          <div className="text-right relative z-10">
+            <p className="text-sm text-amber-100 font-medium">Inicia às {alertaAtivo.horario}</p>
+            <div className="text-2xl font-black font-mono mt-0.5 drop-shadow-sm">
+              {Math.floor(alertaAtivo.segundosRestantes / 60).toString().padStart(2, '0')}:
+              {(alertaAtivo.segundosRestantes % 60).toString().padStart(2, '0')}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-3">
         <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.05 }}>
@@ -492,6 +604,22 @@ export default function RondaPage() {
         </motion.div>
       </div>
 
+      {/* Abas de Navegação */}
+      <div className="flex bg-muted/50 p-1 rounded-lg">
+        <button 
+          onClick={() => setActiveTab('hoje')} 
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'hoje' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}
+        >
+          Plantão de Hoje
+        </button>
+        <button 
+          onClick={() => setActiveTab('historico')} 
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'historico' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}
+        >
+          Histórico
+        </button>
+      </div>
+
       {/* Search + Filter bar */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
@@ -503,17 +631,18 @@ export default function RondaPage() {
             className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
           />
         </div>
-        <Select value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
-          <SelectTrigger className="w-full sm:w-44 h-11 text-sm bg-muted/50 border-0">
-            <SelectValue placeholder="Filtrar status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas</SelectItem>
-            <SelectItem value="em_andamento">Em Andamento</SelectItem>
-            <SelectItem value="concluida">Concluída</SelectItem>
-            <SelectItem value="parcial">Parcial</SelectItem>
-          </SelectContent>
-        </Select>
+        {activeTab === 'historico' && (
+          <Select value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-full sm:w-44 h-11 text-sm bg-muted/50 border-0">
+              <SelectValue placeholder="Filtrar status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas</SelectItem>
+              <SelectItem value="concluida">Concluída</SelectItem>
+              <SelectItem value="parcial">Parcial</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Ronda cards list */}
@@ -620,16 +749,26 @@ export default function RondaPage() {
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          {ronda.status === 'em_andamento' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 w-9 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              onClick={e => { e.stopPropagation(); handleOpenExecution(ronda); }}
-                            >
-                              <Play className="h-5 w-5" />
-                            </Button>
-                          )}
+                            {ronda.status === 'aguardando' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                onClick={e => { e.stopPropagation(); handleStartRondaFromAguardando(ronda); }}
+                              >
+                                <Play className="h-5 w-5" />
+                              </Button>
+                            )}
+                            {ronda.status === 'em_andamento' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 w-9 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                onClick={e => { e.stopPropagation(); handleOpenExecution(ronda); }}
+                              >
+                                <Play className="h-5 w-5" />
+                              </Button>
+                            )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -888,9 +1027,25 @@ export default function RondaPage() {
 
                   const timeValid = isTimeValidForCheckin(ponto.horarioPrevisto);
                   
-                  // Check-in visível até 5 min antes, inativo se fora do raio OR previous not checked
+                  // Trava de 2 minutos
+                  const currentMinutesForWait = new Date().getHours() * 60 + new Date().getMinutes();
+                  let waitTimeValid = true;
+                  let minutesToWait = 0;
+                  if (index > 0 && isCurrentPonto) {
+                    const prevPonto = selectedRonda.pontos[index - 1];
+                    if (prevPonto.horarioReal) {
+                       const [h, m] = prevPonto.horarioReal.split(':').map(Number);
+                       const prevMinutes = h * 60 + m;
+                       if (currentMinutesForWait < prevMinutes + 2) {
+                         waitTimeValid = false;
+                         minutesToWait = (prevMinutes + 2) - currentMinutesForWait;
+                       }
+                    }
+                  }
+
+                  // Check-in visível até 5 min antes, inativo se fora do raio OR previous not checked OR time lock
                   const showCheckin = !isChecked && timeValid;
-                  const canCheckin = inRadius && showCheckin && previousChecked;
+                  const canCheckin = inRadius && showCheckin && previousChecked && waitTimeValid;
 
                   // Se a ronda estiver iniciada, só mostra o ponto atual ou os já verificados
                   if (rondaIniciada && !isChecked && !isCurrentPonto) return null;
@@ -914,17 +1069,45 @@ export default function RondaPage() {
                               )}
                             </div>
                           </div>
-                          
                           {showCheckin || !isChecked ? (
-                            <Button
-                              size="sm"
-                              disabled={!canCheckin}
-                              className={`h-9 text-sm px-4 ${canCheckin ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                              onClick={() => canCheckin && handleCheckin(ponto.id)}
-                            >
-                              <MapPin className="h-4 w-4 mr-1.5" />
-                              {canCheckin ? 'Check-in' : (!timeValid ? 'Aguardando horário' : (!previousChecked ? 'Aguardando ponto anterior' : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS')))}
-                            </Button>
+                            <div className="relative">
+                              {canCheckin && (
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  disabled={!canCheckin}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        handleCheckinWithPhoto(ponto.id, reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                />
+                              )}
+                              <Button
+                                size="sm"
+                                disabled={!canCheckin}
+                                className={`h-9 text-sm px-4 w-full sm:w-auto ${canCheckin ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                              >
+                                {canCheckin ? (
+                                  <>
+                                    <Camera className="h-4 w-4 mr-1.5" />
+                                    Tirar Foto e Check-in
+                                  </>
+                                ) : (
+                                  <>
+                                    <MapPin className="h-4 w-4 mr-1.5" />
+                                    {!timeValid ? 'Aguardando horário' : (!previousChecked ? 'Aguardando ponto anterior' : (!waitTimeValid ? `Aguarde ${minutesToWait} min` : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS')))}
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           ) : null}
                         </div>
 

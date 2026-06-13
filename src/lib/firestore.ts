@@ -60,6 +60,9 @@ const DONT_UPPERCASE_KEYS = new Set([
   'versaoAnteriorId',
   'permissoes',
   'nome',
+  'diasSemana',
+  'horariosPlantao',
+  'horarioPlantao',
 ]);
 
 function transformToUpperCase<T>(obj: T): T {
