@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Map as MapIcon, Trash2, Edit2, User, X, Check, EyeOff, Eye, MapPin, Briefcase, CalendarDays, ChevronLeft, ChevronRight, Play, Navigation } from 'lucide-react';
+import { Plus, Map as MapIcon, Trash2, Edit2, User, X, Check, EyeOff, Eye, MapPin, Briefcase, CalendarDays, ChevronLeft, ChevronRight, Play, Navigation, Activity, AlertTriangle, ShieldCheck } from 'lucide-react';
 import AdminBottomNav, { AdminTab } from './admin-bottom-nav';
 import { useAppStore } from '@/lib/store';
 import { ModalNovaRota } from './modais-rota';
@@ -58,12 +58,223 @@ export default function AdminPage() {
 }
 
 function AdminPainelTab() {
+  const { usuarios, postos, ocorrencias, registrosFluxo, rondas, user } = useAppStore();
+  
+  const [filtroPosto, setFiltroPosto] = useState<string>('todos');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<string>('hoje');
+
+  // Helper para verificar se a data cai no período selecionado
+  const isDateInPeriod = (dateStr: string, period: string) => {
+    if (period === 'todos') return true;
+    if (!dateStr) return false;
+    
+    let dateObj: Date;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      const d = parts[0];
+      const m = parts[1];
+      const y = parts[2].split(' ')[0]; // remove possível horário
+      dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+    } else {
+      const parts = dateStr.split('-');
+      const y = parts[0];
+      const m = parts[1];
+      const d = parts[2].split(' ')[0];
+      dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const targetDate = new Date(dateObj);
+    targetDate.setHours(0,0,0,0);
+    
+    const diffTime = today.getTime() - targetDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (period === 'hoje') return diffDays === 0;
+    if (period === 'ontem') return diffDays === 1;
+    if (period === '7dias') return diffDays >= 0 && diffDays <= 7;
+    if (period === '30dias') return diffDays >= 0 && diffDays <= 30;
+    if (period === 'este_mes') return today.getMonth() === targetDate.getMonth() && today.getFullYear() === targetDate.getFullYear();
+    
+    return true;
+  };
+
+  // Filtragem
+  const appliesPostoFilter = (itemPostoId?: string) => {
+    if (user?.postoId && itemPostoId !== user.postoId) return false;
+    if (!user?.postoId && filtroPosto !== 'todos' && itemPostoId !== filtroPosto) return false;
+    return true;
+  };
+
+  const registrosFiltrados = registrosFluxo.filter(r => appliesPostoFilter(r.postoId) && isDateInPeriod(r.data, filtroPeriodo));
+  const ocorrenciasFiltradas = ocorrencias.filter(o => appliesPostoFilter(o.postoId) && isDateInPeriod(o.data, filtroPeriodo));
+  const ocorrenciasAbertas = ocorrenciasFiltradas.filter(o => o.status === 'aberta' || o.status === 'em_andamento');
+  const rondasFiltradas = rondas.filter(r => appliesPostoFilter(r.postoId) && isDateInPeriod(r.data, filtroPeriodo));
+  const rondasConcluidas = rondasFiltradas.filter(r => r.status === 'concluida');
+
+  const postosFiltrados = postos.filter(p => appliesPostoFilter(p.id));
+  const usuariosFiltrados = usuarios.filter(u => appliesPostoFilter(u.postoId));
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">Dashboard</h2>
-      <p className="text-muted-foreground text-sm">
-        Bem-vindo à área administrativa. Selecione uma opção no menu abaixo.
-      </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground text-sm">
+            Visão geral do sistema APEX Porter com base nos filtros.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {!user?.postoId && (
+            <Select value={filtroPosto} onValueChange={setFiltroPosto}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-card border-border">
+                <SelectValue placeholder="Todos os Postos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Postos</SelectItem>
+                {postos.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
+            <SelectTrigger className="w-full sm:w-[160px] bg-card border-border">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoje">Hoje</SelectItem>
+              <SelectItem value="ontem">Ontem</SelectItem>
+              <SelectItem value="7dias">Últimos 7 dias</SelectItem>
+              <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+              <SelectItem value="este_mes">Este Mês</SelectItem>
+              <SelectItem value="todos">Todo o Período</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Card Usuários */}
+        <div className="bg-card border border-border p-5 rounded-xl shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-muted-foreground">Usuários Cadastrados</span>
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+              <User className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold">{usuariosFiltrados.length}</div>
+        </div>
+
+        {/* Card Postos */}
+        <div className="bg-card border border-border p-5 rounded-xl shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-muted-foreground">Postos (Filtro)</span>
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
+              <MapPin className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold">{postosFiltrados.length}</div>
+        </div>
+
+        {/* Card Registros Fluxo */}
+        <div className="bg-card border border-border p-5 rounded-xl shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-muted-foreground">Registros (Período)</span>
+            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400">
+              <Activity className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold">{registrosFiltrados.length}</div>
+        </div>
+
+        {/* Card Ocorrências */}
+        <div className="bg-card border border-border p-5 rounded-xl shadow-sm flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm font-medium text-muted-foreground">Ocorrências Abertas</span>
+            <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold">{ocorrenciasAbertas.length}</div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Rondas Resumo */}
+        <div className="bg-card border border-border p-6 rounded-xl shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Rondas ({filtroPeriodo.replace('_', ' ')})
+          </h3>
+          <div className="space-y-4 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Total Programadas</span>
+              <span className="font-bold text-lg">{rondasFiltradas.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Concluídas com Sucesso</span>
+              <span className="font-bold text-lg text-emerald-600">{rondasConcluidas.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Em Andamento / Pendentes</span>
+              <span className="font-bold text-lg text-yellow-600">{rondasFiltradas.length - rondasConcluidas.length}</span>
+            </div>
+            
+            <div className="mt-4 pt-6 border-t border-border">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progresso das rondas</span>
+                <span>{rondasFiltradas.length ? Math.round((rondasConcluidas.length / rondasFiltradas.length) * 100) : 0}%</span>
+              </div>
+              <div className="h-3 w-full bg-muted rounded-full overflow-hidden flex">
+                <div 
+                  className="bg-emerald-500 h-full transition-all duration-500" 
+                  style={{ width: rondasFiltradas.length ? `${(rondasConcluidas.length / rondasFiltradas.length) * 100}%` : '0%' }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Atividades Recentes */}
+        <div className="bg-card border border-border p-6 rounded-xl shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Acessos Recentes ({filtroPeriodo.replace('_', ' ')})
+          </h3>
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
+            {registrosFiltrados.slice().reverse().slice(0, 5).map(reg => (
+              <div key={reg.id} className="flex justify-between items-center text-sm border-b border-border pb-3 last:border-0 last:pb-0">
+                <div className="flex flex-col">
+                  <span className="font-medium text-base">{reg.nome}</span>
+                  <span className="text-xs text-muted-foreground capitalize flex items-center gap-1">
+                    <span className={`w-2 h-2 rounded-full ${reg.tipo === 'entrada' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {reg.categoria} • {reg.tipo}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs font-mono bg-muted/50 px-2 py-1 rounded text-muted-foreground">
+                    {reg.horario}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">{reg.data}</span>
+                </div>
+              </div>
+            ))}
+            {registrosFiltrados.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-center py-6">
+                <div className="bg-muted p-3 rounded-full mb-3">
+                  <Activity className="h-6 w-6 text-muted-foreground opacity-50" />
+                </div>
+                <p className="text-sm text-muted-foreground">Nenhum registro de acesso no período.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
