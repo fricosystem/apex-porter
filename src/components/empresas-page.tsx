@@ -261,8 +261,8 @@ export default function EmpresasPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={(evt) => {
+                            evt.stopPropagation();
                             removeEmpresa(e.id);
                             toast.success('Empresa removida');
                           }}

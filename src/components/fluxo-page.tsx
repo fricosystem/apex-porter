@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
 import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw, X, SlidersHorizontal, PlusCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -237,6 +239,16 @@ export default function FluxoPage() {
   const [filtroData, setFiltroData] = useState<string>('');
 
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Auto-clear loading state when data arrives or after a short timeout
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    if (registrosFluxo.length > 0) {
+      setIsLoading(false);
+    }
+    return () => clearTimeout(timer);
+  }, [registrosFluxo.length]);
 
   const hasActiveFilters = 
     categoriaAtiva !== 'todos' || 
@@ -260,6 +272,9 @@ export default function FluxoPage() {
 
   const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
   const [mensagemLiberacao, setMensagemLiberacao] = useState<string | null>(null);
+
+  // Virtual scroll ref for the list container
+  const parentRef = useRef<HTMLDivElement>(null);
 
   // Cadastrar Empresa quick modal
   const [cadastrarEmpresaOpen, setCadastrarEmpresaOpen] = useState(false);
@@ -300,7 +315,9 @@ export default function FluxoPage() {
 
   useEffect(() => {
     if (prefilledRegistroModal) {
-      setModalCategoria(prefilledRegistroModal.categoria);
+      if (prefilledRegistroModal.categoria) {
+        setModalCategoria(prefilledRegistroModal.categoria);
+      }
       setPrefilledFormData(prefilledRegistroModal.formData || null);
       setModalOpen(true);
       clearPrefilledRegistroModal();
@@ -390,6 +407,23 @@ export default function FluxoPage() {
 
     return result;
   }, [registrosFluxo, rascunhosFluxo, categoriaAtiva, buscaFluxo, statusFilter, ordenacao, filtroDepartamento, filtroEmpresa, filtroData]);
+
+  // ── Virtualization: group items into rows of 2 to match grid-cols-2 ──
+  const COLS = 2;
+  const virtualRows = useMemo(() => {
+    const rows: RegistroFluxo[][] = [];
+    for (let i = 0; i < filteredRegistros.length; i += COLS) {
+      rows.push(filteredRegistros.slice(i, i + COLS));
+    }
+    return rows;
+  }, [filteredRegistros]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: virtualRows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: useCallback(() => 200, []), // estimated row height px
+    overscan: 3,
+  });
 
   const handleAddRegistro = () => {
     setRegistroRefacao(null);
@@ -644,9 +678,32 @@ export default function FluxoPage() {
         </Tabs>
       </div>
 
-      {/* Content area - card list */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pt-3 pb-44">
-        {filteredRegistros.length === 0 ? (
+      {/* Content area - virtualized card list */}
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pt-3 pb-44"
+      >
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="opacity-60 border-dashed">
+                <CardContent className="p-3.5 space-y-3">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <div className="flex gap-2 pt-2 border-t border-border/40">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredRegistros.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Inbox className="h-10 w-10 text-muted-foreground/60" />
@@ -661,152 +718,180 @@ export default function FluxoPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredRegistros.map((r) => {
-              const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
-              const mainField = getMainField(r);
-              const secondaryFields = getSecondaryFields(r);
-              const data = 'data' in r ? (r as any).data : '';
-              const horarioEntrada = 'horarioEntrada' in r ? (r as any).horarioEntrada : '';
-              const horarioSaida = 'horarioSaida' in r ? (r as any).horarioSaida : '';
-              // PESAGEM DE CARGA extras
-              const isPesagem = r.categoria === 'pesagem';
-              const pesoEntrada = isPesagem ? (r as any).pesoEntrada ?? 0 : 0;
-              const pesoSaidaVal = isPesagem ? (r as any).pesoSaida ?? 0 : 0;
-              const resultadoDif = isPesagem ? (r as any).resultadoDiferenca ?? null : null;
-              const porteiroEntrada = (r as any).porteiroEntrada || null;
-              const porteiroSaidaVal = (r as any).porteiroSaida || null;
-              const CardIcon = catIcons[r.categoria] || Package;
-
-              const isInactive = r.inativo;
-              const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const rowItems = virtualRows[virtualRow.index];
               return (
-                <Card
-                  key={r.id}
-                  className={`cursor-pointer transition-colors active:scale-[0.98] ${
-                    r.isRascunho 
-                      ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40' 
-                      : isInactive 
-                        ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30' 
-                        : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => handleOpenDetail(r)}
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                    paddingBottom: '1rem',
+                  }}
                 >
-                  <CardContent className="p-3.5">
-                    {/* Topo: badge de categoria + badges de status */}
-                    <div className="flex items-center gap-2 flex-wrap mb-2.5">
-                      <Badge variant="secondary" className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5">
-                        <CardIcon className={`h-3 w-3 ${r.isRascunho ? 'text-red-500' : ''}`} />
-                        {catLabel}
-                      </Badge>
-                      {r.isRascunho ? (
-                        <Badge variant="outline" className="text-red-600 bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-800 text-xs px-1.5 py-0">
-                          Rascunho
-                        </Badge>
-                      ) : isInactive ? (
-                        <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
-                          Inativo (Refeito)
-                        </Badge>
-                      ) : hasSaida ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
-                          Concluído
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
-                          Pendente
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {rowItems.map((r) => {
+                      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
+                      const mainField = getMainField(r);
+                      const secondaryFields = getSecondaryFields(r);
+                      const data = 'data' in r ? (r as any).data : '';
+                      const horarioEntrada = 'horarioEntrada' in r ? (r as any).horarioEntrada : '';
+                      const horarioSaida = 'horarioSaida' in r ? (r as any).horarioSaida : '';
+                      // PESAGEM DE CARGA extras
+                      const isPesagem = r.categoria === 'pesagem';
+                      const pesoEntrada = isPesagem ? (r as any).pesoEntrada ?? 0 : 0;
+                      const pesoSaidaVal = isPesagem ? (r as any).pesoSaida ?? 0 : 0;
+                      const resultadoDif = isPesagem ? (r as any).resultadoDiferenca ?? null : null;
+                      const porteiroEntrada = (r as any).porteiroEntrada || null;
+                      const porteiroSaidaVal = (r as any).porteiroSaida || null;
+                      const CardIcon = catIcons[r.categoria] || Package;
 
-                    {/* Conteúdo principal */}
-                    <div className="min-w-0">
-                      <h3 className={`font-bold text-lg truncate ${r.isRascunho ? 'text-red-700 dark:text-red-400' : ''}`}>{mainField}</h3>
-                      <div className="mt-1 space-y-0.5">
-                        {secondaryFields.map((field) => (
-                          <p key={field.label} className="text-base leading-snug text-muted-foreground">
-                            <span className="font-medium">{field.label}:</span> {field.value || '-'}
-                          </p>
-                        ))}
-                      </div>
-
-                      {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
-                      {isPesagem && hasSaida && resultadoDif !== null && (
-                        <div className={`mt-2 rounded-xl px-3 py-2 border ${resultadoDif >= 0
-                          ? 'bg-emerald-500/10 border-emerald-500/30'
-                          : 'bg-red-500/10 border-red-500/30'
-                          }`}>
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                            Resultado Pesagem
-                          </p>
-                          <p className={`text-2xl font-black ${resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                            {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg · Saída: {pesoSaidaVal.toLocaleString('pt-BR')} kg
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Porteiros */}
-                      {(porteiroEntrada || porteiroSaidaVal) && (
-                        <div className="mt-1 space-y-0.5">
-                          {porteiroEntrada === porteiroSaidaVal ? (
-                            <p className="text-base leading-snug text-muted-foreground">
-                              <span className="font-medium">PORTEIRO:</span> {porteiroEntrada}
-                            </p>
-                          ) : (
-                            <>
-                              {porteiroEntrada && (
-                                <p className="text-base leading-snug text-muted-foreground">
-                                  <span className="font-medium">ENTRADA:</span> {porteiroEntrada}
-                                </p>
+                      const isInactive = r.inativo;
+                      const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
+                      return (
+                        <Card
+                          key={r.id}
+                          className={`cursor-pointer transition-colors active:scale-[0.98] ${
+                            r.isRascunho
+                              ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40'
+                              : isInactive
+                                ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30'
+                                : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => handleOpenDetail(r)}
+                        >
+                          <CardContent className="p-3.5">
+                            {/* Topo: badge de categoria + badges de status */}
+                            <div className="flex items-center gap-2 flex-wrap mb-2.5">
+                              <Badge variant="secondary" className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5">
+                                <CardIcon className={`h-3 w-3 ${r.isRascunho ? 'text-red-500' : ''}`} />
+                                {catLabel}
+                              </Badge>
+                              {r.isRascunho ? (
+                                <Badge variant="outline" className="text-red-600 bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-800 text-xs px-1.5 py-0">
+                                  Rascunho
+                                </Badge>
+                              ) : isInactive ? (
+                                <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
+                                  Inativo (Refeito)
+                                </Badge>
+                              ) : hasSaida ? (
+                                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
+                                  Concluído
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
+                                  Pendente
+                                </Badge>
                               )}
-                              {porteiroSaidaVal && (
-                                <p className="text-base leading-snug text-muted-foreground">
-                                  <span className="font-medium">SAÍDA:</span> {porteiroSaidaVal}
-                                </p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
+                            </div>
 
-                      {/* Rodapé: data e horários */}
-                      <div className="flex flex-nowrap items-center gap-x-1.5 sm:gap-x-3 mt-2.5 pt-2 border-t border-border/40 text-xs sm:text-sm md:text-base text-muted-foreground overflow-x-auto scrollbar-none">
-                        <span className="flex items-center gap-1 shrink-0">
-                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                          {data}
-                        </span>
-                        {horarioEntrada && (
-                          <span className="flex items-center gap-1 shrink-0">
-                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                            Entrou às: {horarioEntrada}
-                          </span>
-                        )}
-                        {hasSaida && horarioSaida && (
-                          <span className="flex items-center gap-1 shrink-0 text-emerald-600 dark:text-emerald-400">
-                            <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-                            Saiu às: {horarioSaida}
-                          </span>
-                        )}
-                      </div>
-                      {/* Observação */}
-                      {'observacao' in r && (r as any).observacao && (
-                        <div className="mt-3 pt-2 border-t border-border/30">
-                          <p className="text-base leading-snug">
-                            <span className="font-medium text-muted-foreground">Observação:</span> <span className="text-foreground">{(r as any).observacao}</span>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                            {/* Conteúdo principal */}
+                            <div className="min-w-0">
+                              <h3 className={`font-bold text-lg truncate ${r.isRascunho ? 'text-red-700 dark:text-red-400' : ''}`}>{mainField}</h3>
+                              <div className="mt-1 space-y-0.5">
+                                {secondaryFields.map((field) => (
+                                  <p key={field.label} className="text-base leading-snug text-muted-foreground">
+                                    <span className="font-medium">{field.label}:</span> {field.value || '-'}
+                                  </p>
+                                ))}
+                              </div>
+
+                              {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
+                              {isPesagem && hasSaida && resultadoDif !== null && (
+                                <div className={`mt-2 rounded-xl px-3 py-2 border ${resultadoDif >= 0
+                                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                                  : 'bg-red-500/10 border-red-500/30'
+                                  }`}>
+                                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                                    Resultado Pesagem
+                                  </p>
+                                  <p className={`text-2xl font-black ${resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
+                                    }`}>
+                                    {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg · Saída: {pesoSaidaVal.toLocaleString('pt-BR')} kg
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Porteiros */}
+                              {(porteiroEntrada || porteiroSaidaVal) && (
+                                <div className="mt-1 space-y-0.5">
+                                  {porteiroEntrada === porteiroSaidaVal ? (
+                                    <p className="text-base leading-snug text-muted-foreground">
+                                      <span className="font-medium">PORTEIRO:</span> {porteiroEntrada}
+                                    </p>
+                                  ) : (
+                                    <>
+                                      {porteiroEntrada && (
+                                        <p className="text-base leading-snug text-muted-foreground">
+                                          <span className="font-medium">ENTRADA:</span> {porteiroEntrada}
+                                        </p>
+                                      )}
+                                      {porteiroSaidaVal && (
+                                        <p className="text-base leading-snug text-muted-foreground">
+                                          <span className="font-medium">SAÍDA:</span> {porteiroSaidaVal}
+                                        </p>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Rodapé: data e horários */}
+                              <div className="flex flex-nowrap items-center gap-x-1.5 sm:gap-x-3 mt-2.5 pt-2 border-t border-border/40 text-xs sm:text-sm md:text-base text-muted-foreground overflow-x-auto scrollbar-none">
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  {data}
+                                </span>
+                                {horarioEntrada && (
+                                  <span className="flex items-center gap-1 shrink-0">
+                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    Entrou às: {horarioEntrada}
+                                  </span>
+                                )}
+                                {hasSaida && horarioSaida && (
+                                  <span className="flex items-center gap-1 shrink-0 text-emerald-600 dark:text-emerald-400">
+                                    <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    Saiu às: {horarioSaida}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Observação */}
+                              {'observacao' in r && (r as any).observacao && (
+                                <div className="mt-3 pt-2 border-t border-border/30">
+                                  <p className="text-base leading-snug">
+                                    <span className="font-medium text-muted-foreground">Observação:</span> <span className="text-foreground">{(r as any).observacao}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
       </div>
+
 
       {/* Fixed bottom register button - above bottom nav */}
       <div className="fixed bottom-16 left-0 right-0 z-30 pt-3 pb-7 px-4 md:px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
@@ -824,10 +909,10 @@ export default function FluxoPage() {
         open={modalOpen}
         onClose={() => { setModalOpen(false); setPrefilledFormData(null); }}
         categoriaInicial={modalCategoria}
-        registroInicial={registroRefacao}
+        registroInicial={registroRefacao || undefined}
         isRefacao={isRefacao}
         isRascunho={isRascunhoEditing}
-        prefilledFormData={prefilledFormData}
+        prefilledFormData={prefilledFormData || undefined}
       />
 
       {/* Detail Modal */}

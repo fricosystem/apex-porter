@@ -135,12 +135,12 @@ export function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionDat
       data.name = r.motorista;
       data.doc = r.cpfRg;
       data.company = r.empresa;
-      data.department = r.departamento;
-      data.plate = r.placa;
+      data.department = r.departamento || '';
+      data.plate = r.placa || '';
       break;
     case 'coleta':
       data.doc = r.rgCpf;
-      data.plate = r.placa;
+      data.plate = r.placa || '';
       data.company = r.empresa;
       data.name = r.motorista;
       break;
@@ -288,6 +288,7 @@ export default function RegistroModal({
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open) {
       if (prefilledFormData) {

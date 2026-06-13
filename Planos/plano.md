@@ -1,169 +1,57 @@
-# Plano de Reestruturação Completa da Aba Rondas — Execução por Plantão
+# Plano Geral de Melhorias - APEX Porter
 
-## Contexto e Objetivo
-O fluxo de rondas precisa seguir uma lógica de plantão com horários fixos (00:00, 02:00, 04:00 e 06:00). Cada horário representa uma **instância independente da ronda** da mesma rota. O vigia recebe um alerta 10 minutos antes, executa a ronda ponto a ponto com geolocalização e foto, finaliza e a ronda vira histórico. A mesma rota fica disponível nos horários seguintes até todos serem concluídos, encerrando o ciclo do plantão.
-
----
-
-## Fase 1: Ajuste no Modelo de Dados (`src/lib/data.ts`)
-
-### Novos campos em `RotaGeoreferenciada`
-Adicionar suporte a horários de plantão configuráveis por rota:
-```ts
-horariosPlantao?: string[];   // Ex: ['00:00', '02:00', '04:00', '06:00']
-minutosAlerta?: number;       // Padrão: 10 (minutos antes de cada horário)
-```
-
-### Novos campos em `Ronda`
-Para identificar a qual instância de horário uma ronda pertence e rastrear o histórico:
-```ts
-horarioPlantao?: string;      // Ex: '00:00' — horário do plantão ao qual pertence
-cicloCompleto?: boolean;      // true quando todos os horários do plantão foram concluídos
-fotoUrl?: string;             // URL da foto tirada na abertura geral da ronda (opcional)
-```
-
-### Novo campo em `PontoRonda`
-Para salvar a foto tirada em cada ponto:
-```ts
-fotoUrl?: string;             // URL da foto tirada no check-in do ponto
-```
+Este documento consolida as principais oportunidades de melhoria para o sistema APEX Porter, abrangendo refatoração de código, melhorias de UI/UX, desempenho e sugestões de novas funcionalidades divididas por cada módulo do sistema.
 
 ---
 
-## Fase 2: Lógica de Geração Automática por Horário de Plantão (`src/components/ronda-page.tsx`)
+## 1. Arquitetura e Qualidade de Código (Technical Debt)
 
-### Substituir o `useEffect` atual de auto-geração
+*   **Modularização de Arquivos Gigantes:** 
+    *   Arquivos como `admin-page.tsx` e `store.ts` ultrapassaram 1.500 linhas.
+    *   **Ação:** Refatorar quebrando em componentes menores (ex: arquivos separados para `AdminPainelTab`, `AdminRondasTab`). 
+    *   Para o `store.ts`, adotar o **Zustand Slice Pattern**, separando o estado em "slices" (authSlice, fluxoSlice, rondasSlice).
+*   **Resolução de Lints (`set-state-in-effect`):** 
+    *   Há avisos de linting recorrentes por atualizações de estado síncronas dentro de `useEffect` (ex: `modais-rota.tsx`, `registro-modal.tsx`).
+    *   **Ação:** Refatorar a inicialização de estados ou usar funções derivadas/memoizadas, evitando *cascading renders* que prejudicam a performance.
+*   **Padronização de Datas:**
+    *   Atualmente, o sistema mescla formatos `dd/MM/yyyy` e `YYYY-MM-DD`.
+    *   **Ação:** Uniformizar o armazenamento no Firestore utilizando `Timestamps` ou strings em formato ISO (`YYYY-MM-DDTHH:mm:ss.sssZ`), e centralizar a formatação visual usando `date-fns`.
 
-A lógica atual verifica apenas o dia da semana. A nova lógica deve:
+## 2. Desempenho e Otimização
 
-1. Obter a hora atual (`HH:mm`).
-2. Para cada rota recorrente com `horariosPlantao` configurados:
-   - Verificar se o dia da semana atual está nos `diasSemana` da rota.
-   - Para **cada horário do plantão**, verificar se já existe uma ronda com `rotaId === rota.id`, `data === hoje` e `horarioPlantao === horário`.
-   - Se não existir, verificar se já passou a hora de criação (hora atual >= horário do plantão) — **não criar adiantado**.
-   - Se passou, criar a nova instância da ronda com `status: 'aguardando'` (novo status).
-3. Rodar essa verificação a cada **1 minuto** via `setInterval`.
+*   **Lazy Loading no Firebase (Listeners sob demanda):**
+    *   Atualmente, o `store.ts` faz *subscribe* em praticamente todas as coleções logo na inicialização. Em postos com grande volume de dados, isso consumirá excessivas leituras do Firestore.
+    *   **Ação:** Modificar os *listeners* para escutarem dados baseados na aba/página ativa. Exemplo: carregar "Avisos" apenas quando o usuário navegar para a aba de Avisos.
+*   **Virtualização de Listas Longas:**
+    *   Na aba de Fluxo e Ocorrências, o histórico pode crescer rapidamente.
+    *   **Ação:** Implementar o `@tanstack/react-virtual` ou `react-window` para renderizar apenas os itens visíveis na tela, mantendo a rolagem fluida.
 
-### Novo status: `'aguardando'`
-Adicionar ao tipo `StatusRonda`:
-```ts
-export type StatusRonda = 'aguardando' | 'em_andamento' | 'concluida' | 'parcial';
-```
-Rondas com `status: 'aguardando'` aparecem na lista mas sem o botão Play — somente com a hora prevista de início.
+## 3. UI, UX e Acessibilidade
 
----
+*   **Modo Offline First (PWA Avançado):**
+    *   Vigias podem ficar sem sinal durante a ronda.
+    *   **Ação:** Salvar os check-ins de ronda localmente no `IndexedDB` do navegador/celular e realizar o *sync background* quando a conexão for reestabelecida.
+*   **Skeletons de Carregamento:**
+    *   **Ação:** Substituir telas brancas ou spinners inteiros por *Skeleton Loaders* (blocos cinzas piscantes) que imitam o layout enquanto o Firebase responde.
+*   **Gráficos Ricos nos Dashboards:**
+    *   **Ação:** Substituir as barras nativas de progresso da aba Admin por bibliotecas especializadas (como `Recharts` ou `Chart.js`) para visualização de linha do tempo, picos de acessos e gráficos em pizza de ocorrências.
 
-## Fase 3: Sistema de Alertas Pré-Ronda (`src/components/ronda-page.tsx`)
+## 4. Melhorias por Módulo (Novas Funcionalidades)
 
-### `useEffect` de alerta de 10 minutos
+### Aba: Portaria / Fluxo
+*   **Leitura de Documentos (OCR) e Placas:** Integração com APIs simples para extrair nome/RG tirando foto da CNH ou capturar a placa do veículo na entrada.
+*   **QR Code Pass:** Geração de convite via WhatsApp com um QRCode para visitantes, que pode ser rapidamente bipado na portaria pelo vigia.
+*   **Exportação do Livro:** Possibilidade de gerar um PDF oficial do Livro de Ocorrências e Livro de Passagem de Turno, pronto para impressão/assinatura do síndico.
 
-- Rodar a cada **30 segundos** para verificar se algum horário de plantão está a `minutosAlerta` minutos de distância.
-- Se for o caso e o alerta ainda não foi emitido, exibir um toast/banner no topo da tela com countdown:
+### Aba: Ocorrências
+*   **Anexos Múltiplos:** Permitir tirar fotos do incidente ou anexar boletins de ocorrência.
+*   **Ditado de Ocorrências (Speech-to-Text):** Botão de microfone para o porteiro ditar a ocorrência, e a IA ou o próprio navegador (Web Speech API) transcreve para texto.
+*   **Assinatura Digital:** Padronizar um campo de ciência/assinatura visual do supervisor ou gerente para fechar ocorrências graves.
 
-```
-⏰ A Ronda das 00:00 inicia em 10 minutos — Fique atento!
-```
+### Aba: Rondas Patrimoniais
+*   **Mapa Real (Leaflet/Google Maps):** Em vez de apenas exibir as coordenadas textuais ou botões estáticos, mostrar um mini mapa interativo pontilhando por onde o vigia já passou.
+*   **Alerta de Pânico:** Um botão fixo/vermelho rápido na interface móvel para acionar o protocolo de emergência silenciosamente (enviando SMS/Email para a central).
 
-- O alerta deve ser **único por horário/rota** (não repetir no mesmo plantão).
-- Guardar os alertas emitidos em estado local (`alertasEmitidos: Set<string>`).
-
-### Componente visual de alerta
-Um banner fixo no topo da aba Rondas (acima da lista) com:
-- Ícone de sino animado
-- Nome da rota
-- Countdown regressivo em tempo real (10:00 → 9:59 → ...)
-- Cor âmbar/laranja chamativo
-
----
-
-## Fase 4: Redesenho do Fluxo de Execução (`src/components/ronda-page.tsx`)
-
-### 4.1 — Abertura da Ronda (botão Play)
-- A ronda com `status: 'em_andamento'` exibe o botão **Play** na lista.
-- Ao clicar, abre o modal de execução e registra `horarioInicio` e `porteiro: user.nome`.
-
-### 4.2 — Ponto Ativo (um por vez, com intervalo de 2 minutos)
-
-O sistema deve liberar os pontos **sequencialmente**:
-
-- O **primeiro ponto** fica disponível imediatamente ao iniciar a ronda.
-- Após o check-in de um ponto, o **próximo ponto aguarda 2 minutos** antes de liberar.
-- Pontos ainda não liberados aparecem com status "Aguardando" (ícone de relógio).
-- **Somente o ponto ativo** tem o botão de check-in habilitado.
-
-### 4.3 — Geolocalização para Liberação do Check-in
-
-- O sistema já monitora `userLat` / `userLon` via `watchPosition`.
-- Quando o vigia entra no raio (`getDistanceFromLatLonInM <= ponto.raio`), o botão de check-in muda para **verde** e fica habilitado.
-- Fora do raio: botão desabilitado e cinza, exibindo a distância atual ("Você está a 47m — raio: 30m").
-
-### 4.4 — Captura de Foto por Ponto
-
-Antes de confirmar o check-in, o sistema deve:
-1. Abrir o componente de câmera (usar `<input type="file" accept="image/*" capture="environment" />`).
-2. Exibir a preview da foto tirada.
-3. Salvar o arquivo como base64 ou URL temporária no estado (upload para Storage do Firebase pode ser adicionado futuramente).
-4. **Check-in só é liberado após a foto ser tirada** E o usuário estar no raio.
-
-### 4.5 — Finalização da Ronda
-
-- O botão **Finalizar Ronda** só fica clicável quando **todos os pontos tiverem check-in** realizado.
-- Ao finalizar:
-  - Registra `horarioFim`.
-  - Define `status: 'concluida'` (ou `'parcial'` se algum ponto foi pulado por irregularidade).
-  - Salva no Firestore via `updateRonda`.
-  - Move o registro para o histórico.
-  - **NÃO remove a ronda** — ela passa a ser somente-leitura no histórico.
-  - Verifica se existem mais horários de plantão pendentes para a rota no dia — se sim, aguarda a próxima instância. Se não (`cicloCompleto: true`), exibe mensagem de encerramento do ciclo.
-
----
-
-## Fase 5: Aba Histórico (`src/components/ronda-page.tsx`)
-
-### Separação na UI: Pendentes × Histórico
-
-A tela de Rondas passa a ter **duas seções** (ou duas abas internas):
-
-#### Seção "Hoje"
-- Lista somente rondas do dia com `status: 'aguardando'` ou `'em_andamento'`.
-- Botão Play visível somente em `'em_andamento'`.
-
-#### Seção "Histórico"
-- Lista rondas com `status: 'concluida'` ou `'parcial'`, em ordem decrescente de data/hora.
-- Cada card exibe: Rota, Data, Horário do Plantão, Porteiro, Pontos verificados/total.
-- Botão de visualização (olho) abre o modal de detalhes somente-leitura com a lista de pontos, horários reais e fotos.
-
----
-
-## Fase 6: Ajustes no Admin para Configurar Horários (`src/components/admin-page.tsx` e `modais-rota.tsx`)
-
-### No modal de Nova/Editar Rota (`ModalNovaRota`)
-Adicionar campo de configuração de horários de plantão:
-- Toggle: "Ronda por Plantão" (se ativo, habilita os campos abaixo).
-- Input de horários: campo de texto com `+` para adicionar múltiplos horários (ex: 00:00, 02:00, 04:00, 06:00).
-- Input: "Alerta com antecedência (minutos)" — padrão 10.
-
----
-
-## Fase 7: Atualização do Firestore (`src/lib/firestore-collections.ts` e `src/lib/store.ts`)
-
-- Garantir que os campos `horarioPlantao`, `cicloCompleto` e `fotoUrl` (em `PontoRonda`) sejam incluídos na lista `DONT_UPPERCASE_KEYS` do `firestore.ts`.
-- Adicionar `horariosPlantao` e `minutosAlerta` ao modelo `RotaGeoreferenciada` nas funções de leitura/gravação.
-- Verificar se o `store.ts` já propaga todos os novos campos ao chamar `updateRonda`.
-
----
-
-## Resumo das Fases
-
-| Fase | Arquivo(s) | O que muda |
-|------|-----------|-----------|
-| 1 | `data.ts` | Novos campos: `horariosPlantao`, `horarioPlantao`, `fotoUrl`, `cicloCompleto`, `minutosAlerta` |
-| 2 | `ronda-page.tsx` | Auto-geração por horário de plantão com `setInterval` de 1 min |
-| 3 | `ronda-page.tsx` | Alerta 10 min antes com banner animado e countdown |
-| 4 | `ronda-page.tsx` | Pontos sequenciais com intervalo de 2 min, foto obrigatória, check-in só dentro do raio |
-| 5 | `ronda-page.tsx` | Separação UI: seção "Hoje" + seção "Histórico" |
-| 6 | `modais-rota.tsx` | Campo de `horariosPlantao` no cadastro de rotas |
-| 7 | `firestore.ts`, `store.ts`, `firestore-collections.ts` | Persistência dos novos campos |
-
-> [!IMPORTANT]
-> **Nenhuma modificação foi executada.** Este plano está aguardando aprovação para execução por fases.
+### Aba: Admin
+*   **Relatórios Automáticos:** O sistema poderia compilar um relatório semanal automático (resumo de faltas, rondas incompletas) e disparar por e-mail para o gerente do posto.
+*   **Auditoria de Ações (Logs):** Um painel onde o Admin possa ver *quem* excluiu ou editou um registro ("Porteiro João excluiu o registro X às 14:02"). Isso é crucial em segurança patrimonial.

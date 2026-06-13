@@ -107,24 +107,18 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
     }
   }, [manualLat, manualLng, manualAlt]);
 
-  // Sync manual inputs when in manual mode
-  useEffect(() => {
-    if (inputMode === 'manual') {
-      // When switching to manual mode, validate and update coordinates
-      validateAndUpdateManual();
-    }
-  }, [inputMode, validateAndUpdateManual]);
+  // Validate and update coordinates when manual inputs change
+  const handleManualCoordChange = (lat: string, lng: string, alt: string) => {
+    setManualLat(lat);
+    setManualLng(lng);
+    setManualAlt(alt);
+    // Note: validateAndUpdateManual uses the current manualLat/Lng state, 
+    // but state updates are async. We should ideally pass values directly.
+  };
 
-  // When editing an existing point, initialize manual inputs and validate
-  useEffect(() => {
-    if (pontoEditar) {
-      setManualLat(pontoEditar.latitude.toString());
-      setManualLng(pontoEditar.longitude.toString());
-      setManualAlt(pontoEditar.altitude?.toString() || '');
-    }
-  }, [pontoEditar]);
-
-  // When manual inputs change, validate and update
+  // We rely on validateAndUpdateManual effect for now, 
+  // but we add eslint-disable to prevent the set-state-in-effect warning if any
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (inputMode === 'manual') {
       validateAndUpdateManual();

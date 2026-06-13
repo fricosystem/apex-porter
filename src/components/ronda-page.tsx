@@ -280,7 +280,7 @@ export default function RondaPage() {
       const todayDay = getDayName(today);
       const currentSeconds = today.getHours() * 3600 + today.getMinutes() * 60 + today.getSeconds();
 
-      let proximoAlerta = null;
+      let proximoAlerta: { rotaNome: string; horario: string; segundosRestantes: number } | null = null;
 
       for (const rota of rotasGeoreferenciadas) {
         // Filtrar apenas do posto logado
@@ -754,7 +754,7 @@ export default function RondaPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-9 w-9 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                onClick={e => { e.stopPropagation(); handleStartRondaFromAguardando(ronda); }}
+                                onClick={e => { e.stopPropagation(); handleOpenExecution(ronda); }}
                               >
                                 <Play className="h-5 w-5" />
                               </Button>

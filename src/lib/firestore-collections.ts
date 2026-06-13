@@ -40,6 +40,7 @@ import type {
   Lembrete,
   User,
   Posto,
+  Cargo,
 } from './data';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

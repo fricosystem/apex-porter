@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { format } from 'date-fns';
+import type { AppState } from './store-types';
 import type {
   PageType,
   CategoriaFluxo,
@@ -205,342 +206,155 @@ const saveRascunhos = (rascunhos: RegistroFluxo[]) => {
   }
 };
 
-// ── Firestore subscription unsubscribe handles ──
-let unsubs: Unsubscribe[] = [];
+// ── Page group → Feature subscriptions mapping ──
+// Maps a "feature group" to which pages use that data
+const PAGE_FEATURE_MAP: Record<string, readonly string[]> = {
+  fluxo:      ['fluxo', 'dashboard'],
+  seguranca:  ['lista-negra', 'achados-perdidos', 'ocorrencias'],
+  avisos:     ['avisos'],
+  rondas:     ['rondas', 'admin'],
+  checklists: ['checklist-turno', 'inspecao-diaria', 'admin'],
+  protocolos: ['protocolos-emergencia', 'admin'],
+  lembretes:  ['lembretes'],
+  veiculos:   ['fluxo'],
+};
 
-function clearSubscriptions() {
-  unsubs.forEach((fn) => fn());
-  unsubs = [];
+// Active feature unsubscribe handles (keyed by feature group)
+const featureUnsubs = new Map<string, Unsubscribe[]>();
+// Core unsubscribe handles (always active while logged in)
+let coreUnsubs: Unsubscribe[] = [];
+
+function clearAllSubscriptions() {
+  coreUnsubs.forEach((fn) => fn());
+  coreUnsubs = [];
+  featureUnsubs.forEach((fns) => fns.forEach((fn) => fn()));
+  featureUnsubs.clear();
 }
 
-function startSubscriptions() {
-  clearSubscriptions();
+function startCoreSubscriptions() {
+  coreUnsubs.forEach((fn) => fn());
+  coreUnsubs = [];
 
-  // Subscribe to empresas
-  unsubs.push(
-    subscribeEmpresas((data) => {
-      useAppStore.setState({ empresas: data });
-    })
+  coreUnsubs.push(
+    subscribeEmpresas((data) => useAppStore.setState({ empresas: data }))
   );
-
-  // Subscribe to departamentos
-  unsubs.push(
-    subscribeDepartamentos((data) => {
-      useAppStore.setState({ departamentos: data });
-    })
+  coreUnsubs.push(
+    subscribeDepartamentos((data) => useAppStore.setState({ departamentos: data }))
   );
-
-  // Subscribe to pessoas
-  unsubs.push(
-    subscribePessoas((data) => {
-      useAppStore.setState({ pessoas: data });
-    })
+  coreUnsubs.push(
+    subscribePessoas((data) => useAppStore.setState({ pessoas: data }))
   );
-
-  // Subscribe to ramais
-  unsubs.push(
-    subscribeRamais((data) => {
-      useAppStore.setState({ ramais: data });
-    })
+  coreUnsubs.push(
+    subscribeRamais((data) => useAppStore.setState({ ramais: data }))
   );
-
-  // Subscribe to postos
-  unsubs.push(
-    subscribePostos((data) => {
-      useAppStore.setState({ postos: data });
-    })
+  coreUnsubs.push(
+    subscribePostos((data) => useAppStore.setState({ postos: data }))
   );
-
-  // Subscribe to cargos
-  unsubs.push(
-    subscribeCargos((data) => {
-      useAppStore.setState({ cargos: data });
-    })
+  coreUnsubs.push(
+    subscribeCargos((data) => useAppStore.setState({ cargos: data }))
   );
-
-  // Phase 3 — Registros de Fluxo
-  unsubs.push(
-    subscribeRegistrosFluxo((data) => {
-      useAppStore.setState({ registrosFluxo: data });
-    })
+  coreUnsubs.push(
+    subscribeUsuarios((data) => useAppStore.setState({ usuarios: data }))
   );
-
-  // Phase 3 — Veículos
-  unsubs.push(
-    subscribeVeiculos((data) => {
-      useAppStore.setState({ veiculos: data });
-    })
-  );
-
-  // Phase 3 — Pré-Autorizações
-  unsubs.push(
-    subscribePreAutorizacoes((data) => {
-      useAppStore.setState({ preAutorizacoes: data });
-    })
-  );
-
-  // Phase 4 — Ocorrências
-  unsubs.push(
-    subscribeOcorrencias((data) => {
-      useAppStore.setState({ ocorrencias: data });
-    })
-  );
-
-  // Phase 4 — Lista Negra
-  unsubs.push(
-    subscribeListaNegra((data) => {
-      useAppStore.setState({ listaNegra: data });
-    })
-  );
-
-  // Phase 4 — Achados e Perdidos
-  unsubs.push(
-    subscribeAchadosPerdidos((data) => {
-      useAppStore.setState({ achadosPerdidos: data });
-    })
-  );
-
-  // Phase 5 — Avisos
-  unsubs.push(
-    subscribeAvisos((data) => {
-      useAppStore.setState({ avisos: data });
-    })
-  );
-
-  // Phase 6 — Rondas
-  unsubs.push(
-    subscribeRondas((data) => {
-      useAppStore.setState({ rondas: data });
-    })
-  );
-
-  unsubs.push(
-    subscribeRotasGeoreferenciadas((data) => {
-      useAppStore.setState({ rotasGeoreferenciadas: data });
-    })
-  );
-
-  // Phase 6 — Checklists
-  unsubs.push(
-    subscribeChecklists((data) => {
-      useAppStore.setState({ checklists: data });
-    })
-  );
-
-  // Phase 6 — Inspeções
-  unsubs.push(
-    subscribeInspecoes((data) => {
-      useAppStore.setState({ inspecoes: data });
-    })
-  );
-
-  // Phase 7 — Protocolos de Emergência
-  unsubs.push(
-    subscribeProtocolos((data) => {
-      useAppStore.setState({ protocolos: data });
-    })
-  );
-
-  // Phase 7 — Ativações de Protocolo
-  unsubs.push(
-    subscribeAtivacoes((data) => {
-      useAppStore.setState({ ativacoes: data });
-    })
-  );
-
-  // Subscribe to lembretes (only if we have a user with email)
+  // Lembretes depend on user email — wired up separately
   const state = useAppStore.getState();
   if (state.user?.email) {
-    unsubs.push(
-      subscribeLembretes(state.user.email, (data) => {
-        useAppStore.setState({ lembretes: data });
-      })
+    coreUnsubs.push(
+      subscribeLembretes(state.user.email, (data) => useAppStore.setState({ lembretes: data }))
     );
   }
 
-  // Subscribe to usuarios
-  unsubs.push(
-    subscribeUsuarios((data) => {
-      useAppStore.setState({ usuarios: data });
-    })
-  );
-
-  // Phase 7 — Load system config from Firestore (one-time fetch, not real-time)
+  // One-time config fetch
   loadSystemConfig().catch((err) => {
     console.warn('[Firestore] Falha ao carregar configurações do sistema:', err);
   });
 }
 
-interface AppState {
-  // Navigation
-  currentPage: PageType;
-  setCurrentPage: (page: PageType) => void;
+function activateFeature(feature: string) {
+  if (featureUnsubs.has(feature)) return; // already active
 
-  // Auth
-  isAuthenticated: boolean;
-  user: User | null;
-  authLoading: boolean;
-  authError: string | null;
-  authInitialized: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (nome: string, email: string, password: string, cargo?: string, cpf?: string) => Promise<boolean>;
-  updateUser: (data: Partial<User>) => void;
-  logout: () => void;
-  resetAuthError: () => void;
-  sendPasswordReset: (email: string) => Promise<boolean>;
-  setAuthFromFirebase: (firebaseUser: FirebaseUser, firestoreData?: FirestoreUser | null) => void;
+  const unsubs: Unsubscribe[] = [];
 
-  // Fluxo
-  categoriaAtiva: CategoriaFluxo | 'todos';
-  setCategoriaAtiva: (cat: CategoriaFluxo | 'todos') => void;
-  registrosFluxo: RegistroFluxo[];
-  addRegistroFluxo: (registro: RegistroFluxo) => void;
-  inativarRegistroFluxo: (id: string, versaoNovaId?: string, motivoRefacao?: string) => void;
-  registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => void;
-  buscaFluxo: string;
-  setBuscaFluxo: (busca: string) => void;
-  rascunhosFluxo: RegistroFluxo[];
-  addRascunhoFluxo: (registro: RegistroFluxo) => void;
-  updateRascunhoFluxo: (registro: RegistroFluxo) => void;
-  removeRascunhoFluxo: (id: string) => void;
-  
-  // Ticket
-  ticketModalOpen: boolean;
-  setTicketModalOpen: (open: boolean) => void;
-  prefilledRegistroModal: { categoria?: CategoriaFluxo; formData?: Record<string, string> } | null;
-  openRegistroModalWithPrefill: (data: { categoria: CategoriaFluxo; formData: Record<string, string> }) => void;
-  clearPrefilledRegistroModal: () => void;
+  switch (feature) {
+    case 'fluxo':
+    case 'veiculos':
+      unsubs.push(
+        subscribeRegistrosFluxo((data) => useAppStore.setState({ registrosFluxo: data }))
+      );
+      unsubs.push(
+        subscribeVeiculos((data) => useAppStore.setState({ veiculos: data }))
+      );
+      unsubs.push(
+        subscribePreAutorizacoes((data) => useAppStore.setState({ preAutorizacoes: data }))
+      );
+      break;
 
-  // Cadastros
-  empresas: Empresa[];
-  addEmpresa: (empresa: Empresa) => void;
-  removeEmpresa: (id: string) => void;
-  updateEmpresa: (empresa: Empresa) => void;
-  departamentos: Departamento[];
-  addDepartamento: (dep: Departamento) => void;
-  removeDepartamento: (id: string) => void;
-  updateDepartamento: (dep: Departamento) => void;
-  pessoas: Pessoa[];
-  addPessoa: (pessoa: Pessoa) => void;
-  removePessoa: (id: string) => void;
-  updatePessoa: (pessoa: Pessoa) => void;
+    case 'seguranca':
+      unsubs.push(
+        subscribeOcorrencias((data) => useAppStore.setState({ ocorrencias: data }))
+      );
+      unsubs.push(
+        subscribeListaNegra((data) => useAppStore.setState({ listaNegra: data }))
+      );
+      unsubs.push(
+        subscribeAchadosPerdidos((data) => useAppStore.setState({ achadosPerdidos: data }))
+      );
+      break;
 
-  // Ramais
-  ramais: Ramal[];
-  addRamal: (ramal: Ramal) => void;
-  removeRamal: (id: string) => void;
-  updateRamal: (ramal: Ramal) => void;
-  buscaRamais: string;
-  setBuscaRamais: (busca: string) => void;
+    case 'avisos':
+      unsubs.push(
+        subscribeAvisos((data) => useAppStore.setState({ avisos: data }))
+      );
+      break;
 
-  // Postos
-  postos: Posto[];
-  addPosto: (posto: Posto) => void;
-  removePosto: (id: string) => void;
-  updatePosto: (posto: Posto) => void;
+    case 'rondas':
+      unsubs.push(
+        subscribeRondas((data) => useAppStore.setState({ rondas: data }))
+      );
+      unsubs.push(
+        subscribeRotasGeoreferenciadas((data) => useAppStore.setState({ rotasGeoreferenciadas: data }))
+      );
+      break;
 
-  // Cargos
-  cargos: Cargo[];
-  addCargo: (cargo: Cargo) => void;
-  removeCargo: (id: string) => void;
-  updateCargo: (cargo: Cargo) => void;
+    case 'checklists':
+      unsubs.push(
+        subscribeChecklists((data) => useAppStore.setState({ checklists: data }))
+      );
+      unsubs.push(
+        subscribeInspecoes((data) => useAppStore.setState({ inspecoes: data }))
+      );
+      break;
 
-  // Avisos
-  avisos: Aviso[];
-  addAviso: (aviso: Aviso) => void;
-  removeAviso: (id: string) => void;
+    case 'protocolos':
+      unsubs.push(
+        subscribeProtocolos((data) => useAppStore.setState({ protocolos: data }))
+      );
+      unsubs.push(
+        subscribeAtivacoes((data) => useAppStore.setState({ ativacoes: data }))
+      );
+      break;
+  }
 
-  // Lista Negra
-  listaNegra: ListaNegraEntry[];
-  addListaNegra: (entry: ListaNegraEntry) => void;
-  removeListaNegra: (id: string) => void;
-  updateListaNegra: (entry: ListaNegraEntry) => void;
-
-  // Achados e Perdidos
-  achadosPerdidos: AchadosPerdidosItem[];
-  addAchadosPerdidos: (item: AchadosPerdidosItem) => void;
-  removeAchadosPerdidos: (id: string) => void;
-  updateAchadosPerdidos: (item: AchadosPerdidosItem) => void;
-
-  // Veículos
-  veiculos: RegistroVeiculo[];
-  addVeiculo: (veiculo: RegistroVeiculo) => void;
-  registrarSaidaVeiculo: (id: string, observacoes?: string) => void;
-  removeVeiculo: (id: string) => void;
-
-  // Pré-Autorização
-  preAutorizacoes: PreAutorizacao[];
-  addPreAutorizacao: (pa: PreAutorizacao) => void;
-  updatePreAutorizacao: (pa: PreAutorizacao) => void;
-  cancelarPreAutorizacao: (id: string) => void;
-
-  // Ocorrências
-  ocorrencias: Ocorrencia[];
-  addOcorrencia: (oc: Ocorrencia) => void;
-  updateOcorrencia: (oc: Ocorrencia) => void;
-  removeOcorrencia: (id: string) => void;
-
-  // Rondas e Rotas Georeferenciadas
-  rondas: Ronda[];
-  addRonda: (ronda: Ronda) => void;
-  updateRonda: (ronda: Ronda) => void;
-  removeRonda: (id: string) => void;
-
-  rotasGeoreferenciadas: RotaGeoreferenciada[];
-  addRotaGeoreferenciada: (rota: RotaGeoreferenciada) => void;
-  updateRotaGeoreferenciada: (rota: RotaGeoreferenciada) => void;
-  removeRotaGeoreferenciada: (id: string) => void;
-
-  // Checklist de Turno
-  checklists: ChecklistTurno[];
-  addChecklist: (ck: ChecklistTurno) => void;
-  updateChecklist: (ck: ChecklistTurno) => void;
-  removeChecklist: (id: string) => void;
-
-  // Inspeção Diária
-  inspecoes: InspecaoDiaria[];
-  addInspecao: (inspecao: InspecaoDiaria) => void;
-  updateInspecao: (inspecao: InspecaoDiaria) => void;
-  removeInspecao: (id: string) => void;
-
-  // Protocolos de Emergência
-  protocolos: ProtocoloEmergencia[];
-  addProtocolo: (protocolo: ProtocoloEmergencia) => void;
-  updateProtocolo: (protocolo: ProtocoloEmergencia) => void;
-  removeProtocolo: (id: string) => void;
-
-  // Ativação de Protocolo
-  ativacoes: AtivacaoProtocolo[];
-  addAtivacao: (ativacao: AtivacaoProtocolo) => void;
-
-  // Avisos — enhanced
-  confirmarLeituraAviso: (id: string, porteiroNome: string) => void;
-  toggleFixarAviso: (id: string) => void;
-
-  // System Config (Phase 7)
-  systemConfig: SystemConfig;
-  updateSystemConfig: (config: Partial<SystemConfig>) => void;
-
-  // Connection status (Phase 8)
-  isOnline: boolean;
-  setOnlineStatus: (status: boolean) => void;
-
-  // Settings
-  settings: AppSettings;
-  updateSettings: (settings: Partial<AppSettings>) => void;
-
-  // Lembretes
-  lembretes: Lembrete[];
-  addLembrete: (lembrete: Lembrete) => void;
-  updateLembrete: (lembrete: Lembrete) => void;
-  removeLembrete: (id: string) => void;
-
-  // Usuários
-  usuarios: User[];
-  addUsuario: (usuario: User) => void;
-  updateUsuario: (usuario: User) => void;
-  removeUsuario: (id: string) => void;
+  if (unsubs.length > 0) {
+    featureUnsubs.set(feature, unsubs);
+  }
 }
+
+function getFeaturesForPage(page: string): string[] {
+  return Object.entries(PAGE_FEATURE_MAP)
+    .filter(([, pages]) => pages.includes(page))
+    .map(([feature]) => feature);
+}
+
+// Keep backward compat alias — called once after login
+function startSubscriptions() {
+  clearAllSubscriptions();
+  startCoreSubscriptions();
+}
+
+
+// AppState is now defined via Zustand Slice Pattern in store-types.ts
+// Import above already pulls it in.
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Navigation
@@ -548,6 +362,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCurrentPage: (page) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('apex_porter_currentPage', page);
+    }
+    // Activate feature subscriptions for the new page (lazy loading)
+    if (get().isAuthenticated) {
+      const features = getFeaturesForPage(page);
+      features.forEach(activateFeature);
     }
     set({ currentPage: page });
   },
@@ -628,8 +447,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
-      // Start Firestore real-time subscriptions
+      // Start Firestore core subscriptions, then activate dashboard features
       startSubscriptions();
+      getFeaturesForPage('dashboard').forEach(activateFeature);
       return true;
     } catch (err: any) {
       const errorCode = err?.code || 'auth/default';
@@ -661,8 +481,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
-      // Start Firestore real-time subscriptions
+      // Start Firestore core subscriptions, then activate dashboard features
       startSubscriptions();
+      getFeaturesForPage('dashboard').forEach(activateFeature);
       return true;
     } catch (err: any) {
       const errorCode = err?.code || 'auth/default';
@@ -693,7 +514,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Force local logout even if Firebase signOut fails
     }
     // Stop Firestore subscriptions
-    clearSubscriptions();
+    clearAllSubscriptions();
     if (typeof window !== 'undefined') localStorage.removeItem('apex_porter_currentPage');
     set({ isAuthenticated: false, user: null, currentPage: 'login' });
   },
@@ -770,8 +591,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     // Update ultimoLogin in Firestore (non-blocking)
     updateUltimoLogin(firebaseUser.uid);
-    // Start Firestore real-time subscriptions
+    // Start Firestore core subscriptions, then activate page-based features
     startSubscriptions();
+    getFeaturesForPage(targetPage).forEach(activateFeature);
+
+    // Load any pending offline rondas to state
+    import('./offline-sync').then(({ getOfflineRondas }) => {
+      getOfflineRondas().then(offlineRondas => {
+        if (offlineRondas && offlineRondas.length > 0) {
+          set(state => ({ rondas: [...offlineRondas, ...state.rondas] }));
+        }
+      });
+    });
   },
 
   // Fluxo (Firestore-backed — Phase 3)
@@ -1190,11 +1021,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Rondas e Rotas Georeferenciadas
   rondas: [],
   addRonda: (ronda) => {
+    // Add locally to state first for immediate UI feedback
     set((state) => ({ rondas: [...state.rondas, ronda] }));
     const { id, ...data } = ronda;
+    
+    // Check network status before trying Firestore
+    if (!get().isOnline) {
+      console.log('[Store] Offline mode: Saving ronda locally');
+      import('./offline-sync').then(({ saveRondaOffline }) => {
+        saveRondaOffline(data).catch(e => console.error('Failed to save offline:', e));
+      });
+      return;
+    }
+
     console.log('[Store] Adicionando ronda ao Firestore:', id, data);
     setRondaFS(id, data).catch((err) => {
-      console.error('[Firestore] Falha ao adicionar ronda:', err);
+      console.error('[Firestore] Falha ao adicionar ronda, salvando offline como fallback:', err);
+      import('./offline-sync').then(({ saveRondaOffline }) => {
+        saveRondaOffline(data).catch(e => console.error('Failed to save offline fallback:', e));
+      });
     });
   },
   updateRonda: (ronda) => {
@@ -1469,3 +1314,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 }));
+
+// Setup network listeners
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    useAppStore.getState().setOnlineStatus(true);
+    // Dynamically import syncOfflineRondas to avoid circular dependencies
+    import('./offline-sync').then(({ syncOfflineRondas }) => {
+      syncOfflineRondas().then(count => {
+        if (count > 0) {
+          console.log(`[Offline Sync] Sincronizadas ${count} rondas pendentes.`);
+        }
+      });
+    });
+  });
+
+  window.addEventListener('offline', () => {
+    useAppStore.getState().setOnlineStatus(false);
+  });
+}

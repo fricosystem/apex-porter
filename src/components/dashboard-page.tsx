@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
 import {
   CATEGORIAS_FLUXO,
@@ -262,6 +263,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function DashboardPage() {
+  const [isLoading, setIsLoading] = useState(true);
   const [activeChartStates, setActiveChartStates] = useState<Record<string, number | null>>({});
   
   const setActiveChartIndex = (chartId: string, index: number | null) => {
@@ -285,8 +287,17 @@ export default function DashboardPage() {
     protocolos,
   } = useAppStore();
 
+  // Auto-clear loading state when data arrives or after a short timeout
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    if (registrosFluxo.length > 0 || ocorrencias.length > 0 || avisos.length > 0) {
+      setIsLoading(false);
+    }
+    return () => clearTimeout(timer);
+  }, [registrosFluxo.length, ocorrencias.length, avisos.length]);
+
   type DateRange = 'hoje' | 'semana' | 'mes' | 'ano' | 'personalizado';
-  const [dateRange, setDateRange] = useState<DateRange>('hoje');
+  const [dateRange, setDateRange] = useState<DateRange>('semana');
   const [dataInicio, setDataInicio] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -811,23 +822,41 @@ export default function DashboardPage() {
 
       {/* ── KPI Cards (2 rows of 4) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {kpis.filter((k) => k.value > 0).map((kpi) => (
-            <motion.div key={kpi.title} variants={item}>
-              <Card className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${kpi.bg}`}>
-                      <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+          {isLoading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <motion.div key={i} variants={item}>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-5 w-1/2" />
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
-                      <p className="text-2xl font-bold">{kpi.value}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          ) : (
+            kpis.filter((k) => k.value > 0).map((kpi) => (
+              <motion.div key={kpi.title} variants={item}>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${kpi.bg}`}>
+                        <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
+                        <p className="text-2xl font-bold">{kpi.value}</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          )}
         </div>
 
       {/* ── Charts Row 1: Original (Entradas vs Saídas + Tendência Semanal) ── */}
@@ -852,6 +881,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
@@ -901,6 +931,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
@@ -959,6 +990,7 @@ export default function DashboardPage() {
                             <Cell key={`cell-${index}`} fill={(entry as any).fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['checklists']}
@@ -993,6 +1025,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="periodo" tick={AXIS_TICK_STYLE_SMALL} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
@@ -1047,6 +1080,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                         <YAxis dataKey="categoria" type="category" width={100} tick={AXIS_TICK_STYLE_SMALL} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
@@ -1086,6 +1120,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                         <YAxis dataKey="empresa" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(6,182,212,0.1)' }} 
@@ -1125,6 +1160,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="tipo" tick={AXIS_TICK_STYLE_SMALL} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(239,68,68,0.1)' }} 
@@ -1172,6 +1208,7 @@ export default function DashboardPage() {
                             <Cell key={`grav-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['ocorrenciasGravidade']}
@@ -1219,6 +1256,7 @@ export default function DashboardPage() {
                             <Cell key={`oc-status-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['ocorrenciasStatus']}
@@ -1263,6 +1301,7 @@ export default function DashboardPage() {
                             <Cell key={`vei-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['veiculosTipo']}
@@ -1310,6 +1349,7 @@ export default function DashboardPage() {
                             <Cell key={`pes-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['pessoasTipo']}
@@ -1354,6 +1394,7 @@ export default function DashboardPage() {
                             <Cell key={`pa-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['preAuthStatus']}
@@ -1401,6 +1442,7 @@ export default function DashboardPage() {
                             <Cell key={`ap-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['achadosStatus']}
@@ -1445,6 +1487,7 @@ export default function DashboardPage() {
                             <Cell key={`insp-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
+                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           activeIndex={activeChartStates['inspecoesStatus']}
