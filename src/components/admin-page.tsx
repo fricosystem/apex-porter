@@ -80,20 +80,32 @@ function AdminRondasTab() {
   const [modalAvulsaOpen, setModalAvulsaOpen] = useState(false);
   const [selectedRotaId, setSelectedRotaId] = useState<string>('');
 
+  // Filtros Globais (para Registros e Calendário)
+  const [filtroPosto, setFiltroPosto] = useState<string>('todos');
+  const [filtroRota, setFiltroRota] = useState<string>('todas');
+  const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+
   const getPostoNome = (postoId?: string) => {
     if (!postoId) return 'Não atribuído';
     const posto = postos.find(p => p.id === postoId);
     return posto ? posto.nome : 'Não atribuído';
   };
 
+  // As opções de rota baseadas nas rotas existentes e posto selecionado
+  const rotasOpcoes = rotasGeoreferenciadas.filter(r => user?.postoId ? r.postoId === user.postoId : (filtroPosto !== 'todos' ? r.postoId === filtroPosto : true));
+
   const rotasFiltradas = rotasGeoreferenciadas.filter(rota => {
-    if (!user?.postoId) return true;
-    return rota.postoId === user.postoId;
+    if (user?.postoId && rota.postoId !== user.postoId) return false;
+    if (!user?.postoId && filtroPosto !== 'todos' && rota.postoId !== filtroPosto) return false;
+    return true;
   });
 
   const rondasFiltradas = rondas.filter(ronda => {
-    if (!user?.postoId) return true;
-    return ronda.postoId === user.postoId;
+    if (user?.postoId && ronda.postoId !== user.postoId) return false;
+    if (!user?.postoId && filtroPosto !== 'todos' && ronda.postoId !== filtroPosto) return false;
+    if (filtroRota !== 'todas' && ronda.rotaId !== filtroRota) return false;
+    if (filtroStatus !== 'todos' && ronda.status !== filtroStatus) return false;
+    return true;
   });
 
   const getStatusLabel = (status: Ronda['status']) => {
@@ -215,6 +227,58 @@ function AdminRondasTab() {
         >
           Calendário
         </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3 bg-card border border-border p-3 rounded-xl shadow-sm">
+        {!user?.postoId && (
+          <div className="flex-1">
+            <Select value={filtroPosto} onValueChange={setFiltroPosto}>
+              <SelectTrigger className="w-full bg-background border-input">
+                <SelectValue placeholder="Filtrar por Posto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Postos</SelectItem>
+                {postos.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {subTab !== 'rotas' && (
+          <div className="flex-1">
+            <Select value={filtroRota} onValueChange={setFiltroRota}>
+              <SelectTrigger className="w-full bg-background border-input">
+                <SelectValue placeholder="Filtrar por Rota" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as Rotas</SelectItem>
+                {rotasOpcoes.map(r => (
+                  <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {subTab !== 'rotas' && (
+          <div className="flex-1">
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="w-full bg-background border-input">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="concluida">Concluída</SelectItem>
+                <SelectItem value="parcial">Parcial / Falha</SelectItem>
+                <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                <SelectItem value="aguardando">Aguardando</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {subTab === 'rotas' && (
