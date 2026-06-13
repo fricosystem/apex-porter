@@ -193,23 +193,22 @@ export default function RondaPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [executionOpen]);
 
-  // Auto-create weekly recurring rondas
+  // Auto-create daily recurring rondas
   useEffect(() => {
     const today = new Date();
+    const dateString = format(today, 'yyyy-MM-dd');
+    const todayDay = getDayName(today);
     const currentWeek = getWeekNumber(today);
     const currentYear = today.getFullYear();
-    const todayDay = getDayName(today);
 
     rotasGeoreferenciadas.forEach(rota => {
-      if (rota.recorrente && rota.diasSemana && rota.diasSemana.length > 0) {
-        // Check if we already have a ronda for this week
+      if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
+        // Check if we already have a ronda for TODAY
         const existingRonda = rondas.find(
-          r => r.rotaId === rota.id && 
-               r.semanaAno === currentWeek && 
-               r.ano === currentYear
+          r => r.rotaId === rota.id && r.data === dateString
         );
         if (!existingRonda) {
-          // Create a new ronda for this week
+          // Create a new ronda for today
           const id = `rn_${Date.now()}_${rota.id}`;
           const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
             id: `pt_${Date.now()}_${idx}`,
@@ -228,12 +227,12 @@ export default function RondaPage() {
             id,
             rota: rota.nome,
             rotaId: rota.id,
-            postoId: user?.postoId,
-            data: format(today, 'yyyy-MM-dd'),
+            postoId: rota.postoId, // Default to the route's posto
+            data: dateString,
             horarioInicio: '',
             horarioFim: '',
             status: 'em_andamento',
-            porteiro: user?.nome || 'Porteiro',
+            porteiro: 'A Definir', // Will be set when a guard starts it
             pontos,
             recorrente: true,
             diasSemana: rota.diasSemana,
@@ -244,7 +243,7 @@ export default function RondaPage() {
         }
       }
     });
-  }, [rotasGeoreferenciadas, rondas, addRonda, user]);
+  }, [rotasGeoreferenciadas, rondas, addRonda]);
 
   // Stats
   const stats = useMemo(() => {
@@ -369,7 +368,8 @@ export default function RondaPage() {
     const updatedRonda = {
       ...selectedRonda,
       horarioInicio: getCurrentTime(),
-      data: getCurrentDate() // Garante que a data é atual
+      data: getCurrentDate(), // Garante que a data é atual
+      porteiro: user?.nome || 'Porteiro',
     };
     setSelectedRonda(updatedRonda);
     updateRonda(updatedRonda);
@@ -461,10 +461,7 @@ export default function RondaPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Registro de patrulhamento</p>
         </div>
-        <Button onClick={handleOpenModal} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Criar Ronda
-        </Button>
+        {/* Botão de criar ronda removido para esta tela (agora apenas no Admin) */}
       </div>
 
       {/* Stats cards */}
@@ -526,7 +523,7 @@ export default function RondaPage() {
             <Inbox className="h-10 w-10 text-muted-foreground/60" />
           </div>
           <p className="text-lg font-medium mb-1">Nenhuma ronda encontrada</p>
-          <p className="text-sm text-muted-foreground/70">Toque em Criar Ronda para iniciar um patrulhamento.</p>
+          <p className="text-sm text-muted-foreground/70">Aguarde a atribuição de uma ronda ou horários programados.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -641,14 +638,7 @@ export default function RondaPage() {
                           >
                             <Eye className="h-5 w-5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                            onClick={e => { e.stopPropagation(); handleDelete(ronda.id); }}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
+
                           {isExpanded ? (
                             <ChevronUp className="h-5 w-5 text-muted-foreground" />
                           ) : (
@@ -704,88 +694,7 @@ export default function RondaPage() {
         </div>
       )}
 
-      {/* New Ronda Dialog */}
-      <Dialog open={modalOpen} onOpenChange={v => { if (!v) setModalOpen(false); }}>
-        <DialogContent className="max-w-full w-full h-full max-h-[100vh] m-0 rounded-none flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Navigation className="h-5 w-5 text-emerald-600" />
-              Criar Ronda
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            <div className="space-y-2">
-              <Label>Rota *</Label>
-              <Select value={selectedRota} onValueChange={setSelectedRota}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a rota" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rotasGeoreferenciadas.map((rota) => (
-                    <SelectItem key={rota.id} value={rota.id}>{rota.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            {selectedRota && rotasGeoreferenciadas.find(r => r.id === selectedRota) && (
-              <>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">Mapa da Rota</Label>
-                    <button
-                      type="button"
-                      onClick={() => setIsSatellite(!isSatellite)}
-                      className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
-                    >
-                      {isSatellite ? 'Padrão' : 'Satélite'}
-                    </button>
-                  </div>
-                  <RotaMap 
-                    pontos={rotasGeoreferenciadas.find(r => r.id === selectedRota)!.pontos.map(p => ({
-                      latitude: p.latitude,
-                      longitude: p.longitude,
-                      nome: p.nome
-                    }))} 
-                    isSatellite={isSatellite}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Pontos que serão verificados</Label>
-                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                    {rotasGeoreferenciadas.find(r => r.id === selectedRota)!.pontos.map((ponto, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <MapPin className="h-3 w-3 text-emerald-600 shrink-0" />
-                        <span>{ponto.nome}</span>
-                        <span className="text-muted-foreground ml-auto">{ponto.horarioExecucao}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Porteiro</Label>
-                <Input
-                  value={user?.nome || 'Porteiro'}
-                  readOnly
-                  className="bg-muted/50"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0 p-4 border-t border-border">
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreateRonda} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Play className="h-4 w-4 mr-2" />
-              Criar Ronda
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Ronda Detail Modal (Read-Only) */}
       <Dialog open={detailOpen} onOpenChange={handleCloseDetail}>

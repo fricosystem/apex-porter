@@ -58,6 +58,8 @@ const DONT_UPPERCASE_KEYS = new Set([
   'protocoloId',
   'registroFluxoId',
   'versaoAnteriorId',
+  'permissoes',
+  'nome',
 ]);
 
 function transformToUpperCase<T>(obj: T): T {
@@ -113,7 +115,7 @@ export async function updateDocument<T extends Record<string, unknown>>(
   data: Partial<T>
 ): Promise<void> {
   const transformed = transformToUpperCase(data);
-  await updateDoc(doc(db, path, id), transformed as Record<string, unknown>);
+  await setDoc(doc(db, path, id), transformed as Record<string, unknown>, { merge: true });
 }
 
 // ── Delete a document ──
