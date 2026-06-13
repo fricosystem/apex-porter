@@ -881,12 +881,8 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
-                          activeIndex={activeChartStates['entradasSaidas']}
-                          active={activeChartStates['entradasSaidas'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                         <Bar 
@@ -931,12 +927,9 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
                         <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
                           cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
-                          activeIndex={activeChartStates['tendencia']}
-                          active={activeChartStates['tendencia'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                         <Line
@@ -990,11 +983,8 @@ export default function DashboardPage() {
                             <Cell key={`cell-${index}`} fill={(entry as any).fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['checklists']}
-                          active={activeChartStates['checklists'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
@@ -1298,11 +1288,8 @@ export default function DashboardPage() {
                             <Cell key={`vei-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
                         <Tooltip 
                           content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['veiculosTipo']}
-                          active={activeChartStates['veiculosTipo'] !== null}
                         />
                         <Legend wrapperStyle={LEGEND_STYLE} />
                       </PieChart>
