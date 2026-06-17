@@ -799,7 +799,7 @@ export default function RondaPage() {
                               </span>
                             </div>
 
-                            {/* Próximo horário de execução (próximo ponto pendente) */}
+                            {/* Próximo horário de execuç��o (próximo ponto pendente) */}
                             {proximoPonto && ronda.status !== 'concluida' && (
                               <div className="mt-2 inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-sm font-medium">
                                 <Clock className="h-4 w-4" />
@@ -1242,12 +1242,23 @@ export default function RondaPage() {
                             </div>
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Atual</Label>
-                            <div className={`rounded-lg px-3 py-2 border ${ponto.horarioReal ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-muted/50 border-border'}`}>
-                              <p className={`text-base font-medium ${ponto.horarioReal ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
-                                {ponto.horarioReal || '—'}
-                              </p>
-                            </div>
+                            <Label className="text-xs text-muted-foreground">
+                              {mostrarCountdown ? 'Disponível em' : 'Atual'}
+                            </Label>
+                            {mostrarCountdown ? (
+                              <div className="rounded-lg px-3 py-2 border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                                <p className="text-base font-semibold text-blue-700 dark:text-blue-300 tabular-nums flex items-center gap-1.5">
+                                  <Clock className="h-4 w-4" />
+                                  {formatCountdown(secondsUntil)}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className={`rounded-lg px-3 py-2 border ${ponto.horarioReal ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-muted/50 border-border'}`}>
+                                <p className={`text-base font-medium ${ponto.horarioReal ? 'text-emerald-700 dark:text-emerald-300' : 'text-muted-foreground'}`}>
+                                  {ponto.horarioReal || '—'}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
 
