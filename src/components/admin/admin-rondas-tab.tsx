@@ -99,18 +99,25 @@ export function AdminRondasTab() {
     const dataFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
     const id = `rn_${Date.now()}_${rota.id}`;
 
-    const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
-      id: `pt_${Date.now()}_${idx}`,
-      rondaId: id,
-      ponto: p.nome,
-      horarioPrevisto: p.horarioExecucao,
-      horarioReal: '',
-      status: 'ok',
-      observacao: '',
-      latitude: p.latitude,
-      longitude: p.longitude,
-      raio: p.raio,
-    }));
+    const pontos: PontoRonda[] = rota.pontos
+      .flatMap((p, idx) => {
+        const horarios = (p.horariosExecucao && p.horariosExecucao.length > 0)
+          ? p.horariosExecucao
+          : [p.horarioExecucao];
+        return horarios.map((horario, hIdx) => ({
+          id: `pt_${id}_${idx}_${hIdx}`,
+          rondaId: id,
+          ponto: p.nome,
+          horarioPrevisto: horario,
+          horarioReal: '',
+          status: 'ok' as const,
+          observacao: '',
+          latitude: p.latitude,
+          longitude: p.longitude,
+          raio: p.raio,
+        }));
+      })
+      .sort((a, b) => a.horarioPrevisto.localeCompare(b.horarioPrevisto));
 
     const novaRonda: Ronda = {
       id,

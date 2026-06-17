@@ -394,7 +394,8 @@ export interface PontoRota {
   longitude: number;
   altitude?: number; // em metros
   raio: number; // em metros
-  horarioExecucao: string; // HH:mm
+  horarioExecucao: string; // HH:mm (horário único / não recorrente)
+  horariosExecucao?: string[]; // HH:mm[] — múltiplos horários quando recorrente
   recorrente: boolean;
   diasSemana?: string[]; // Ex: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
 }

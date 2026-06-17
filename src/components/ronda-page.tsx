@@ -117,8 +117,29 @@ function isTimeValidForCheckin(horarioPrevisto: string): boolean {
   const [h, m] = horarioPrevisto.split(':').map(Number);
   const previstoMinutes = h * 60 + m;
   
-  // Available from 5 minutes before
-  return currentMinutes >= (previstoMinutes - 5);
+  // Só é permitido o check-in a partir do horário configurado (não antes).
+  return currentMinutes >= previstoMinutes;
+}
+
+// Segundos restantes até o horário previsto (0 se já passou)
+function getSecondsUntil(horarioPrevisto: string): number {
+  if (!horarioPrevisto) return 0;
+  const now = new Date();
+  const [h, m] = horarioPrevisto.split(':').map(Number);
+  const target = new Date(now);
+  target.setHours(h, m, 0, 0);
+  const diff = Math.floor((target.getTime() - now.getTime()) / 1000);
+  return diff > 0 ? diff : 0;
+}
+
+// Formata segundos como HH:MM:SS ou MM:SS
+function formatCountdown(totalSeconds: number): string {
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  if (hrs > 0) return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  return `${pad(mins)}:${pad(secs)}`;
 }
 
 function getPontosForRota(rotaIndex: number): string[] {
@@ -176,6 +197,14 @@ export default function RondaPage() {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLon, setUserLon] = useState<number | null>(null);
   const [rondaIniciada, setRondaIniciada] = useState(false);
+
+  // Tick de 1s para atualizar o countdown enquanto o modal de execução está aberto
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (!executionOpen) return;
+    const intervalId = setInterval(() => setNowTick(t => t + 1), 1000);
+    return () => clearInterval(intervalId);
+  }, [executionOpen]);
   
   // Confirmation modal for finalizing ronda
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
@@ -239,18 +268,28 @@ export default function RondaPage() {
         if (criandoRondasRef.current.has(id)) return;
         criandoRondasRef.current.add(id);
 
-        const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
-          id: `pt_${id}_${idx}`,
-          rondaId: id,
-          ponto: p.nome,
-          horarioPrevisto: p.horarioExecucao,
-          horarioReal: '',
-          status: 'ok' as const,
-          observacao: '',
-          latitude: p.latitude,
-          longitude: p.longitude,
-          raio: p.raio,
-        }));
+        // Expande cada ponto em uma verificação por horário configurado.
+        // Pontos recorrentes com vários horários geram um item por horário.
+        const pontos: PontoRonda[] = rota.pontos
+          .flatMap((p, idx) => {
+            const horarios = (p.horariosExecucao && p.horariosExecucao.length > 0)
+              ? p.horariosExecucao
+              : [p.horarioExecucao];
+            return horarios.map((horario, hIdx) => ({
+              id: `pt_${id}_${idx}_${hIdx}`,
+              rondaId: id,
+              ponto: p.nome,
+              horarioPrevisto: horario,
+              horarioReal: '',
+              status: 'ok' as const,
+              observacao: '',
+              latitude: p.latitude,
+              longitude: p.longitude,
+              raio: p.raio,
+            }));
+          })
+          // Ordena cronologicamente para que a ronda siga a ordem dos horários
+          .sort((a, b) => a.horarioPrevisto.localeCompare(b.horarioPrevisto));
 
         const ronda: Ronda = {
           id,
@@ -386,18 +425,25 @@ export default function RondaPage() {
 
     const today = new Date();
     const id = `rn_${Date.now()}`;
-    const pontos: PontoRonda[] = rotaData.pontos.map((p, idx) => ({
-      id: `pt_${Date.now()}_${idx}`,
-      rondaId: id,
-      ponto: p.nome,
-      horarioPrevisto: p.horarioExecucao,
-      horarioReal: '',
-      status: 'ok' as const,
-      observacao: '',
-      latitude: p.latitude,
-      longitude: p.longitude,
-      raio: p.raio,
-    }));
+    const pontos: PontoRonda[] = rotaData.pontos
+      .flatMap((p, idx) => {
+        const horarios = (p.horariosExecucao && p.horariosExecucao.length > 0)
+          ? p.horariosExecucao
+          : [p.horarioExecucao];
+        return horarios.map((horario, hIdx) => ({
+          id: `pt_${id}_${idx}_${hIdx}`,
+          rondaId: id,
+          ponto: p.nome,
+          horarioPrevisto: horario,
+          horarioReal: '',
+          status: 'ok' as const,
+          observacao: '',
+          latitude: p.latitude,
+          longitude: p.longitude,
+          raio: p.raio,
+        }));
+      })
+      .sort((a, b) => a.horarioPrevisto.localeCompare(b.horarioPrevisto));
 
     const ronda: Ronda = {
       id,
@@ -692,6 +738,9 @@ export default function RondaPage() {
             const StatusIcon = statusIcons[ronda.status];
             const progressPct = total > 0 ? (checked / total) * 100 : 0;
 
+            // Próximo ponto pendente (para exibir o próximo horário de execução)
+            const proximoPonto = ronda.pontos.find(p => !p.horarioReal);
+
             return (
               <motion.div
                 key={ronda.id}
@@ -749,6 +798,17 @@ export default function RondaPage() {
                                 {ronda.porteiro}
                               </span>
                             </div>
+
+                            {/* Próximo horário de execução (próximo ponto pendente) */}
+                            {proximoPonto && ronda.status !== 'concluida' && (
+                              <div className="mt-2 inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg text-sm font-medium">
+                                <Clock className="h-4 w-4" />
+                                Próximo: {proximoPonto.horarioPrevisto}
+                                <span className="text-blue-600/70 dark:text-blue-400/70 truncate max-w-[160px]">
+                                  · {proximoPonto.ponto}
+                                </span>
+                              </div>
+                            )}
 
                             {/* Progress bar */}
                             <div className="mt-2.5">
@@ -1086,9 +1146,16 @@ export default function RondaPage() {
                     }
                   }
 
-                  // Check-in visível até 5 min antes, inativo se fora do raio OR previous not checked OR time lock
+                  // Check-in só é permitido dentro do raio e após o horário configurado
                   const showCheckin = !isChecked && timeValid;
                   const canCheckin = inRadius && showCheckin && previousChecked && waitTimeValid;
+
+                  // Countdown até o horário previsto (exibido no lugar do campo "Atual")
+                  const secondsUntil = getSecondsUntil(ponto.horarioPrevisto);
+                  const mostrarCountdown = !isChecked && secondsUntil > 0;
+
+                  // Texto de distância para o botão de check-in
+                  const distanciaTexto = dist >= 0 ? `${Math.round(dist)}m · ` : '';
 
                   // Se a ronda estiver iniciada, só mostra o ponto atual ou os já verificados
                   if (rondaIniciada && !isChecked && !isCurrentPonto) return null;
@@ -1096,6 +1163,13 @@ export default function RondaPage() {
                   return (
                     <Card key={ponto.id} className={`overflow-hidden border ${isCurrentPonto ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : ponto.status === 'irregularidade' ? 'border-red-200 dark:border-red-800' : isChecked ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'}`}>
                       <CardContent className="p-4 space-y-3">
+                        {/* Aviso "Aguardando ponto anterior" no topo do card */}
+                        {!isChecked && !previousChecked && (
+                          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-sm font-medium">
+                            <Clock className="h-4 w-4 shrink-0" />
+                            Aguardando ponto anterior
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {isChecked ? (
@@ -1141,12 +1215,16 @@ export default function RondaPage() {
                                 {canCheckin ? (
                                   <>
                                     <Camera className="h-4 w-4 mr-1.5" />
-                                    Tirar Foto e Check-in
+                                    {distanciaTexto}Check-in
                                   </>
                                 ) : (
                                   <>
                                     <MapPin className="h-4 w-4 mr-1.5" />
-                                    {!timeValid ? 'Aguardando horário' : (!previousChecked ? 'Aguardando ponto anterior' : (!waitTimeValid ? `Aguarde ${minutesToWait} min` : (dist >= 0 ? `Longe (${Math.round(dist)}m)` : 'Aguardando GPS')))}
+                                    {!timeValid
+                                      ? 'Aguardando horário'
+                                      : (!waitTimeValid
+                                          ? `Aguarde ${minutesToWait} min`
+                                          : `${distanciaTexto}Check-in`)}
                                   </>
                                 )}
                               </Button>

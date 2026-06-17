@@ -29,6 +29,13 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
 
   const [nome, setNome] = useState(pontoEditar?.nome || '');
   const [horarioExecucao, setHorarioExecucao] = useState(pontoEditar?.horarioExecucao || '');
+  const [horariosExecucao, setHorariosExecucao] = useState<string[]>(
+    pontoEditar?.horariosExecucao && pontoEditar.horariosExecucao.length > 0
+      ? pontoEditar.horariosExecucao
+      : (pontoEditar?.horarioExecucao ? [pontoEditar.horarioExecucao] : [])
+  );
+  const [novoHorario, setNovoHorario] = useState('');
+  const [mostrarCampoHorario, setMostrarCampoHorario] = useState(false);
   const [raio, setRaio] = useState(pontoEditar?.raio || 10);
   const [recorrente, setRecorrente] = useState(pontoEditar?.recorrente || false);
   const [diasSemana, setDiasSemana] = useState<string[]>(pontoEditar?.diasSemana || []);
@@ -184,7 +191,15 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
       toast.error("Nome do ponto é obrigatório.");
       return;
     }
-    if (!horarioExecucao) {
+
+    // Quando recorrente, exige pelo menos um horário na lista.
+    // Quando não recorrente, exige o horário único.
+    if (recorrente) {
+      if (horariosExecucao.length === 0) {
+        toast.error("Adicione pelo menos um horário de execução.");
+        return;
+      }
+    } else if (!horarioExecucao) {
       toast.error("Horário de execução é obrigatório.");
       return;
     }
@@ -203,13 +218,17 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
       return;
     }
 
+    // horarioExecucao base = primeiro horário da lista (recorrente) ou o único informado
+    const horarioBase = recorrente ? horariosExecucao[0] : horarioExecucao;
+
     onAdd({
       nome,
       latitude,
       longitude,
       altitude: altitude ?? undefined,
       raio,
-      horarioExecucao,
+      horarioExecucao: horarioBase,
+      horariosExecucao: recorrente ? horariosExecucao : undefined,
       recorrente,
       diasSemana: recorrente ? diasSemana : undefined,
     });
@@ -219,6 +238,26 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
     setDiasSemana(prev => 
       prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]
     );
+  };
+
+  const adicionarHorario = () => {
+    if (!novoHorario) {
+      toast.error("Selecione um horário antes de adicionar.");
+      return;
+    }
+    if (horariosExecucao.includes(novoHorario)) {
+      toast.error("Esse horário já foi adicionado.");
+      return;
+    }
+    // Mantém a lista ordenada por horário
+    const atualizados = [...horariosExecucao, novoHorario].sort((a, b) => a.localeCompare(b));
+    setHorariosExecucao(atualizados);
+    setNovoHorario('');
+    setMostrarCampoHorario(false);
+  };
+
+  const removerHorario = (horario: string) => {
+    setHorariosExecucao(prev => prev.filter(h => h !== horario));
   };
 
   return (
@@ -411,13 +450,21 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
             </div>
 
             <div>
-              <label className="block text-base font-medium mb-1.5">Horário de Execução *</label>
+              <label className="block text-base font-medium mb-1.5">
+                {recorrente ? 'Horário Base (1º horário)' : 'Horário de Execução *'}
+              </label>
               <input
                 type="time"
                 value={horarioExecucao}
                 onChange={(e) => setHorarioExecucao(e.target.value)}
-                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
+                disabled={recorrente}
+                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-60 disabled:cursor-not-allowed"
               />
+              {recorrente && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Quando recorrente, os horários são definidos na lista abaixo.
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-border">
@@ -437,24 +484,102 @@ function ModalNovoPonto({ onClose, onAdd, pontoEditar }: ModalNovoPontoProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden space-y-4"
                 >
-                  <label className="block text-base font-medium mb-2.5">Dias da semana</label>
-                  <div className="flex flex-wrap gap-2">
-                    {diasOptions.map(dia => (
+                  {/* Horários de execução (lista) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <label className="block text-base font-medium">Horários de Execução *</label>
                       <button
-                        key={dia.value}
                         type="button"
-                        onClick={() => toggleDia(dia.value)}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                          diasSemana.includes(dia.value)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        }`}
+                        onClick={() => setMostrarCampoHorario(true)}
+                        className="flex items-center gap-1 text-sm font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
                       >
-                        {dia.label}
+                        <Plus className="h-4 w-4" />
+                        Adicionar Horário
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Campo para adicionar novo horário */}
+                    <AnimatePresence>
+                      {mostrarCampoHorario && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <input
+                              type="time"
+                              value={novoHorario}
+                              onChange={(e) => setNovoHorario(e.target.value)}
+                              className="flex-1 bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                            <button
+                              type="button"
+                              onClick={adicionarHorario}
+                              className="bg-primary text-primary-foreground px-4 py-3 rounded-xl font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
+                            >
+                              Adicionar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setMostrarCampoHorario(false); setNovoHorario(''); }}
+                              className="p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors shrink-0"
+                            >
+                              <X className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Lista de horários adicionados */}
+                    {horariosExecucao.length === 0 ? (
+                      <div className="text-center py-5 bg-muted/30 rounded-xl border border-dashed border-border">
+                        <p className="text-sm text-muted-foreground">Nenhum horário adicionado.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {horariosExecucao.map(horario => (
+                          <div
+                            key={horario}
+                            className="flex items-center gap-2 bg-primary/10 text-primary pl-3 pr-2 py-1.5 rounded-lg"
+                          >
+                            <span className="text-sm font-medium tabular-nums">{horario}</span>
+                            <button
+                              type="button"
+                              onClick={() => removerHorario(horario)}
+                              className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dias da semana */}
+                  <div>
+                    <label className="block text-base font-medium mb-2.5">Dias da semana</label>
+                    <div className="flex flex-wrap gap-2">
+                      {diasOptions.map(dia => (
+                        <button
+                          key={dia.value}
+                          type="button"
+                          onClick={() => toggleDia(dia.value)}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            diasSemana.includes(dia.value)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          {dia.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -736,7 +861,10 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-base truncate">{ponto.nome}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Horário: {ponto.horarioExecucao} | Raio: {ponto.raio}m
+                          {ponto.recorrente && ponto.horariosExecucao && ponto.horariosExecucao.length > 0
+                            ? `Horários: ${ponto.horariosExecucao.join(', ')}`
+                            : `Horário: ${ponto.horarioExecucao}`}
+                          {` | Raio: ${ponto.raio}m`}
                         </p>
                         {ponto.recorrente && (
                           <div className="flex gap-1.5 mt-2">
