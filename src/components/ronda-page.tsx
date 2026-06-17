@@ -210,6 +210,10 @@ export default function RondaPage() {
       const currentYear = today.getFullYear();
       const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
+      // Get the current state of rondas from the store without adding it to dependencies
+      const state = useAppStore.getState();
+      const currentRondas = state.rondas;
+      
       rotasGeoreferenciadas.forEach(rota => {
         if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
           if (rota.horariosPlantao && rota.horariosPlantao.length > 0) {
@@ -220,7 +224,7 @@ export default function RondaPage() {
               // Check if it is time to create (or past time)
               if (currentMinutes >= plantaoMinutes) {
                 // Check if already exists for this date and shift hour
-                const existingRonda = rondas.find(
+                const existingRonda = currentRondas.find(
                   r => r.rotaId === rota.id && r.data === dateString && r.horarioPlantao === horario
                 );
 
@@ -271,7 +275,7 @@ export default function RondaPage() {
     checkAndCreateRondas();
     const intervalId = setInterval(checkAndCreateRondas, 60000);
     return () => clearInterval(intervalId);
-  }, [rotasGeoreferenciadas, rondas, addRonda]);
+  }, [rotasGeoreferenciadas]);
 
   // Alerta de proximidade de plantão (10 min antes)
   useEffect(() => {
