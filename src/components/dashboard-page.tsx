@@ -54,7 +54,7 @@ import {
   STATUS_OCORRENCIA,
   TIPOS_EMERGENCIA,
 } from '@/lib/data';
-import type { RegistroFluxo, TipoPessoa } from '@/lib/data';
+import { TIPOS_PESSOA, normalizeTipoPessoa, type RegistroFluxo, type TipoPessoa } from '@/lib/data';
 
 const container = {
   hidden: { opacity: 0 },
@@ -630,22 +630,26 @@ export default function DashboardPage() {
   // ── Pessoas por tipo ──
   const pessoasPorTipo = useMemo(() => {
     const colors: Record<string, string> = {
-      Colaborador: '#3b82f6',
-      Visitante: '#8b5cf6',
+      Porteiro: '#3b82f6',
+      Vigia: '#06b6d4',
+      Vigilante: '#14b8a6',
       Prestador: '#f59e0b',
       Entregador: '#10b981',
-      Motorista: '#f97316',
-      Outro: '#6b7280',
+      Colaborador: '#6366f1',
+      Coletor: '#f97316',
+      Esporadico: '#6b7280',
     };
+    // Inicializa todos os tipos canônicos com zero para exibir os tipos existentes
     const counts: Record<string, number> = {};
+    TIPOS_PESSOA.forEach((t) => { counts[t.value] = 0; });
     pessoas.filter(p => !p.inativo).forEach((p) => {
-      const t = p.tipo || 'Outro';
+      const t = normalizeTipoPessoa(p.tipo);
       counts[t] = (counts[t] || 0) + 1;
     });
-    return Object.entries(counts).map(([tipo, qtd]) => ({
-      name: tipo,
-      value: qtd,
-      fill: colors[tipo] || '#6b7280',
+    return TIPOS_PESSOA.map((t) => ({
+      name: t.label,
+      value: counts[t.value] || 0,
+      fill: colors[t.value] || '#6b7280',
     }));
   }, [pessoas]);
 
@@ -859,7 +863,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-      {/* ── Charts Row 1: Original (Entradas vs Saídas + Tendência Semanal) ── */}
+      {/* ── Charts: grade contínua que preenche os espaços vazios no desktop ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
             <motion.div variants={item}>
@@ -949,10 +953,8 @@ export default function DashboardPage() {
               </Card>
             </motion.div>
           )}
-        </div>
 
       {/* ── Charts Row 2: Checklists por Status + Fluxo por Período ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {checklistsPorStatus.length > 0 && (
             <motion.div variants={item}>
               <Card>
@@ -1053,7 +1055,7 @@ export default function DashboardPage() {
             <motion.div variants={item}>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Registros por Categoria (Dados Reais)</CardTitle>
+                  <CardTitle className="text-sm font-medium">Registros por Categoria</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="h-64">

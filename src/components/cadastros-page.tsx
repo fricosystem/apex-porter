@@ -21,6 +21,11 @@ import {
   ChevronDown,
   ChevronUp,
   Ticket,
+  Shield,
+  ShieldCheck,
+  DoorOpen,
+  Recycle,
+  CalendarClock,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -44,26 +49,38 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppStore } from '@/lib/store';
-import { TIPOS_PESSOA, type TipoPessoa, type Pessoa } from '@/lib/data';
+import { TIPOS_PESSOA, getTipoPessoaLabel, normalizeTipoPessoa, type TipoPessoa, type Pessoa } from '@/lib/data';
 import { toast } from 'sonner';
 import AutocompleteInput from './autocomplete-input';
 import { PESSOAS_INICIAIS, REGISTROS_FLUXO_INICIAIS } from '@/lib/seed-data';
 import { formatCpfRg, formatPhone } from '@/lib/utils';
 
 const TIPO_ICONS: Record<TipoPessoa, React.ReactNode> = {
-  Colaborador: <Briefcase className="h-3.5 w-3.5" />,
-  Visitante: <Users className="h-3.5 w-3.5" />,
+  Porteiro: <DoorOpen className="h-3.5 w-3.5" />,
+  Vigia: <Shield className="h-3.5 w-3.5" />,
+  Vigilante: <ShieldCheck className="h-3.5 w-3.5" />,
   Prestador: <HeadphonesIcon className="h-3.5 w-3.5" />,
   Entregador: <Package className="h-3.5 w-3.5" />,
+  Colaborador: <Briefcase className="h-3.5 w-3.5" />,
+  Coletor: <Recycle className="h-3.5 w-3.5" />,
+  Esporadico: <CalendarClock className="h-3.5 w-3.5" />,
+  // Tipos legados (cadastros antigos)
+  Visitante: <Users className="h-3.5 w-3.5" />,
   Motorista: <Truck className="h-3.5 w-3.5" />,
   Outro: <UserPlus className="h-3.5 w-3.5" />,
 };
 
 const TIPO_COLORS: Record<TipoPessoa, string> = {
-  Colaborador: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  Visitante: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  Porteiro: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  Vigia: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  Vigilante: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   Prestador: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   Entregador: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  Colaborador: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  Coletor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  Esporadico: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+  // Tipos legados
+  Visitante: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   Motorista: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   Outro: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 };
@@ -320,7 +337,8 @@ export default function CadastrosPage() {
     if (filterStatus === 'inativos') list = list.filter((p) => p.inativo);
     
     if (filterTipo !== 'todos') {
-      list = list.filter((p) => p.tipo === filterTipo);
+      // Normaliza para comparar tipos legados (ex: Motorista → Coletor)
+      list = list.filter((p) => normalizeTipoPessoa(p.tipo) === filterTipo);
     }
     if (filterDepartamento !== 'todos') {
       list = list.filter((p) => p.departamento === filterDepartamento);
@@ -655,7 +673,7 @@ export default function CadastrosPage() {
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <p className="font-medium truncate text-base">{p.nome}</p>
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border">
-                            {p.tipo}
+                            {getTipoPessoaLabel(p.tipo)}
                           </span>
                           {p.inativo && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border">
@@ -722,7 +740,7 @@ export default function CadastrosPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg leading-tight">{detailsPessoa.nome}</h3>
-                    <p className="text-sm text-muted-foreground">{detailsPessoa.cargo || detailsPessoa.tipo}</p>
+                    <p className="text-sm text-muted-foreground">{detailsPessoa.cargo || getTipoPessoaLabel(detailsPessoa.tipo)}</p>
                   </div>
                 </div>
 
@@ -1056,10 +1074,16 @@ export default function CadastrosPage() {
 }
 
 const TIPO_STRIPE_COLORS: Record<TipoPessoa, string> = {
-  Colaborador: 'bg-blue-500',
-  Visitante: 'bg-purple-500',
+  Porteiro: 'bg-blue-500',
+  Vigia: 'bg-cyan-500',
+  Vigilante: 'bg-teal-500',
   Prestador: 'bg-amber-500',
   Entregador: 'bg-emerald-500',
+  Colaborador: 'bg-indigo-500',
+  Coletor: 'bg-orange-500',
+  Esporadico: 'bg-gray-500',
+  // Tipos legados
+  Visitante: 'bg-purple-500',
   Motorista: 'bg-orange-500',
   Outro: 'bg-gray-500',
 };

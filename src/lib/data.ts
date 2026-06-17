@@ -197,16 +197,52 @@ export interface Departamento {
   responsavel?: string;
 }
 
-export type TipoPessoa = 'Colaborador' | 'Visitante' | 'Prestador' | 'Entregador' | 'Motorista' | 'Outro';
+// Tipos canônicos atuais + tipos legados (mantidos para não quebrar cadastros antigos)
+export type TipoPessoaCanonico =
+  | 'Porteiro'
+  | 'Vigia'
+  | 'Vigilante'
+  | 'Prestador'
+  | 'Entregador'
+  | 'Colaborador'
+  | 'Coletor'
+  | 'Esporadico';
 
-export const TIPOS_PESSOA: { value: TipoPessoa; label: string }[] = [
-  { value: 'Colaborador', label: 'Colaborador' },
-  { value: 'Visitante', label: 'Visitante' },
-  { value: 'Prestador', label: 'Prestador de Serviço' },
+export type TipoPessoaLegado = 'Visitante' | 'Motorista' | 'Outro';
+
+export type TipoPessoa = TipoPessoaCanonico | TipoPessoaLegado;
+
+// Lista exibida nos seletores de cadastro (apenas tipos canônicos atuais)
+export const TIPOS_PESSOA: { value: TipoPessoaCanonico; label: string }[] = [
+  { value: 'Porteiro', label: 'Porteiro' },
+  { value: 'Vigia', label: 'Vigia' },
+  { value: 'Vigilante', label: 'Vigilante' },
+  { value: 'Prestador', label: 'Prestador de Serviços' },
   { value: 'Entregador', label: 'Entregador' },
-  { value: 'Motorista', label: 'Motorista' },
-  { value: 'Outro', label: 'Outro' },
+  { value: 'Colaborador', label: 'Colaborador' },
+  { value: 'Coletor', label: 'Coletor' },
+  { value: 'Esporadico', label: 'Esporádico' },
 ];
+
+// Mapeia tipos legados para os tipos canônicos atuais de forma inteligente,
+// sem precisar alterar os registros já salvos.
+const MAPA_TIPO_LEGADO: Record<TipoPessoaLegado, TipoPessoaCanonico> = {
+  Visitante: 'Esporadico',
+  Motorista: 'Coletor',
+  Outro: 'Esporadico',
+};
+
+export function normalizeTipoPessoa(tipo: string | undefined | null): TipoPessoaCanonico {
+  if (!tipo) return 'Esporadico';
+  if (tipo in MAPA_TIPO_LEGADO) return MAPA_TIPO_LEGADO[tipo as TipoPessoaLegado];
+  const canonicos = TIPOS_PESSOA.map((t) => t.value);
+  return (canonicos.includes(tipo as TipoPessoaCanonico) ? tipo : 'Esporadico') as TipoPessoaCanonico;
+}
+
+export function getTipoPessoaLabel(tipo: string | undefined | null): string {
+  const canonico = normalizeTipoPessoa(tipo);
+  return TIPOS_PESSOA.find((t) => t.value === canonico)?.label || 'Esporádico';
+}
 
 export interface Pessoa {
   id: string;
