@@ -200,7 +200,7 @@ export default function RondaPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [executionOpen]);
 
-  // Auto-create daily recurring rondas per shift hour
+  // Auto-create daily recurring rondas (one per rota per day)
   useEffect(() => {
     const checkAndCreateRondas = () => {
       const today = new Date();
@@ -208,64 +208,53 @@ export default function RondaPage() {
       const todayDay = getDayName(today);
       const currentWeek = getWeekNumber(today);
       const currentYear = today.getFullYear();
-      const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
       // Get the current state of rondas from the store without adding it to dependencies
       const state = useAppStore.getState();
       const currentRondas = state.rondas;
       
       rotasGeoreferenciadas.forEach(rota => {
+        // Verifica se é o dia certo para a rota recorrente
         if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
-          if (rota.horariosPlantao && rota.horariosPlantao.length > 0) {
-            rota.horariosPlantao.forEach(horario => {
-              const [h, m] = horario.split(':').map(Number);
-              const plantaoMinutes = h * 60 + m;
+          // Verifica se já existe uma ronda para essa rota no dia de hoje
+          const existingRonda = currentRondas.find(
+            r => r.rotaId === rota.id && r.data === dateString
+          );
 
-              // Check if it is time to create (or past time)
-              if (currentMinutes >= plantaoMinutes) {
-                // Check if already exists for this date and shift hour
-                const existingRonda = currentRondas.find(
-                  r => r.rotaId === rota.id && r.data === dateString && r.horarioPlantao === horario
-                );
+          if (!existingRonda) {
+            // Cria uma nova ronda para hoje para essa rota
+            const id = `rn_${Date.now()}_${rota.id}`;
+            const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
+              id: `pt_${Date.now()}_${idx}`,
+              rondaId: id,
+              ponto: p.nome,
+              horarioPrevisto: p.horarioExecucao,
+              horarioReal: '',
+              status: 'ok' as const,
+              observacao: '',
+              latitude: p.latitude,
+              longitude: p.longitude,
+              raio: p.raio,
+            }));
 
-                if (!existingRonda) {
-                  // Create a new ronda for this shift hour
-                  const id = `rn_${Date.now()}_${rota.id}_${horario.replace(':', '')}`;
-                  const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
-                    id: `pt_${Date.now()}_${idx}`,
-                    rondaId: id,
-                    ponto: p.nome,
-                    horarioPrevisto: p.horarioExecucao,
-                    horarioReal: '',
-                    status: 'ok' as const,
-                    observacao: '',
-                    latitude: p.latitude,
-                    longitude: p.longitude,
-                    raio: p.raio,
-                  }));
-
-                  const ronda: Ronda = {
-                    id,
-                    rota: rota.nome,
-                    rotaId: rota.id,
-                    postoId: rota.postoId,
-                    data: dateString,
-                    horarioInicio: '',
-                    horarioFim: '',
-                    status: 'aguardando',
-                    porteiro: 'A Definir',
-                    pontos,
-                    recorrente: true,
-                    diasSemana: rota.diasSemana,
-                    semanaAno: currentWeek,
-                    ano: currentYear,
-                    horarioPlantao: horario,
-                    cicloCompleto: false
-                  };
-                  addRonda(ronda);
-                }
-              }
-            });
+            const ronda: Ronda = {
+              id,
+              rota: rota.nome,
+              rotaId: rota.id,
+              postoId: rota.postoId,
+              data: dateString,
+              horarioInicio: '',
+              horarioFim: '',
+              status: 'aguardando',
+              porteiro: 'A Definir',
+              pontos,
+              recorrente: true,
+              diasSemana: rota.diasSemana,
+              semanaAno: currentWeek,
+              ano: currentYear,
+              cicloCompleto: false
+            };
+            addRonda(ronda);
           }
         }
       });
