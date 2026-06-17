@@ -480,6 +480,10 @@ export default function FluxoPage() {
     }
     const empresa = (r as any).empresa || (r as any).nomeEmpresa?.split(' / ')[1] || '';
     
+    // Convertendo para caixa alta
+    const nomeUppercase = nome.toUpperCase();
+    const empresaUppercase = empresa.toUpperCase();
+    
     // extrair doc
     let doc = (r as any).rgCpf || (r as any).cpfRg || '';
     let docLabel = 'RG/CPF';
@@ -507,7 +511,7 @@ export default function FluxoPage() {
       default: acao = r.categoria;
     }
     
-    return `O Sr. ${nome}, ${docLabel} ${docValue}, está aqui pela empresa ${empresa} para ${acao}. Podemos liberar?`;
+    return `O Sr. ${nomeUppercase}, ${docLabel} ${docValue}, está aqui pela empresa ${empresaUppercase} para ${acao}. Podemos liberar?`;
   };
 
   const handleRefazer = (r: RegistroFluxo) => {

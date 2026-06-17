@@ -63,19 +63,127 @@ const DONT_UPPERCASE_KEYS = new Set([
   'diasSemana',
   'horariosPlantao',
   'horarioPlantao',
+  'mapconfig',
+  'data',
+  'dataCadastro',
+  'dataInativacao',
+  'dataExpiracao',
+  'dataConfirmacao',
+  'dataAprovacao',
+  'dataCriacao',
+  'dataPrevista',
+  'horarioEntrada',
+  'horarioSaida',
+  'horario',
+  'horarioExecucao',
+  'horarioPrevisto',
+  'horarioReal',
+  'horarioInicio',
+  'horarioFim',
+  'horarioPassagem',
+  'hora',
+  'latitude',
+  'longitude',
+  'altitude',
+  'raio',
+  'pesoEntrada',
+  'pesoSaida',
+  'resultadoDiferenca',
+  'minutosAlerta',
+  'semanaAno',
+  'ano',
+  'placa',
+  'cpf',
+  'cpfRg',
+  'rgCpf',
+  'telefone',
+  'ramal',
+  'cnpj',
+  'empresa',
+  'departamento',
+  'local',
+  'localEncontrado',
+  'titulo',
+  'conteudo',
+  'motivo',
+  'descricao',
+  'observacao',
+  'observacoes',
+  'observacoesGerais',
+  'detalhes',
+  'ocorrencia',
+  'envolvidos',
+  'acaoTomada',
+  'resolucao',
+  'autorizadoPor',
+  'remetente',
+  'destinatario',
+  'quemRetirou',
+  'porteiro',
+  'porteiroEntrada',
+  'porteiroSaida',
+  'porteiroSaindo',
+  'porteiroEntrando',
+  'motorista',
+  'motoristaNome',
+  'motoristaDoc',
+  'visitanteNome',
+  'visitanteDoc',
+  'visitanteEmpresa',
+  'nomeColaborador',
+  'nomeEmpresa',
+  'tipoMovimentacao',
+  'supervisor',
+  'acionadoPor',
+  'criadoPor',
+  'item',
+  'itens',
+  'vaga',
+  'cor',
+  'modelo',
+  'responsavel',
+  'contato',
+  'funcao',
+  'ticket',
+  'lidoPor',
+  'cicloCompleto',
+  'fixado',
+  'inativo',
+  'isRascunho',
+  'ativo',
+  'recorrente',
+  'checked',
+  'notificadoAntes',
+  'notificadoNoHorario',
+  'mapconfig',
+  'tipoRecorrencia',
+  'minutosAntes',
+  'usuarioEmail',
+  'ordem',
+  'etapas',
+  'contatos',
 ]);
 
 function transformToUpperCase<T>(obj: T): T {
+  // Não modifica tipos primitivos que não sejam string
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
   if (typeof obj === 'string') {
     return obj.toUpperCase() as unknown as T;
   }
+  
   if (Array.isArray(obj)) {
     return obj.map((item) => transformToUpperCase(item)) as unknown as T;
   }
-  if (obj !== null && typeof obj === 'object') {
-    if (obj instanceof Date || 'toDate' in (obj as any) || '_methodName' in (obj as any)) {
+  
+  if (typeof obj === 'object') {
+    // Não modifica objetos Date ou objetos especiais do Firebase
+    if (obj instanceof Date || 'toDate' in obj || '_methodName' in obj) {
       return obj;
     }
+    
     const newObj: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) { // Ignora campos undefined para não enviar para Firestore
@@ -88,6 +196,7 @@ function transformToUpperCase<T>(obj: T): T {
     }
     return newObj as unknown as T;
   }
+  
   return obj;
 }
 
