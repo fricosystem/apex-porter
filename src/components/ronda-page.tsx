@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppStore } from '@/lib/store';
+import { uploadFotoRonda } from '@/lib/storage';
 import {
   ROTAS_RONDA, PONTOS_RONDA_PREDEFINIDOS,
   type Ronda, type PontoRonda, type StatusRonda, type RotaGeoreferenciada,
@@ -200,7 +201,12 @@ export default function RondaPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [executionOpen]);
 
+  // Trava local para evitar criar a mesma ronda duas vezes enquanto o
+  // subscribe do Firestore ainda não atualizou o estado (race condition).
+  const criandoRondasRef = useRef<Set<string>>(new Set());
+
   // Auto-create daily recurring rondas (one per rota per day)
+  // Cria APENAS para o dia atual e APENAS para o posto do usuário logado.
   useEffect(() => {
     const checkAndCreateRondas = () => {
       const today = new Date();
@@ -209,62 +215,69 @@ export default function RondaPage() {
       const currentWeek = getWeekNumber(today);
       const currentYear = today.getFullYear();
 
-      // Get the current state of rondas from the store without adding it to dependencies
+      // Lê o estado mais recente do store sem entrar nas dependências
       const state = useAppStore.getState();
       const currentRondas = state.rondas;
-      
+
       rotasGeoreferenciadas.forEach(rota => {
+        // Filtra apenas rotas do posto do usuário logado
+        if (user?.postoId && rota.postoId !== user.postoId) return;
+
         // Verifica se é o dia certo para a rota recorrente
-        if (rota.recorrente && rota.diasSemana && rota.diasSemana.includes(todayDay)) {
-          // Verifica se já existe uma ronda para essa rota no dia de hoje
-          const existingRonda = currentRondas.find(
-            r => r.rotaId === rota.id && r.data === dateString
-          );
+        if (!rota.recorrente || !rota.diasSemana || !rota.diasSemana.includes(todayDay)) return;
 
-          if (!existingRonda) {
-            // Cria uma nova ronda para hoje para essa rota
-            const id = `rn_${Date.now()}_${rota.id}`;
-            const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
-              id: `pt_${Date.now()}_${idx}`,
-              rondaId: id,
-              ponto: p.nome,
-              horarioPrevisto: p.horarioExecucao,
-              horarioReal: '',
-              status: 'ok' as const,
-              observacao: '',
-              latitude: p.latitude,
-              longitude: p.longitude,
-              raio: p.raio,
-            }));
+        // ID DETERMINÍSTICO: garante 1 ronda por rota por dia (idempotente).
+        // Mesmo que o efeito rode várias vezes, o ID será sempre o mesmo,
+        // então o setRonda apenas sobrescreve o documento existente em vez de criar duplicatas.
+        const id = `rn_${dateString}_${rota.id}`;
 
-            const ronda: Ronda = {
-              id,
-              rota: rota.nome,
-              rotaId: rota.id,
-              postoId: rota.postoId,
-              data: dateString,
-              horarioInicio: '',
-              horarioFim: '',
-              status: 'aguardando',
-              porteiro: 'A Definir',
-              pontos,
-              recorrente: true,
-              diasSemana: rota.diasSemana,
-              semanaAno: currentWeek,
-              ano: currentYear,
-              cicloCompleto: false
-            };
-            addRonda(ronda);
-          }
-        }
+        // Já existe no estado? Não recria.
+        const existingRonda = currentRondas.find(r => r.id === id);
+        if (existingRonda) return;
+
+        // Já está sendo criada nesta sessão? Evita corrida antes do subscribe.
+        if (criandoRondasRef.current.has(id)) return;
+        criandoRondasRef.current.add(id);
+
+        const pontos: PontoRonda[] = rota.pontos.map((p, idx) => ({
+          id: `pt_${id}_${idx}`,
+          rondaId: id,
+          ponto: p.nome,
+          horarioPrevisto: p.horarioExecucao,
+          horarioReal: '',
+          status: 'ok' as const,
+          observacao: '',
+          latitude: p.latitude,
+          longitude: p.longitude,
+          raio: p.raio,
+        }));
+
+        const ronda: Ronda = {
+          id,
+          rota: rota.nome,
+          rotaId: rota.id,
+          postoId: rota.postoId,
+          data: dateString,
+          horarioInicio: '',
+          horarioFim: '',
+          status: 'aguardando',
+          porteiro: 'A Definir',
+          pontos,
+          recorrente: true,
+          diasSemana: rota.diasSemana,
+          semanaAno: currentWeek,
+          ano: currentYear,
+          cicloCompleto: false
+        };
+        addRonda(ronda);
       });
     };
 
-    // Run immediately and then every minute
+    // Roda na montagem e a cada minuto (caso vire um novo dia / nova rota)
     checkAndCreateRondas();
     const intervalId = setInterval(checkAndCreateRondas, 60000);
     return () => clearInterval(intervalId);
-  }, [rotasGeoreferenciadas]);
+  }, [rotasGeoreferenciadas, user?.postoId, addRonda]);
 
   // Alerta de proximidade de plantão (10 min antes)
   useEffect(() => {
@@ -455,16 +468,38 @@ export default function RondaPage() {
     toast.success('Ronda iniciada!');
   };
 
-  // Check-in a ponto
-  const handleCheckinWithPhoto = (pontoId: string, photoBase64: string) => {
+  // Check-in a ponto (com upload da foto para o Firebase Storage)
+  const handleCheckinWithPhoto = async (pontoId: string, photoBase64: string) => {
     if (!selectedRonda) return;
+
+    const toastId = toast.loading('Enviando foto...');
+    let fotoUrl = photoBase64;
+
+    try {
+      fotoUrl = await uploadFotoRonda({
+        rondaId: selectedRonda.id,
+        pontoId,
+        data: selectedRonda.data || getCurrentDate(),
+        base64: photoBase64,
+      });
+    } catch (err) {
+      console.error('[v0] Falha no upload da foto, mantendo localmente:', err);
+      toast.error('Falha ao enviar foto. Check-in salvo, tente sincronizar depois.', { id: toastId });
+    }
+
     const updatedPontos = selectedRonda.pontos.map(p =>
-      p.id === pontoId ? { ...p, horarioReal: getCurrentTime(), fotoUrl: photoBase64 } : p
+      p.id === pontoId ? { ...p, horarioReal: getCurrentTime(), fotoUrl } : p
     );
     const updatedRonda = { ...selectedRonda, pontos: updatedPontos };
     setSelectedRonda(updatedRonda);
     updateRonda(updatedRonda);
-    toast.success('Check-in e foto realizados com sucesso!');
+
+    // Só mostra sucesso se o upload não falhou (caso contrário já mostrou erro)
+    if (fotoUrl !== photoBase64) {
+      toast.success('Check-in e foto realizados com sucesso!', { id: toastId });
+    } else {
+      toast.dismiss(toastId);
+    }
   };
 
   // Update ponto field
@@ -927,6 +962,21 @@ export default function RondaPage() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Foto do ponto (registrada no check-in) */}
+                        {ponto.fotoUrl && (
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Camera className="h-3 w-3" />
+                              Foto registrada
+                            </Label>
+                            <img
+                              src={ponto.fotoUrl || "/placeholder.svg"}
+                              alt={`Foto do ponto ${ponto.ponto}`}
+                              className="w-full max-h-48 object-cover rounded-lg border border-border"
+                            />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -1161,6 +1211,21 @@ export default function RondaPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Foto do ponto (capturada no check-in) */}
+                        {ponto.fotoUrl && (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Camera className="h-3.5 w-3.5" />
+                              Foto registrada
+                            </Label>
+                            <img
+                              src={ponto.fotoUrl || "/placeholder.svg"}
+                              alt={`Foto do ponto ${ponto.ponto}`}
+                              className="w-full max-h-48 object-cover rounded-lg border border-border"
+                            />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );

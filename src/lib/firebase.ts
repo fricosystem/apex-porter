@@ -7,6 +7,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -24,6 +25,7 @@ const isFirebaseConfigured = Object.values(firebaseConfig).every(value => value 
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
+let storage: FirebaseStorage | undefined;
 
 if (isFirebaseConfigured) {
   // Initialize Firebase (prevent re-initialization in dev hot reload)
@@ -32,6 +34,9 @@ if (isFirebaseConfigured) {
   
   // Initialize Firestore
   db = getFirestore(app);
+
+  // Initialize Cloud Storage
+  storage = getStorage(app);
 } else if (typeof window !== 'undefined') {
   console.warn('[Firebase] Missing Firebase configuration. Please set environment variables.');
 }
@@ -41,6 +46,7 @@ if (isFirebaseConfigured) {
 const exportedApp = app as FirebaseApp;
 const exportedAuth = auth as Auth;
 const exportedDb = db as Firestore;
+const exportedStorage = storage as FirebaseStorage;
 
-export { exportedApp as app, exportedAuth as auth, exportedDb as db };
+export { exportedApp as app, exportedAuth as auth, exportedDb as db, exportedStorage as storage };
 export default exportedApp;
