@@ -597,7 +597,7 @@ export default function DashboardPage() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="h-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-40"
+      className="h-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-56"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
