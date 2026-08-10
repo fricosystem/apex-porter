@@ -358,6 +358,8 @@ export default function FluxoPage() {
 
   const filteredRegistros = useMemo(() => {
     let result = [...rascunhosFluxo, ...registrosFluxo].filter((r) => {
+      // Registros inativados (Refeito) não aparecem nas listas Em aberto/Finalizados
+      if (r.inativo) return false;
       if (categoriaAtiva !== 'todos' && r.categoria !== categoriaAtiva) return false;
       const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
       if (statusFilter === 'aberto' && hasSaida) return false;
