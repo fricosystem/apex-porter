@@ -29,32 +29,24 @@ import {
   Radar,
   ComposedChart,
 } from 'recharts';
-import type { TooltipProps } from 'recharts';
 import {
   ArrowDown,
   ArrowUp,
-  Clock,
-  Activity,
   Car,
   AlertTriangle,
   ShieldBan,
   PackageSearch,
   CalendarCheck,
   Users,
-  FileCheck,
   Filter,
+  MousePointerClick,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
-import {
-  CATEGORIAS_FLUXO,
-  TIPOS_OCORRENCIA,
-  GRAVIDADES_OCORRENCIA,
-  STATUS_OCORRENCIA,
-  TIPOS_EMERGENCIA,
-} from '@/lib/data';
-import { TIPOS_PESSOA, normalizeTipoPessoa, type RegistroFluxo, type TipoPessoa } from '@/lib/data';
+import { CATEGORIAS_FLUXO, TIPOS_OCORRENCIA, GRAVIDADES_OCORRENCIA } from '@/lib/data';
+import { TIPOS_PESSOA, normalizeTipoPessoa } from '@/lib/data';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const container = {
   hidden: { opacity: 0 },
@@ -85,86 +77,14 @@ const LEGEND_STYLE = {
   fontFamily: 'inherit',
 };
 
-// ── Custom Cursor with connector line from tooltip area to point ──
-function ChartCursor(props: any) {
-  const { x, y, width, height, top, bottom, points } = props;
-  
-  if (x === undefined) return null;
-
-  const cx = x;
-  const chartTop = top ?? 0;
-  const chartBottom = bottom ?? 0;
-  
-  let pointY = y;
-  let barWidth = width || 20;
-  
-  // For LineChart/AreaChart, use points if available
-  if (points && points.length > 0 && points[0].value !== undefined) {
-    pointY = points[0].y;
-  }
-  
-  const color = '#10b981';
-
-  return (
-    <g>
-      {/* Vertical line through the point */}
-      <line
-        x1={cx}
-        y1={chartTop}
-        x2={cx}
-        y2={chartBottom}
-        stroke={color}
-        strokeWidth="1"
-        strokeDasharray="3 3"
-        opacity="0.3"
-      />
-
-      {/* Connector line from chart top to the point */}
-      {pointY !== undefined && (
-        <line
-          x1={cx}
-          y1={chartTop}
-          x2={cx}
-          y2={pointY}
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          opacity="0.6"
-        />
-      )}
-
-      {/* Dot at the point (target endpoint) */}
-      {pointY !== undefined && (
-        <>
-          <circle cx={cx} cy={pointY} r="4" fill={color} opacity="0.8" />
-          <circle cx={cx} cy={pointY} r="2" fill="#ffffff" />
-        </>
-      )}
-      
-      {/* For BarChart, show highlight behind bar */}
-      {width !== undefined && height !== undefined && (
-        <rect
-          x={x - 2}
-          y={chartTop}
-          width={barWidth + 4}
-          height={chartBottom - chartTop}
-          fill="rgba(16,185,129,0.06)"
-          rx={3}
-        />
-      )}
-    </g>
-  );
-}
-
 // ── Custom Tooltip Component ──
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
 
-  const mainColor = payload[0]?.color || '#10b981';
+  const mainColor = payload[0]?.color || payload[0]?.payload?.fill || '#10b981';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {/* Badge container */}
       <div
         style={{
           display: 'flex',
@@ -180,7 +100,6 @@ function ChartTooltip({ active, payload, label }: any) {
           backdropFilter: 'blur(8px)',
         }}
       >
-        {/* Label (title) */}
         {label !== undefined && label !== '' && (
           <span
             style={{
@@ -194,19 +113,13 @@ function ChartTooltip({ active, payload, label }: any) {
             {label}
           </span>
         )}
-        {/* Payload items */}
         {payload.map((entry: any, idx: number) => {
-          const itemColor = entry.color || '#10b981';
+          const itemColor = entry.color || entry.payload?.fill || '#10b981';
           return (
             <div
               key={`tooltip-item-${idx}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10 }}
             >
-              {/* Color indicator with glow ring */}
               <div style={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
                 <div
                   style={{
@@ -227,26 +140,10 @@ function ChartTooltip({ active, payload, label }: any) {
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Title (white bold) */}
-                <span
-                  style={{
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    lineHeight: 1.2,
-                  }}
-                >
+                <span style={{ color: '#ffffff', fontWeight: 700, fontSize: 13, lineHeight: 1.2 }}>
                   {entry.name}
                 </span>
-                {/* Result subtitle (green, not bold) */}
-                <span
-                  style={{
-                    color: itemColor,
-                    fontWeight: 400,
-                    fontSize: 15,
-                    lineHeight: 1.3,
-                  }}
-                >
+                <span style={{ color: itemColor, fontWeight: 400, fontSize: 15, lineHeight: 1.3 }}>
                   {entry.value !== undefined && entry.value !== null
                     ? typeof entry.value === 'number'
                       ? entry.value.toLocaleString('pt-BR')
@@ -264,15 +161,11 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [activeChartStates, setActiveChartStates] = useState<Record<string, number | null>>({});
-  
-  const setActiveChartIndex = (chartId: string, index: number | null) => {
-    setActiveChartStates(prev => ({
-      ...prev,
-      [chartId]: prev[chartId] === index ? null : index
-    }));
-  };
-  
+  const isMobile = useIsMobile();
+  // No mobile o tooltip aparece ao tocar/clicar na barra ou fatia.
+  // No desktop mantém o comportamento de passar o mouse por cima.
+  const tooltipTrigger: 'hover' | 'click' = isMobile ? 'click' : 'hover';
+
   const {
     registrosFluxo,
     veiculos,
@@ -284,7 +177,6 @@ export default function DashboardPage() {
     avisos,
     checklists,
     inspecoes,
-    protocolos,
   } = useAppStore();
 
   // Auto-clear loading state when data arrives or after a short timeout
@@ -376,15 +268,24 @@ export default function DashboardPage() {
     };
   }, [inicio, fim]);
 
-  const registrosFluxoFiltered = useMemo(() => registrosFluxo.filter(r => isDateInRange('data' in r ? (r as any).data : '')), [registrosFluxo, isDateInRange]);
-  const veiculosFiltered = useMemo(() => veiculos.filter(v => isDateInRange(v.data)), [veiculos, isDateInRange]);
-  const ocorrenciasFiltered = useMemo(() => ocorrencias.filter(o => isDateInRange(o.data)), [ocorrencias, isDateInRange]);
-  const listaNegraFiltered = useMemo(() => listaNegra.filter(l => isDateInRange(l.data)), [listaNegra, isDateInRange]);
-  const achadosFiltered = useMemo(() => achadosPerdidos.filter(a => isDateInRange(a.data)), [achadosPerdidos, isDateInRange]);
-  const preAuthFiltered = useMemo(() => preAutorizacoes.filter(p => isDateInRange(p.dataPrevista)), [preAutorizacoes, isDateInRange]);
-  const checklistsFiltered = useMemo(() => checklists.filter(c => isDateInRange(c.data)), [checklists, isDateInRange]);
-  const inspecoesFiltered = useMemo(() => inspecoes.filter(i => isDateInRange(i.data)), [inspecoes, isDateInRange]);
-  const avisosFiltered = useMemo(() => avisos.filter(a => isDateInRange(a.data)), [avisos, isDateInRange]);
+  // Registros de fluxo: aplicam o filtro de período E excluem os inativados (Refeito)
+  const registrosFluxoFiltered = useMemo(
+    () => registrosFluxo.filter((r) => !r.inativo && isDateInRange('data' in r ? (r as any).data : '')),
+    [registrosFluxo, isDateInRange]
+  );
+  const veiculosFiltered = useMemo(() => veiculos.filter((v) => isDateInRange(v.data)), [veiculos, isDateInRange]);
+  const ocorrenciasFiltered = useMemo(() => ocorrencias.filter((o) => isDateInRange(o.data)), [ocorrencias, isDateInRange]);
+  const listaNegraFiltered = useMemo(() => listaNegra.filter((l) => isDateInRange(l.data)), [listaNegra, isDateInRange]);
+  const achadosFiltered = useMemo(() => achadosPerdidos.filter((a) => isDateInRange(a.data)), [achadosPerdidos, isDateInRange]);
+  const preAuthFiltered = useMemo(() => preAutorizacoes.filter((p) => isDateInRange(p.dataPrevista)), [preAutorizacoes, isDateInRange]);
+  const checklistsFiltered = useMemo(() => checklists.filter((c) => isDateInRange(c.data)), [checklists, isDateInRange]);
+  const inspecoesFiltered = useMemo(() => inspecoes.filter((i) => isDateInRange(i.data)), [inspecoes, isDateInRange]);
+  const avisosFiltered = useMemo(() => avisos.filter((a) => isDateInRange(a.data)), [avisos, isDateInRange]);
+  // Pessoas cadastradas agora respeitam o filtro de período (por dataCadastro)
+  const pessoasFiltered = useMemo(
+    () => pessoas.filter((p) => !p.inativo && isDateInRange(p.dataCadastro)),
+    [pessoas, isDateInRange]
+  );
 
   // ── Computed KPIs ──
   const kpis = useMemo(() => {
@@ -395,98 +296,57 @@ export default function DashboardPage() {
     const listaNegraAtiva = listaNegraFiltered.filter((l) => l.status === 'ativo').length;
     const achadosNaoDevolvidos = achadosFiltered.filter((a) => a.status !== 'devolvido').length;
     const preAuthPendentes = preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
-    const pessoasCadastradas = pessoas.filter(p => !p.inativo).length;
-    const checklistsPendentes = checklistsFiltered.filter((c) => c.status === 'pendente').length;
-    const avisosAtivos = avisosFiltered.filter((a) => a.fixado).length;
+    const pessoasCadastradas = pessoasFiltered.length;
 
     return [
-      {
-        title: 'Fluxo Aberto',
-        value: fluxoAbertos,
-        icon: ArrowDown,
-        color: 'text-emerald-600 dark:text-emerald-400',
-        bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      },
-      {
-        title: 'Fluxo Finalizado',
-        value: fluxoFechados,
-        icon: ArrowUp,
-        color: 'text-teal-600 dark:text-teal-400',
-        bg: 'bg-teal-50 dark:bg-teal-950/30',
-      },
-      {
-        title: 'Veículos no Local',
-        value: veiculosEstacionados,
-        icon: Car,
-        color: 'text-blue-600 dark:text-blue-400',
-        bg: 'bg-blue-50 dark:bg-blue-950/30',
-      },
-      {
-        title: 'Ocorrências Abertas',
-        value: ocorrenciasAbertas,
-        icon: AlertTriangle,
-        color: 'text-red-600 dark:text-red-400',
-        bg: 'bg-red-50 dark:bg-red-950/30',
-      },
-      {
-        title: 'Lista Negra Ativa',
-        value: listaNegraAtiva,
-        icon: ShieldBan,
-        color: 'text-orange-600 dark:text-orange-400',
-        bg: 'bg-orange-50 dark:bg-orange-950/30',
-      },
-      {
-        title: 'Achados e Perdidos',
-        value: achadosNaoDevolvidos,
-        icon: PackageSearch,
-        color: 'text-violet-600 dark:text-violet-400',
-        bg: 'bg-violet-50 dark:bg-violet-950/30',
-      },
-      {
-        title: 'Pré-Autorizações',
-        value: preAuthPendentes,
-        icon: CalendarCheck,
-        color: 'text-cyan-600 dark:text-cyan-400',
-        bg: 'bg-cyan-50 dark:bg-cyan-950/30',
-      },
-      {
-        title: 'Pessoas Cadastradas',
-        value: pessoasCadastradas,
-        icon: Users,
-        color: 'text-indigo-600 dark:text-indigo-400',
-        bg: 'bg-indigo-50 dark:bg-indigo-950/30',
-      },
+      { title: 'Fluxo Aberto', value: fluxoAbertos, icon: ArrowDown, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+      { title: 'Fluxo Finalizado', value: fluxoFechados, icon: ArrowUp, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
+      { title: 'Veículos no Local', value: veiculosEstacionados, icon: Car, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+      { title: 'Ocorrências Abertas', value: ocorrenciasAbertas, icon: AlertTriangle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30' },
+      { title: 'Lista Negra Ativa', value: listaNegraAtiva, icon: ShieldBan, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30' },
+      { title: 'Achados e Perdidos', value: achadosNaoDevolvidos, icon: PackageSearch, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/30' },
+      { title: 'Pré-Autorizações', value: preAuthPendentes, icon: CalendarCheck, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/30' },
+      { title: 'Pessoas Cadastradas', value: pessoasCadastradas, icon: Users, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
     ];
-  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoas, avisosFiltered, checklistsFiltered]);
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered]);
 
   // ── Real Data for Charts ──
   const entradasSaidasPorHora = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-    const data = hours.map(h => ({ hora: h, entradas: 0, saidas: 0 }));
-    
-    registrosFluxoFiltered.forEach(r => {
+    const data = hours.map((h) => ({ hora: h, entradas: 0, saidas: 0 }));
+
+    registrosFluxoFiltered.forEach((r) => {
       if (r.horarioEntrada) {
         const h = r.horarioEntrada.split(':')[0] + ':00';
-        const entry = data.find(d => d.hora === h);
+        const entry = data.find((d) => d.hora === h);
         if (entry) entry.entradas++;
       }
       if ('horarioSaida' in r && (r as any).horarioSaida) {
         const h = (r as any).horarioSaida.split(':')[0] + ':00';
-        const entry = data.find(d => d.hora === h);
+        const entry = data.find((d) => d.hora === h);
         if (entry) entry.saidas++;
       }
     });
-    
-    const firstActiveIndex = data.findIndex(d => d.entradas > 0 || d.saidas > 0);
-    const lastActiveIndex = data.findLastIndex(d => d.entradas > 0 || d.saidas > 0);
-    
+
+    const firstActiveIndex = data.findIndex((d) => d.entradas > 0 || d.saidas > 0);
+    const lastActiveIndex = data.findLastIndex((d) => d.entradas > 0 || d.saidas > 0);
+
     if (firstActiveIndex === -1) return data.slice(6, 18);
-    
+
     const start = Math.max(0, firstActiveIndex - 1);
     const end = Math.min(23, lastActiveIndex + 1);
-    
+
     return data.slice(start, end + 1);
   }, [registrosFluxoFiltered]);
+
+  // ── Movimentação acumulada (novo gráfico) ──
+  const movimentacaoAcumulada = useMemo(() => {
+    let acc = 0;
+    return entradasSaidasPorHora.map((d) => {
+      acc += d.entradas;
+      return { hora: d.hora, entradas: d.entradas, acumulado: acc };
+    });
+  }, [entradasSaidasPorHora]);
 
   const tendenciaSemanal = useMemo(() => {
     const dataMap: Record<string, any> = {};
@@ -499,49 +359,38 @@ export default function DashboardPage() {
       dataMap[dataStr] = 0;
       dataMap[`${dataStr}_label`] = diaSemana;
     }
-    
-    registrosFluxo.forEach(r => {
+
+    registrosFluxo.forEach((r) => {
+      if (r.inativo) return;
       const data = 'data' in r ? (r as any).data : '';
       if (data && dataMap[data] !== undefined) {
         dataMap[data]++;
       }
     });
-    
+
     return Object.keys(dataMap)
-      .filter(k => !k.includes('_label'))
-      .map(k => ({
-        dia: dataMap[`${k}_label`],
-        data: k,
-        movimentacoes: dataMap[k]
-      }));
+      .filter((k) => !k.includes('_label'))
+      .map((k) => ({ dia: dataMap[`${k}_label`], data: k, movimentacoes: dataMap[k] }));
   }, [registrosFluxo, fim]);
 
   const fluxoPorPeriodo = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-    const data = hours.map(h => ({ periodo: h, fluxo: 0 }));
-    
-    registrosFluxoFiltered.forEach(r => {
+    const data = hours.map((h) => ({ periodo: h, fluxo: 0 }));
+
+    registrosFluxoFiltered.forEach((r) => {
       if (r.horarioEntrada) {
         const h = r.horarioEntrada.split(':')[0] + ':00';
-        const entry = data.find(d => d.periodo === h);
+        const entry = data.find((d) => d.periodo === h);
         if (entry) entry.fluxo++;
       }
     });
-    
+
     return data;
   }, [registrosFluxoFiltered]);
 
   const checklistsPorStatus = useMemo(() => {
-    const colors: Record<string, string> = {
-      pendente: '#ef4444',
-      em_andamento: '#f59e0b',
-      concluido: '#10b981',
-    };
-    const labels: Record<string, string> = {
-      pendente: 'Pendente',
-      em_andamento: 'Em Andamento',
-      concluido: 'Concluído',
-    };
+    const colors: Record<string, string> = { pendente: '#ef4444', em_andamento: '#f59e0b', concluido: '#10b981' };
+    const labels: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em Andamento', concluido: 'Concluído' };
     const counts: Record<string, number> = {};
     checklistsFiltered.forEach((c) => {
       counts[c.status] = (counts[c.status] || 0) + 1;
@@ -562,11 +411,8 @@ export default function DashboardPage() {
     registrosFluxoFiltered.forEach((r) => {
       const cat = r.categoria;
       if (!counts[cat]) counts[cat] = { abertos: 0, fechados: 0 };
-      if (r.horarioSaida) {
-        counts[cat].fechados++;
-      } else {
-        counts[cat].abertos++;
-      }
+      if (r.horarioSaida) counts[cat].fechados++;
+      else counts[cat].abertos++;
     });
     return CATEGORIAS_FLUXO.map((c) => ({
       categoria: c.label.length > 12 ? c.label.slice(0, 12) + '…' : c.label,
@@ -578,53 +424,36 @@ export default function DashboardPage() {
   // ── Ocorrências por tipo ──
   const ocorrenciasPorTipo = useMemo(() => {
     const counts: Record<string, number> = {};
-    TIPOS_OCORRENCIA.forEach((t) => { counts[t.value] = 0; });
+    TIPOS_OCORRENCIA.forEach((t) => {
+      counts[t.value] = 0;
+    });
     ocorrenciasFiltered.forEach((o) => {
       counts[o.tipo] = (counts[o.tipo] || 0) + 1;
     });
-    return TIPOS_OCORRENCIA.map((t) => ({
-      tipo: t.label,
-      qtd: counts[t.value] || 0,
-    })).filter((d) => d.qtd > 0);
+    return TIPOS_OCORRENCIA.map((t) => ({ tipo: t.label, qtd: counts[t.value] || 0 })).filter((d) => d.qtd > 0);
   }, [ocorrenciasFiltered]);
 
   // ── Ocorrências por gravidade ──
   const ocorrenciasPorGravidade = useMemo(() => {
-    const colors: Record<string, string> = {
-      leve: '#10b981',
-      moderada: '#f59e0b',
-      grave: '#f97316',
-      critica: '#ef4444',
-    };
+    const colors: Record<string, string> = { leve: '#10b981', moderada: '#f59e0b', grave: '#f97316', critica: '#ef4444' };
     const counts: Record<string, number> = {};
-    GRAVIDADES_OCORRENCIA.forEach((g) => { counts[g.value] = 0; });
+    GRAVIDADES_OCORRENCIA.forEach((g) => {
+      counts[g.value] = 0;
+    });
     ocorrenciasFiltered.forEach((o) => {
       counts[o.gravidade] = (counts[o.gravidade] || 0) + 1;
     });
-    return GRAVIDADES_OCORRENCIA.map((g) => ({
-      name: g.label,
-      value: counts[g.value] || 0,
-      fill: colors[g.value],
-    })).filter((d) => d.value > 0);
+    return GRAVIDADES_OCORRENCIA.map((g) => ({ name: g.label, value: counts[g.value] || 0, fill: colors[g.value] })).filter((d) => d.value > 0);
   }, [ocorrenciasFiltered]);
 
   // ── Veículos por tipo ──
   const veiculosPorTipo = useMemo(() => {
-    const colors: Record<string, string> = {
-      Visitante: '#8b5cf6',
-      Prestador: '#06b6d4',
-      Entregador: '#10b981',
-      Colaborador: '#3b82f6',
-    };
+    const colors: Record<string, string> = { Visitante: '#8b5cf6', Prestador: '#06b6d4', Entregador: '#10b981', Colaborador: '#3b82f6' };
     const counts: Record<string, number> = {};
     veiculosFiltered.forEach((v) => {
       counts[v.tipo] = (counts[v.tipo] || 0) + 1;
     });
-    return Object.entries(counts).map(([tipo, qtd]) => ({
-      name: tipo,
-      value: qtd,
-      fill: colors[tipo] || '#6b7280',
-    }));
+    return Object.entries(counts).map(([tipo, qtd]) => ({ name: tipo, value: qtd, fill: colors[tipo] || '#6b7280' }));
   }, [veiculosFiltered]);
 
   // ── Pessoas por tipo ──
@@ -637,93 +466,52 @@ export default function DashboardPage() {
       Entregador: '#10b981',
       Colaborador: '#6366f1',
       Coletor: '#f97316',
-      Esporadico: '#6b7280',
+      Esporadico: '#8b5cf6',
     };
-    // Inicializa todos os tipos canônicos com zero para exibir os tipos existentes
     const counts: Record<string, number> = {};
-    TIPOS_PESSOA.forEach((t) => { counts[t.value] = 0; });
-    pessoas.filter(p => !p.inativo).forEach((p) => {
+    TIPOS_PESSOA.forEach((t) => {
+      counts[t.value] = 0;
+    });
+    pessoasFiltered.forEach((p) => {
       const t = normalizeTipoPessoa(p.tipo);
       counts[t] = (counts[t] || 0) + 1;
     });
-    return TIPOS_PESSOA.map((t) => ({
-      name: t.label,
-      value: counts[t.value] || 0,
-      fill: colors[t.value] || '#6b7280',
-    }));
-  }, [pessoas]);
+    return TIPOS_PESSOA.map((t) => ({ name: t.label, value: counts[t.value] || 0, fill: colors[t.value] || '#6b7280' })).filter(
+      (d) => d.value > 0
+    );
+  }, [pessoasFiltered]);
 
   // ── Pré-autorizações por status ──
   const preAuthPorStatus = useMemo(() => {
-    const colors: Record<string, string> = {
-      agendado: '#3b82f6',
-      confirmado: '#10b981',
-      cancelado: '#ef4444',
-      expirado: '#6b7280',
-    };
-    const labels: Record<string, string> = {
-      agendado: 'Agendado',
-      confirmado: 'Confirmado',
-      cancelado: 'Cancelado',
-      expirado: 'Expirado',
-    };
+    const colors: Record<string, string> = { agendado: '#3b82f6', confirmado: '#10b981', cancelado: '#ef4444', expirado: '#6b7280' };
+    const labels: Record<string, string> = { agendado: 'Agendado', confirmado: 'Confirmado', cancelado: 'Cancelado', expirado: 'Expirado' };
     const counts: Record<string, number> = {};
     preAuthFiltered.forEach((p) => {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
-    return Object.entries(counts).map(([status, qtd]) => ({
-      name: labels[status] || status,
-      value: qtd,
-      fill: colors[status] || '#6b7280',
-    }));
+    return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [preAuthFiltered]);
 
   // ── Achados e perdidos por status ──
   const achadosPorStatus = useMemo(() => {
-    const colors: Record<string, string> = {
-      achado: '#10b981',
-      perdido: '#f59e0b',
-      devolvido: '#3b82f6',
-    };
-    const labels: Record<string, string> = {
-      achado: 'Achado',
-      perdido: 'Perdido',
-      devolvido: 'Devolvido',
-    };
+    const colors: Record<string, string> = { achado: '#10b981', perdido: '#f59e0b', devolvido: '#3b82f6' };
+    const labels: Record<string, string> = { achado: 'Achado', perdido: 'Perdido', devolvido: 'Devolvido' };
     const counts: Record<string, number> = {};
     achadosFiltered.forEach((a) => {
       counts[a.status] = (counts[a.status] || 0) + 1;
     });
-    return Object.entries(counts).map(([status, qtd]) => ({
-      name: labels[status] || status,
-      value: qtd,
-      fill: colors[status] || '#6b7280',
-    }));
+    return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [achadosFiltered]);
 
   // ── Ocorrências por status ──
   const ocorrenciasPorStatus = useMemo(() => {
-    const colors: Record<string, string> = {
-      aberta: '#ef4444',
-      em_andamento: '#f59e0b',
-      resolvida: '#10b981',
-      encaminhada: '#3b82f6',
-    };
-    const labels: Record<string, string> = {
-      aberta: 'Aberta',
-      em_andamento: 'Em Andamento',
-      resolvida: 'Resolvida',
-      encaminhada: 'Encaminhada',
-    };
+    const colors: Record<string, string> = { aberta: '#ef4444', em_andamento: '#f59e0b', resolvida: '#10b981', encaminhada: '#3b82f6' };
+    const labels: Record<string, string> = { aberta: 'Aberta', em_andamento: 'Em Andamento', resolvida: 'Resolvida', encaminhada: 'Encaminhada' };
     const counts: Record<string, number> = {};
     ocorrenciasFiltered.forEach((o) => {
       counts[o.status] = (counts[o.status] || 0) + 1;
     });
-    return Object.entries(counts).map(([status, qtd]) => ({
-      name: labels[status] || status,
-      value: qtd,
-      fill: colors[status] || '#6b7280',
-    }));
+    return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [ocorrenciasFiltered]);
 
   // ── Empresas mais frequentes (top 5) ──
@@ -734,7 +522,6 @@ export default function DashboardPage() {
       if ('empresa' in r) empresa = (r as any).empresa;
       if ('nomeEmpresa' in r) empresa = (r as any).nomeEmpresa;
       if (!empresa) return;
-      // Extract company name from "Name / Company" format
       const parts = empresa.split(' / ');
       const companyName = parts.length > 1 ? parts[parts.length - 1] : empresa;
       counts[companyName] = (counts[companyName] || 0) + 1;
@@ -742,34 +529,51 @@ export default function DashboardPage() {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([empresa, qtd]) => ({
-        empresa: empresa.length > 20 ? empresa.slice(0, 20) + '…' : empresa,
-        registros: qtd,
-      }));
+      .map(([empresa, qtd]) => ({ empresa: empresa.length > 20 ? empresa.slice(0, 20) + '…' : empresa, registros: qtd }));
   }, [registrosFluxoFiltered]);
+
+  // ── Registros por departamento (top 5) - novo gráfico ──
+  const registrosPorDepartamento = useMemo(() => {
+    const counts: Record<string, number> = {};
+    registrosFluxoFiltered.forEach((r) => {
+      const dep = 'departamento' in r ? (r as any).departamento : '';
+      if (!dep) return;
+      counts[dep] = (counts[dep] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([departamento, qtd]) => ({ departamento: departamento.length > 20 ? departamento.slice(0, 20) + '…' : departamento, registros: qtd }));
+  }, [registrosFluxoFiltered]);
+
+  // ── Atividade por módulo (novo gráfico - radar) ──
+  const atividadePorModulo = useMemo(() => {
+    return [
+      { modulo: 'Fluxo', valor: registrosFluxoFiltered.length },
+      { modulo: 'Veículos', valor: veiculosFiltered.length },
+      { modulo: 'Ocorrências', valor: ocorrenciasFiltered.length },
+      { modulo: 'Achados', valor: achadosFiltered.length },
+      { modulo: 'Pré-Aut.', valor: preAuthFiltered.length },
+      { modulo: 'Checklists', valor: checklistsFiltered.length },
+      { modulo: 'Inspeções', valor: inspecoesFiltered.length },
+    ];
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, achadosFiltered, preAuthFiltered, checklistsFiltered, inspecoesFiltered]);
 
   // ── Inspeções por status ──
   const inspecoesPorStatus = useMemo(() => {
-    const colors: Record<string, string> = {
-      em_andamento: '#f59e0b',
-      concluida: '#3b82f6',
-      aprovada: '#10b981',
-    };
-    const labels: Record<string, string> = {
-      em_andamento: 'Em Andamento',
-      concluida: 'Concluída',
-      aprovada: 'Aprovada',
-    };
+    const colors: Record<string, string> = { em_andamento: '#f59e0b', concluida: '#3b82f6', aprovada: '#10b981' };
+    const labels: Record<string, string> = { em_andamento: 'Em Andamento', concluida: 'Concluída', aprovada: 'Aprovada' };
     const counts: Record<string, number> = {};
     inspecoesFiltered.forEach((i) => {
       counts[i.status] = (counts[i.status] || 0) + 1;
     });
-    return Object.entries(counts).map(([status, qtd]) => ({
-      name: labels[status] || status,
-      value: qtd,
-      fill: colors[status] || '#6b7280',
-    }));
+    return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [inspecoesFiltered]);
+
+  const renderTooltip = (cursorColor = '16,185,129') => (
+    <Tooltip content={<ChartTooltip />} trigger={tooltipTrigger} cursor={{ fill: `rgba(${cursorColor},0.1)` }} />
+  );
+  const renderPieTooltip = () => <Tooltip content={<ChartTooltip />} trigger={tooltipTrigger} />;
 
   return (
     <motion.div
@@ -824,667 +628,521 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Dica de interação no mobile */}
+      {isMobile && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          <MousePointerClick className="h-3.5 w-3.5 shrink-0" />
+          <span>Toque nas barras ou fatias dos gráficos para ver os detalhes.</span>
+        </div>
+      )}
+
       {/* ── KPI Cards (2 rows of 4) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {isLoading ? (
-            Array.from({ length: 8 }).map((_, i) => (
-              <motion.div key={i} variants={item}>
-                <Card className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-5 w-1/2" />
-                      </div>
+        {isLoading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <motion.div key={i} variants={item}>
+              <Card className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-5 w-1/2" />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          ) : (
-            kpis.filter((k) => k.value > 0).map((kpi) => (
-              <motion.div key={kpi.title} variants={item}>
-                <Card className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${kpi.bg}`}>
-                        <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
-                        <p className="text-2xl font-bold">{kpi.value}</p>
-                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        ) : (
+          kpis.filter((k) => k.value > 0).map((kpi) => (
+            <motion.div key={kpi.title} variants={item}>
+              <Card className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${kpi.bg}`}>
+                      <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))
-          )}
-        </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
+                      <p className="text-2xl font-bold">{kpi.value}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        )}
+      </div>
 
-      {/* ── Charts: grade contínua que preenche os espaços vazios no desktop ── */}
+      {/* ── Charts Row 1 ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Entradas vs Saídas por Hora</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={entradasSaidasPorHora}
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('entradasSaidas', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
-                        <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar 
-                          dataKey="entradas" 
-                          fill="#10b981" 
-                          radius={[4, 4, 0, 0]} 
-                          name="Entradas" 
-                          className="cursor-pointer"
-                        />
-                        <Bar 
-                          dataKey="saidas" 
-                          fill="#14b8a6" 
-                          radius={[4, 4, 0, 0]} 
-                          name="Saídas" 
-                          className="cursor-pointer"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Entradas vs Saídas por Hora</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={entradasSaidasPorHora}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="entradas" fill="#10b981" radius={[4, 4, 0, 0]} name="Entradas" className="cursor-pointer" />
+                      <Bar dataKey="saidas" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Saídas" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-          {tendenciaSemanal.some((d) => d.movimentacoes > 0) && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Tendência Semanal</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart 
-                        data={tendenciaSemanal}
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('tendencia', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
-                        <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Line
-                          type="monotone"
-                          dataKey="movimentacoes"
-                          stroke="#10b981"
-                          strokeWidth={2}
-                          dot={{ fill: '#10b981', r: 4 }}
-                          activeDot={{ r: 6 }}
-                          name="Movimentações"
-                          className="cursor-pointer"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {tendenciaSemanal.some((d) => d.movimentacoes > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Tendência Semanal</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={tendenciaSemanal}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Line
+                        type="monotone"
+                        dataKey="movimentacoes"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={{ fill: '#10b981', r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name="Movimentações"
+                        className="cursor-pointer"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* ── Charts Row 2: Checklists por Status + Fluxo por Período ── */}
-          {checklistsPorStatus.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Checklists por Status</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('checklists', data.activeIndex);
-                          }
-                        }}
+        {checklistsPorStatus.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Checklists por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={checklistsPorStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        dataKey="value"
+                        className="cursor-pointer"
                       >
-                        <Pie
-                          data={checklistsPorStatus}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={90}
-                          paddingAngle={2}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {checklistsPorStatus.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={(entry as any).fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+                        {checklistsPorStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={(entry as any).fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-          {fluxoPorPeriodo.some((d) => d.fluxo > 0) && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Fluxo por Período do Dia</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart 
-                        data={fluxoPorPeriodo}
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('fluxoPeriodo', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="periodo" tick={AXIS_TICK_STYLE_SMALL} />
-                        <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
-                          activeIndex={activeChartStates['fluxoPeriodo']}
-                          active={activeChartStates['fluxoPeriodo'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <defs>
-                          <linearGradient id="colorFluxo" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area
-                          type="monotone"
-                          dataKey="fluxo"
-                          stroke="#10b981"
-                          fill="url(#colorFluxo)"
-                          strokeWidth={2}
-                          name="Fluxo"
-                          className="cursor-pointer"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+        {fluxoPorPeriodo.some((d) => d.fluxo > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Fluxo por Período do Dia</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={fluxoPorPeriodo}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="periodo" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <defs>
+                        <linearGradient id="colorFluxo" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="fluxo" stroke="#10b981" fill="url(#colorFluxo)" strokeWidth={2} name="Fluxo" className="cursor-pointer" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
-      {/* ── Charts Row 3: Fluxo por Categoria (real data) + Empresas mais frequentes ── */}
+      {/* ── Charts Row 2: Movimentação acumulada + Atividade por módulo (novos) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Registros por Categoria</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={fluxoPorCategoria} 
-                        layout="vertical"
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('fluxoCategorias', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <YAxis dataKey="categoria" type="category" width={100} tick={AXIS_TICK_STYLE_SMALL} />
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(16,185,129,0.1)' }} 
-                          activeIndex={activeChartStates['fluxoCategorias']}
-                          active={activeChartStates['fluxoCategorias'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" className="cursor-pointer" />
-                        <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" className="cursor-pointer" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {movimentacaoAcumulada.some((d) => d.entradas > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Movimentação Acumulada por Hora</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={movimentacaoAcumulada}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="hora" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="entradas" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Entradas" className="cursor-pointer" />
+                      <Line type="monotone" dataKey="acumulado" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1', r: 3 }} name="Acumulado" className="cursor-pointer" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
+        {atividadePorModulo.some((d) => d.valor > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Atividade por Módulo</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={atividadePorModulo} outerRadius="70%">
+                      <PolarGrid className="stroke-border" />
+                      <PolarAngleAxis dataKey="modulo" tick={AXIS_TICK_STYLE_SMALL} />
+                      <PolarRadiusAxis tick={AXIS_TICK_STYLE_SMALL} allowDecimals={false} />
+                      {renderPieTooltip()}
+                      <Radar name="Registros" dataKey="valor" stroke="#10b981" fill="#10b981" fillOpacity={0.4} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
-          {empresasMaisFrequentes.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Empresas Mais Frequentes</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={empresasMaisFrequentes} 
-                        layout="vertical"
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('empresas', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        <YAxis dataKey="empresa" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(6,182,212,0.1)' }} 
-                          activeIndex={activeChartStates['empresas']}
-                          active={activeChartStates['empresas'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="registros" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Registros" className="cursor-pointer" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
-
-      {/* ── Charts Row 4: Ocorrências por tipo + Ocorrências por gravidade ── */}
+      {/* ── Charts Row 3: Fluxo por Categoria + Empresas mais frequentes ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {ocorrenciasPorTipo.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Ocorrências por Tipo</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={ocorrenciasPorTipo}
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('ocorrenciasTipo', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="tipo" tick={AXIS_TICK_STYLE_SMALL} />
-                        <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          cursor={{ fill: 'rgba(239,68,68,0.1)' }} 
-                          activeIndex={activeChartStates['ocorrenciasTipo']}
-                          active={activeChartStates['ocorrenciasTipo'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                        <Bar dataKey="qtd" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ocorrências" className="cursor-pointer" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Registros por Categoria</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={fluxoPorCategoria} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="categoria" type="category" width={100} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" className="cursor-pointer" />
+                      <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
+        {empresasMaisFrequentes.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Empresas Mais Frequentes</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={empresasMaisFrequentes} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="empresa" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip('6,182,212')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="registros" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Registros" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
-          {ocorrenciasPorGravidade.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Ocorrências por Gravidade</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('ocorrenciasGravidade', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={ocorrenciasPorGravidade}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {ocorrenciasPorGravidade.map((entry, index) => (
-                            <Cell key={`grav-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['ocorrenciasGravidade']}
-                          active={activeChartStates['ocorrenciasGravidade'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
-
-      {/* ── Charts Row 5: Ocorrências por status + Veículos por tipo ── */}
+      {/* ── Charts Row 4: Registros por departamento (novo) + Ocorrências por tipo ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {ocorrenciasPorStatus.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Ocorrências por Status</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('ocorrenciasStatus', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={ocorrenciasPorStatus}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {ocorrenciasPorStatus.map((entry, index) => (
-                            <Cell key={`oc-status-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {registrosPorDepartamento.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Registros por Departamento</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={registrosPorDepartamento} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="departamento" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip('99,102,241')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="registros" fill="#6366f1" radius={[0, 4, 4, 0]} name="Registros" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-          {veiculosPorTipo.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Veículos por Tipo</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('veiculosTipo', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={veiculosPorTipo}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {veiculosPorTipo.map((entry, index) => (
-                            <Cell key={`vei-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+        {ocorrenciasPorTipo.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Ocorrências por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={ocorrenciasPorTipo}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="tipo" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip('239,68,68')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="qtd" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ocorrências" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
-      {/* ── Charts Row 6: Pessoas por tipo + Pré-autorizações por status ── */}
+      {/* ── Charts Row 5: Ocorrências por gravidade + Ocorrências por status ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {pessoasPorTipo.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Pessoas Cadastradas por Tipo</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('pessoasTipo', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={pessoasPorTipo}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {pessoasPorTipo.map((entry, index) => (
-                            <Cell key={`pes-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {ocorrenciasPorGravidade.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Ocorrências por Gravidade</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={ocorrenciasPorGravidade} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {ocorrenciasPorGravidade.map((entry, index) => (
+                          <Cell key={`grav-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-          {preAuthPorStatus.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Pré-Autorizações por Status</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('preAuthStatus', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={preAuthPorStatus}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {preAuthPorStatus.map((entry, index) => (
-                            <Cell key={`pa-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+        {ocorrenciasPorStatus.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Ocorrências por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={ocorrenciasPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {ocorrenciasPorStatus.map((entry, index) => (
+                          <Cell key={`oc-status-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
-      {/* ── Charts Row 7: Achados e Perdidos + Inspeções por status ── */}
+      {/* ── Charts Row 6: Veículos por tipo + Pessoas por tipo ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {achadosPorStatus.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Achados e Perdidos por Status</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('achadosStatus', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={achadosPorStatus}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {achadosPorStatus.map((entry, index) => (
-                            <Cell key={`ap-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        {veiculosPorTipo.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Veículos por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={veiculosPorTipo} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {veiculosPorTipo.map((entry, index) => (
+                          <Cell key={`vei-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-          {inspecoesPorStatus.length > 0 && (
-            <motion.div variants={item}>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Inspeções Diárias por Status</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart
-                        onClick={(data) => {
-                          if (data?.activeIndex !== undefined) {
-                            setActiveChartIndex('inspecoesStatus', data.activeIndex);
-                          }
-                        }}
-                      >
-                        <Pie
-                          data={inspecoesPorStatus}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={85}
-                          paddingAngle={3}
-                          dataKey="value"
-                          className="cursor-pointer"
-                        >
-                          {inspecoesPorStatus.map((entry, index) => (
-                            <Cell key={`insp-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        {/* @ts-expect-error Recharts internal props */}
-                        <Tooltip 
-                          content={<ChartTooltip />} 
-                          activeIndex={activeChartStates['inspecoesStatus']}
-                          active={activeChartStates['inspecoesStatus'] !== null}
-                        />
-                        <Legend wrapperStyle={LEGEND_STYLE} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+        {pessoasPorTipo.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pessoas Cadastradas por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pessoasPorTipo} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {pessoasPorTipo.map((entry, index) => (
+                          <Cell key={`pes-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
+
+      {/* ── Charts Row 7: Pré-autorizações + Achados + Inspeções ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {preAuthPorStatus.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pré-Autorizações por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={preAuthPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {preAuthPorStatus.map((entry, index) => (
+                          <Cell key={`pa-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {achadosPorStatus.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Achados e Perdidos por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={achadosPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {achadosPorStatus.map((entry, index) => (
+                          <Cell key={`ap-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {inspecoesPorStatus.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Inspeções Diárias por Status</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={inspecoesPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                        {inspecoesPorStatus.map((entry, index) => (
+                          <Cell key={`insp-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </div>
 
       {/* ── Summary Cards Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Lista Negra */}
         {listaNegraFiltered.length > 0 && (
-        <motion.div variants={item}>
+          <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -1497,11 +1155,13 @@ export default function DashboardPage() {
                   {listaNegraFiltered.slice(0, 3).map((ln) => (
                     <div key={ln.id} className="flex items-center justify-between text-sm">
                       <span className="truncate font-medium">{ln.nome}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        ln.status === 'ativo'
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          ln.status === 'ativo'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
                         {ln.status === 'ativo' ? 'Ativo' : 'Inativo'}
                       </span>
                     </div>
@@ -1517,72 +1177,79 @@ export default function DashboardPage() {
 
         {/* Avisos Fixados */}
         {avisosFiltered.filter((a) => a.fixado).length > 0 && (
-        <motion.div variants={item}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                Avisos Importantes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                {avisosFiltered.filter((a) => a.fixado).slice(0, 3).map((av) => (
-                  <div key={av.id} className="flex items-center justify-between text-sm">
-                    <span className="truncate font-medium">{av.titulo}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      av.prioridade === 'alta'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        : av.prioridade === 'media'
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    }`}>
-                      {av.prioridade}
-                    </span>
-                  </div>
-                ))}
-                {avisosFiltered.filter((a) => a.fixado).length > 3 && (
-                  <p className="text-xs text-muted-foreground">+{avisosFiltered.filter((a) => a.fixado).length - 3} mais</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Avisos Importantes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {avisosFiltered
+                    .filter((a) => a.fixado)
+                    .slice(0, 3)
+                    .map((av) => (
+                      <div key={av.id} className="flex items-center justify-between text-sm">
+                        <span className="truncate font-medium">{av.titulo}</span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            av.prioridade === 'alta'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                              : av.prioridade === 'media'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}
+                        >
+                          {av.prioridade}
+                        </span>
+                      </div>
+                    ))}
+                  {avisosFiltered.filter((a) => a.fixado).length > 3 && (
+                    <p className="text-xs text-muted-foreground">+{avisosFiltered.filter((a) => a.fixado).length - 3} mais</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
 
         {/* Últimas Pré-Autorizações */}
         {preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0 && (
-        <motion.div variants={item}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-cyan-500" />
-                Pré-Autorizações Pendentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                {preAuthFiltered
-                  .filter((p) => p.status === 'agendado' || p.status === 'confirmado')
-                  .slice(0, 3)
-                  .map((pa) => (
-                    <div key={pa.id} className="flex items-center justify-between text-sm">
-                      <span className="truncate font-medium">{pa.visitanteNome}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        pa.status === 'confirmado'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
-                        {pa.status === 'confirmado' ? 'Confirmado' : 'Agendado'}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CalendarCheck className="h-4 w-4 text-cyan-500" />
+                  Pré-Autorizações Pendentes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  {preAuthFiltered
+                    .filter((p) => p.status === 'agendado' || p.status === 'confirmado')
+                    .slice(0, 3)
+                    .map((pa) => (
+                      <div key={pa.id} className="flex items-center justify-between text-sm">
+                        <span className="truncate font-medium">{pa.visitanteNome}</span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            pa.status === 'confirmado'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}
+                        >
+                          {pa.status === 'confirmado' ? 'Confirmado' : 'Agendado'}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
-        </div>
+      </div>
     </motion.div>
   );
 }

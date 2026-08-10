@@ -221,7 +221,7 @@ export const TIPOS_PESSOA: { value: TipoPessoaCanonico; label: string }[] = [
   { value: 'Entregador', label: 'Entregador' },
   { value: 'Colaborador', label: 'Colaborador' },
   { value: 'Coletor', label: 'Coletor' },
-  { value: 'Esporadico', label: 'Esporádico' },
+  { value: 'Esporadico', label: 'Visitantes' },
 ];
 
 // Mapeia tipos legados para os tipos canônicos atuais de forma inteligente,
@@ -241,7 +241,7 @@ export function normalizeTipoPessoa(tipo: string | undefined | null): TipoPessoa
 
 export function getTipoPessoaLabel(tipo: string | undefined | null): string {
   const canonico = normalizeTipoPessoa(tipo);
-  return TIPOS_PESSOA.find((t) => t.value === canonico)?.label || 'Esporádico';
+  return TIPOS_PESSOA.find((t) => t.value === canonico)?.label || 'Visitantes';
 }
 
 export interface Pessoa {
