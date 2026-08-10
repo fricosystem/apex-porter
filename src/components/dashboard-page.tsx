@@ -40,6 +40,9 @@ import {
   Users,
   Filter,
   MousePointerClick,
+  ClipboardCheck,
+  ClipboardList,
+  Bell,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -292,23 +295,37 @@ export default function DashboardPage() {
     const fluxoAbertos = registrosFluxoFiltered.filter((r) => !r.horarioSaida).length;
     const fluxoFechados = registrosFluxoFiltered.filter((r) => !!r.horarioSaida).length;
     const veiculosEstacionados = veiculosFiltered.filter((v) => !v.horarioSaida).length;
+    const veiculosTotal = veiculosFiltered.length;
     const ocorrenciasAbertas = ocorrenciasFiltered.filter((o) => o.status === 'aberta' || o.status === 'em_andamento').length;
+    const ocorrenciasResolvidas = ocorrenciasFiltered.filter((o) => o.status === 'resolvida').length;
     const listaNegraAtiva = listaNegraFiltered.filter((l) => l.status === 'ativo').length;
     const achadosNaoDevolvidos = achadosFiltered.filter((a) => a.status !== 'devolvido').length;
+    const achadosDevolvidos = achadosFiltered.filter((a) => a.status === 'devolvido').length;
     const preAuthPendentes = preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
     const pessoasCadastradas = pessoasFiltered.length;
+    const checklistsConcluidos = checklistsFiltered.filter((c) => c.status === 'concluido').length;
+    const checklistsPendentes = checklistsFiltered.filter((c) => c.status !== 'concluido').length;
+    const inspecoesRealizadas = inspecoesFiltered.length;
+    const avisosAtivos = avisosFiltered.length;
 
     return [
       { title: 'Fluxo Aberto', value: fluxoAbertos, icon: ArrowDown, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Fluxo Finalizado', value: fluxoFechados, icon: ArrowUp, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
       { title: 'Veículos no Local', value: veiculosEstacionados, icon: Car, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+      { title: 'Total de Veículos', value: veiculosTotal, icon: Car, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/30' },
       { title: 'Ocorrências Abertas', value: ocorrenciasAbertas, icon: AlertTriangle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30' },
+      { title: 'Ocorrências Resolvidas', value: ocorrenciasResolvidas, icon: ClipboardCheck, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/30' },
       { title: 'Lista Negra Ativa', value: listaNegraAtiva, icon: ShieldBan, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30' },
       { title: 'Achados e Perdidos', value: achadosNaoDevolvidos, icon: PackageSearch, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/30' },
+      { title: 'Itens Devolvidos', value: achadosDevolvidos, icon: PackageSearch, color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30' },
       { title: 'Pré-Autorizações', value: preAuthPendentes, icon: CalendarCheck, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/30' },
       { title: 'Pessoas Cadastradas', value: pessoasCadastradas, icon: Users, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
+      { title: 'Checklists Concluídos', value: checklistsConcluidos, icon: ClipboardCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+      { title: 'Checklists Pendentes', value: checklistsPendentes, icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+      { title: 'Inspeções Diárias', value: inspecoesRealizadas, icon: ClipboardCheck, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
+      { title: 'Avisos Publicados', value: avisosAtivos, icon: Bell, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30' },
     ];
-  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered]);
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered, checklistsFiltered, inspecoesFiltered, avisosFiltered]);
 
   // ── Real Data for Charts ──
   const entradasSaidasPorHora = useMemo(() => {
@@ -675,7 +692,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Charts Row 1 ── */}
+      {/* ── Todos os gráficos em um único grid contínuo (auto-flow 2x2) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
           <motion.div variants={item}>
@@ -798,10 +815,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 2: Movimentação acumulada + Atividade por módulo (novos) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {movimentacaoAcumulada.some((d) => d.entradas > 0) && (
           <motion.div variants={item}>
             <Card>
@@ -849,10 +862,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 3: Fluxo por Categoria + Empresas mais frequentes ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) && (
           <motion.div variants={item}>
             <Card>
@@ -901,10 +910,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 4: Registros por departamento (novo) + Ocorrências por tipo ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {registrosPorDepartamento.length > 0 && (
           <motion.div variants={item}>
             <Card>
@@ -952,10 +957,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 5: Ocorrências por gravidade + Ocorrências por status ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {ocorrenciasPorGravidade.length > 0 && (
           <motion.div variants={item}>
             <Card>
@@ -1005,10 +1006,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 6: Veículos por tipo + Pessoas por tipo ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {veiculosPorTipo.length > 0 && (
           <motion.div variants={item}>
             <Card>
@@ -1058,10 +1055,6 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-      </div>
-
-      {/* ── Charts Row 7: Pré-autorizações + Achados + Inspeções ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {preAuthPorStatus.length > 0 && (
           <motion.div variants={item}>
             <Card>
