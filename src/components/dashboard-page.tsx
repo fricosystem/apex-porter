@@ -767,16 +767,20 @@ export default function DashboardPage() {
           ))
         ) : (
           kpis.filter((k) => k.value > 0).map((kpi) => (
-            <motion.div key={kpi.title} variants={item}>
-              <Card className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${kpi.bg}`}>
+            <motion.div key={kpi.title} variants={item} className="h-full min-w-0">
+              <Card className="overflow-hidden h-full">
+                <CardContent className="p-4 h-full">
+                  <div className="flex items-center gap-3 h-full min-w-0">
+                    <div className={`p-2 rounded-lg shrink-0 ${kpi.bg}`}>
                       <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground truncate">{kpi.title}</p>
-                      <p className="text-2xl font-bold">{kpi.value}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] sm:text-xs font-medium text-muted-foreground leading-tight break-words whitespace-normal">
+                        {kpi.title}
+                      </p>
+                      <p className="mt-0.5 text-xl sm:text-2xl font-bold leading-none break-all">
+                        {typeof kpi.value === 'number' ? kpi.value.toLocaleString('pt-BR') : kpi.value}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
