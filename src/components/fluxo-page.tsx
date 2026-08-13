@@ -1055,6 +1055,31 @@ export default function FluxoPage() {
                 </div>
               </div>
 
+              {/* Diferença de Peso — exibida quando o registro já finalizado possui entrada e saída */}
+              {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2') && selectedRegistro.horarioSaida && (() => {
+                const pesoEntrada = (selectedRegistro as any).pesoEntrada ?? 0;
+                const pesoSaida = (selectedRegistro as any).pesoSaida ?? 0;
+                if (pesoEntrada <= 0 || pesoSaida <= 0) return null;
+                const diferenca = pesoSaida - pesoEntrada;
+                return (
+                  <div className={`rounded-2xl p-4 text-center border-2 ${diferenca >= 0
+                    ? 'bg-emerald-500/10 border-emerald-500/40'
+                    : 'bg-red-500/10 border-red-500/40'
+                    }`}>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      Diferença (Saída − Entrada)
+                    </p>
+                    <p className={`text-4xl font-black tracking-tight ${diferenca >= 0 ? 'text-emerald-400' : 'text-red-400'
+                      }`}>
+                      {diferenca >= 0 ? '+' : ''}{diferenca.toLocaleString('pt-BR')} kg
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg • Saída: {pesoSaida.toLocaleString('pt-BR')} kg
+                    </p>
+                  </div>
+                );
+              })()}
+
               {/* Only show detalhes/ocorrencia/saida if not yet finalized */}
               {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
                 <>
