@@ -42,6 +42,7 @@ import type {
   Posto,
   Cargo,
   RegistroPesagemApara,
+  RegistroPesagemTinta,
   RegistroChave,
 } from './data';
 
@@ -251,6 +252,32 @@ export async function updatePesagemApara(id: string, data: Partial<RegistroPesag
 
 export async function removePesagemApara(id: string): Promise<void> {
   await deleteDocument(PESAGEM_APARA_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PESAGEM DE TINTA/SOLVENTE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const PESAGEM_SOLVENTE_COL = 'pesagem_solvente';
+
+export function subscribePesagemSolvente(callback: (data: RegistroPesagemTinta[]) => void): Unsubscribe {
+  return subscribeCollection<RegistroPesagemTinta>(PESAGEM_SOLVENTE_COL, callback);
+}
+
+export async function addPesagemSolvente(data: Omit<RegistroPesagemTinta, 'id'>): Promise<string> {
+  return addDocument(PESAGEM_SOLVENTE_COL, data as Record<string, unknown>);
+}
+
+export async function setPesagemSolvente(id: string, data: Omit<RegistroPesagemTinta, 'id'>): Promise<void> {
+  await setDocument(PESAGEM_SOLVENTE_COL, id, data as Record<string, unknown>);
+}
+
+export async function updatePesagemSolvente(id: string, data: Partial<RegistroPesagemTinta>): Promise<void> {
+  await updateDocument(PESAGEM_SOLVENTE_COL, id, data);
+}
+
+export async function removePesagemSolvente(id: string): Promise<void> {
+  await deleteDocument(PESAGEM_SOLVENTE_COL, id);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

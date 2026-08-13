@@ -193,6 +193,20 @@ export interface RegistroPesagemApara extends BaseRegistroFluxo {
   ocorrencia?: string;
 }
 
+export interface RegistroPesagemTinta extends BaseRegistroFluxo {
+  categoria: 'pesagem_tinta';
+  condutor: string;
+  material: string;
+  veiculo: string;
+  peso: number;
+  data: string;
+  horarioEntrada: string;
+  horarioSaida: string;
+  porteiro?: string;
+  detalhes?: string;
+  ocorrencia?: string;
+}
+
 export interface RegistroChave {
   id: string;
   nome: string;
@@ -214,7 +228,8 @@ export type RegistroFluxo =
   | RegistroColeta
   | RegistroMovimentacao
   | RegistroCorrespondencias
-  | RegistroPesagemApara;
+  | RegistroPesagemApara
+  | RegistroPesagemTinta;
 
 export interface Empresa {
   id: string;

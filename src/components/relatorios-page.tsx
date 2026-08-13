@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import {
   FileDown, Printer, Calendar, Clock, ArrowRightLeft, User, Building2, Truck, Scale,
   Package, LogOut, Users, Mail, Car, UserCheck, BarChart3, PieChart, TrendingUp,
-  Filter, Download, Table, Weight,
+  Filter, Download, Table, Weight, Fuel,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,7 @@ type DateRange = 'hoje' | 'ontem' | 'semana' | 'mes' | 'personalizado';
 const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   entregas1: Package, visitantes: User, prestadores: Building2, pesagem: Scale,
   entregas2: Truck, coleta: ArrowRightLeft, movimentacao: Users, correspondencias: Mail,
-  pesagem_apara: Weight,
+  pesagem_apara: Weight, pesagem_tinta: Fuel,
 };
 
 function getMainField(r: RegistroFluxo): string {
@@ -45,6 +45,7 @@ function getMainField(r: RegistroFluxo): string {
     case 'movimentacao': return r.nomeColaborador;
     case 'correspondencias': return r.destinatario;
     case 'pesagem_apara': return (r as any).condutor;
+    case 'pesagem_tinta': return (r as any).condutor;
   }
 }
 

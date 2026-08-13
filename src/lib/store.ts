@@ -83,6 +83,10 @@ import {
   setPesagemApara as setPesagemAparaFS,
   updatePesagemApara as updatePesagemAparaFS,
   removePesagemApara as removePesagemAparaFS,
+  subscribePesagemSolvente,
+  setPesagemSolvente as setPesagemSolventeFS,
+  updatePesagemSolvente as updatePesagemSolventeFS,
+  removePesagemSolvente as removePesagemSolventeFS,
   subscribeVeiculos,
   setVeiculo as setVeiculoFS,
   updateVeiculo as updateVeiculoFS,
@@ -652,6 +656,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (registro.categoria === 'pesagem_apara') {
       setPesagemAparaFS(id, data as Parameters<typeof setPesagemAparaFS>[1]).catch((err) => {
         console.warn('[Firestore] Falha ao adicionar pesagem de apara:', err);
+      });
+    }
+    if (registro.categoria === 'pesagem_tinta') {
+      setPesagemSolventeFS(id, data as Parameters<typeof setPesagemSolventeFS>[1]).catch((err) => {
+        console.warn('[Firestore] Falha ao adicionar pesagem de tinta/solvente:', err);
       });
     }
   },

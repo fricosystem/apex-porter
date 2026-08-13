@@ -107,6 +107,10 @@ export function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSug
       if (data.name) mapped.condutor = data.name;
       if (data.plate) mapped.veiculo = data.plate;
       break;
+    case 'pesagem_tinta':
+      if (data.name) mapped.condutor = data.name;
+      if (data.plate) mapped.veiculo = data.plate;
+      break;
   }
 
   return mapped;
@@ -158,6 +162,10 @@ export function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionDat
       data.department = r.departamento;
       break;
     case 'pesagem_apara':
+      data.name = (r as any).condutor || '';
+      data.plate = (r as any).veiculo || '';
+      break;
+    case 'pesagem_tinta':
       data.name = (r as any).condutor || '';
       data.plate = (r as any).veiculo || '';
       break;
@@ -547,6 +555,20 @@ export default function RegistroModal({
     }));
   }, [registrosFluxo]);
 
+  // ── Material suggestions (PESAGEM DE TINTA/SOLVENTE) from histórico ──
+  const materialSuggestions = useMemo(() => {
+    const names = new Set<string>();
+    registrosFluxo.forEach((r) => {
+      const material = (r as any).material;
+      if (typeof material === 'string' && material.trim()) names.add(material.trim());
+    });
+    return Array.from(names).sort().map((name) => ({
+      label: name,
+      sublabel: undefined,
+      data: { name: '', company: '', doc: '', plate: '', department: '', material: name } as unknown as Record<string, string>,
+    }));
+  }, [registrosFluxo]);
+
   // ── Handlers ──
 
   const handleCategoriaChange = (v: string) => {
@@ -596,6 +618,12 @@ export default function RegistroModal({
           // Pesos sempre limpos para novos valores numéricos
           novoFormData.pesoCarregado = '';
           novoFormData.pesoVazio = '';
+          break;
+
+        case 'pesagem_tinta':
+          if (nomePrincipal && !prev.condutor) novoFormData.condutor = nomePrincipal;
+          // Peso sempre limpo para novo valor numérico
+          novoFormData.peso = '';
           break;
       }
       
@@ -652,6 +680,9 @@ export default function RegistroModal({
         break;
       case 'pesagem_apara':
         registro = { ...registro, condutor: formData.condutor || '', tipoReboque: formData.tipoReboque || '', veiculo: formData.veiculo || '', pesoCarregado: Number(formData.pesoCarregado) || 0, pesoVazio: Number(formData.pesoVazio) || 0, porteiro: user?.nome || '' };
+        break;
+      case 'pesagem_tinta':
+        registro = { ...registro, condutor: formData.condutor || '', material: formData.material || '', veiculo: formData.veiculo || '', peso: Number(formData.peso) || 0, porteiro: user?.nome || '' };
         break;
     }
 
@@ -715,6 +746,13 @@ export default function RegistroModal({
         ...prev,
         veiculo: unified.plate,
       }));
+    }
+  };
+
+  const handleMaterialSelect = (suggestionData: Record<string, string>) => {
+    const material = (suggestionData as unknown as { material?: string }).material;
+    if (material) {
+      updateField('material', material);
     }
   };
 
@@ -953,6 +991,38 @@ export default function RegistroModal({
           porteiro: user?.nome || '',
         };
         break;
+      case 'pesagem_tinta':
+        if (!formData.condutor?.trim()) {
+          toast.error('Preencha o nome do condutor');
+          return;
+        }
+        if (!formData.material?.trim()) {
+          toast.error('Preencha o material');
+          return;
+        }
+        if (!formData.veiculo?.trim()) {
+          toast.error('Preencha o veículo');
+          return;
+        }
+        if (!formData.peso || Number(formData.peso) <= 0) {
+          toast.error('Preencha o peso');
+          return;
+        }
+        // Pesagem de tinta/solvente é registrada já concluída (aba Finalizados)
+        const horarioConcluido = format(new Date(), 'HH:mm');
+        registro = {
+          id,
+          categoria: 'pesagem_tinta',
+          condutor: formData.condutor,
+          material: formData.material || '',
+          veiculo: formData.veiculo || '',
+          peso: Number(formData.peso) || 0,
+          data: formData.data || format(new Date(), 'dd/MM/yyyy'),
+          horarioEntrada: formData.horarioEntrada || horarioConcluido,
+          horarioSaida: horarioConcluido,
+          porteiro: user?.nome || '',
+        };
+        break;
       default:
         return;
     }
@@ -1004,6 +1074,9 @@ export default function RegistroModal({
         if (formData.destinatario) checkAndCadastrarPessoa(formData.destinatario, { departamento: formData.departamento, tipo: 'Visitante' });
         break;
       case 'pesagem_apara':
+        if (formData.condutor) checkAndCadastrarPessoa(formData.condutor, { tipo: 'Motorista', placa: formData.veiculo });
+        break;
+      case 'pesagem_tinta':
         if (formData.condutor) checkAndCadastrarPessoa(formData.condutor, { tipo: 'Motorista', placa: formData.veiculo });
         break;
     }
@@ -1637,6 +1710,58 @@ export default function RegistroModal({
             </div>
           </>
         );
+      case 'pesagem_tinta':
+        return (
+          <>
+            <div className="space-y-3">
+              <Label className="text-base">Condutor *</Label>
+              <AutocompleteInput
+                value={formData.condutor || ''}
+                onChange={(v) => updateField('condutor', v)}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
+                suggestions={nameSuggestions}
+                placeholder="Nome do condutor"
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Material *</Label>
+              <AutocompleteInput
+                value={formData.material || ''}
+                onChange={(v) => updateField('material', v.toUpperCase())}
+                onSelect={(s) => handleMaterialSelect(s.data || {})}
+                suggestions={materialSuggestions}
+                placeholder="Ex: TINTA, SOLVENTE"
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Veículo *</Label>
+              <AutocompleteInput
+                value={formData.veiculo || ''}
+                onChange={(v) => updateField('veiculo', v.toUpperCase())}
+                onSelect={(s) => handleVeiculoSelect(s.data || {})}
+                suggestions={placaSuggestions}
+                placeholder="Placa do veículo"
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Peso (kg) *</Label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.peso || ''}
+                onChange={(e) => updateField('peso', e.target.value)}
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Data</Label>
+              <Input value={formData.data || ''} readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Horário</Label>
+              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
+            </div>
+          </>
+        );
       default:
         return null;
     }
@@ -1672,7 +1797,7 @@ export default function RegistroModal({
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-3">
                 <Label className="flex items-center gap-1 text-base">
-                  Tipo de Visita <span className="text-red-500">*</span>
+                  Tipo de Registro <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={categoria}
@@ -1680,7 +1805,7 @@ export default function RegistroModal({
                   disabled={isRefacao}
                 >
                   <SelectTrigger className={!categoria ? 'text-muted-foreground border-amber-500/50 focus:ring-amber-500' : ''}>
-                    <SelectValue placeholder="Selecione o tipo de visita" />
+                    <SelectValue placeholder="Selecione o tipo de registro" />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIAS_FLUXO.map((cat) => (

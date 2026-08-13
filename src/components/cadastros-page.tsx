@@ -261,6 +261,10 @@ export default function CadastrosPage() {
           name = (r as any).condutor || '';
           plate = (r as any).veiculo || '';
           break;
+        case 'pesagem_tinta':
+          name = (r as any).condutor || '';
+          plate = (r as any).veiculo || '';
+          break;
       }
 
       if (!name) return;

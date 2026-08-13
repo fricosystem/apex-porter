@@ -184,6 +184,8 @@ export default function PreAutorizacaoPage() {
             data.name = r.destinatario; data.company = r.remetente; data.department = r.departamento; break;
           case 'pesagem_apara':
             data.name = (r as any).condutor || ''; data.plate = (r as any).veiculo || ''; break;
+          case 'pesagem_tinta':
+            data.name = (r as any).condutor || ''; data.plate = (r as any).veiculo || ''; break;
         }
         return data;
       };

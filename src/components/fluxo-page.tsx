@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion } from 'framer-motion';
-import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw, X, SlidersHorizontal, PlusCircle, MessageSquare, Weight } from 'lucide-react';
+import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw, X, SlidersHorizontal, PlusCircle, MessageSquare, Weight, Fuel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,7 @@ const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   movimentacao: Users,
   correspondencias: Mail,
   pesagem_apara: Weight,
+  pesagem_tinta: Fuel,
 };
 
 function getMainField(r: RegistroFluxo): string {
@@ -61,6 +62,7 @@ function getMainField(r: RegistroFluxo): string {
     case 'movimentacao': return r.nomeColaborador;
     case 'correspondencias': return r.destinatario;
     case 'pesagem_apara': return (r as any).condutor;
+    case 'pesagem_tinta': return (r as any).condutor;
   }
 }
 
@@ -131,6 +133,12 @@ function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[
         { label: 'Tipo de Reboque', value: (r as any).tipoReboque || '-' },
         { label: 'Peso Carregado', value: `${((r as any).pesoCarregado ?? 0).toLocaleString('pt-BR')} kg` },
         { label: 'Peso Vazio', value: `${((r as any).pesoVazio ?? 0).toLocaleString('pt-BR')} kg` },
+      ];
+    case 'pesagem_tinta':
+      return [
+        { label: 'Material', value: (r as any).material || '-' },
+        { label: 'Veículo', value: (r as any).veiculo || '-' },
+        { label: 'Peso', value: `${((r as any).peso ?? 0).toLocaleString('pt-BR')} kg` },
       ];
   }
 }
@@ -205,6 +213,12 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push({ label: 'Tipo de Reboque', value: (r as any).tipoReboque || '-' });
       base.push({ label: 'Peso Carregado', value: `${((r as any).pesoCarregado ?? 0).toLocaleString('pt-BR')} kg` });
       base.push({ label: 'Peso Vazio', value: `${((r as any).pesoVazio ?? 0).toLocaleString('pt-BR')} kg` });
+      break;
+    case 'pesagem_tinta':
+      base.push({ label: 'Condutor', value: (r as any).condutor || '-' });
+      base.push({ label: 'Material', value: (r as any).material || '-' });
+      base.push({ label: 'Veículo', value: (r as any).veiculo || '-' });
+      base.push({ label: 'Peso', value: `${((r as any).peso ?? 0).toLocaleString('pt-BR')} kg` });
       break;
   }
 
@@ -552,6 +566,7 @@ export default function FluxoPage() {
       case 'entregas2': acao = 'uma entrega'; break;
       case 'pesagem': acao = 'uma pesagem'; break;
       case 'pesagem_apara': acao = 'uma pesagem de apara'; break;
+      case 'pesagem_tinta': acao = 'uma pesagem de tinta/solvente'; break;
       case 'correspondencias': acao = 'uma entrega de correspondência'; break;
       default: acao = r.categoria;
     }
