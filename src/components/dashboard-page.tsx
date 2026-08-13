@@ -43,6 +43,8 @@ import {
   ClipboardCheck,
   ClipboardList,
   Bell,
+  Weight,
+  Fuel,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -276,6 +278,24 @@ export default function DashboardPage() {
     () => registrosFluxo.filter((r) => !r.inativo && isDateInRange('data' in r ? (r as any).data : '')),
     [registrosFluxo, isDateInRange]
   );
+
+  // ── Pesagens de Apara e de Tinta/Solvente (a partir do mesmo fluxo enviado ao Firestore) ──
+  const pesagensApara = useMemo(
+    () => registrosFluxoFiltered.filter((r) => r.categoria === 'pesagem_apara'),
+    [registrosFluxoFiltered]
+  );
+  const pesagensTinta = useMemo(
+    () => registrosFluxoFiltered.filter((r) => r.categoria === 'pesagem_tinta'),
+    [registrosFluxoFiltered]
+  );
+  const pesoTotalApara = useMemo(
+    () => pesagensApara.reduce((acc, r) => acc + Number((r as any).pesoCarregado ?? 0), 0),
+    [pesagensApara]
+  );
+  const pesoTotalTinta = useMemo(
+    () => pesagensTinta.reduce((acc, r) => acc + Number((r as any).peso ?? 0), 0),
+    [pesagensTinta]
+  );
   const veiculosFiltered = useMemo(() => veiculos.filter((v) => isDateInRange(v.data)), [veiculos, isDateInRange]);
   const ocorrenciasFiltered = useMemo(() => ocorrencias.filter((o) => isDateInRange(o.data)), [ocorrencias, isDateInRange]);
   const listaNegraFiltered = useMemo(() => listaNegra.filter((l) => isDateInRange(l.data)), [listaNegra, isDateInRange]);
@@ -322,10 +342,14 @@ export default function DashboardPage() {
       { title: 'Pessoas Cadastradas', value: pessoasCadastradas, icon: Users, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
       { title: 'Checklists Concluídos', value: checklistsConcluidos, icon: ClipboardCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Checklists Pendentes', value: checklistsPendentes, icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+      { title: 'Pesagens de Apara', value: pesagensApara.length, icon: Weight, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/30' },
+      { title: 'Peso Total Apara (kg)', value: pesoTotalApara, icon: Weight, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/30' },
+      { title: 'Pesagens de Tinta/Solv.', value: pesagensTinta.length, icon: Fuel, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/30' },
+      { title: 'Peso Total Tinta/Solv. (kg)', value: pesoTotalTinta, icon: Fuel, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-950/30' },
       { title: 'Inspeções Diárias', value: inspecoesRealizadas, icon: ClipboardCheck, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
       { title: 'Avisos Publicados', value: avisosAtivos, icon: Bell, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30' },
     ];
-  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered, checklistsFiltered, inspecoesFiltered, avisosFiltered]);
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered, checklistsFiltered, inspecoesFiltered, avisosFiltered, pesagensApara, pesagensTinta, pesoTotalApara, pesoTotalTinta]);
 
   // ── Real Data for Charts ──
   const entradasSaidasPorHora = useMemo(() => {
@@ -586,6 +610,76 @@ export default function DashboardPage() {
     });
     return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [inspecoesFiltered]);
+
+  // ── PESAGEM DE APARA — Peso Carregado vs Vazio (últimos 10 registros) ──
+  const aparaPesoCarregadoVazio = useMemo(() => {
+    return pesagensApara
+      .slice(-10)
+      .reverse()
+      .map((r, i) => ({
+        reg: `#${String(pesagensApara.length - 9 + i).padStart(2, '0')}`,
+        Carregado: Number((r as any).pesoCarregado ?? 0),
+        Vazio: Number((r as any).pesoVazio ?? 0),
+      }));
+  }, [pesagensApara]);
+
+  // ── PESAGEM DE TINTA/SOLVENTE — Peso total por material (top 5) ──
+  const tintaPesoPorMaterial = useMemo(() => {
+    const counts: Record<string, number> = {};
+    pesagensTinta.forEach((r) => {
+      const m = String((r as any).material || 'NÃO INFORMADO');
+      counts[m] = (counts[m] || 0) + Number((r as any).peso ?? 0);
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([material, peso]) => ({
+        material: material.length > 18 ? material.slice(0, 18) + '…' : material,
+        peso,
+      }));
+  }, [pesagensTinta]);
+
+  // ── Evolução diária das pesagens (Apara + Tinta/Solvente) ──
+  const pesagensPorDia = useMemo(() => {
+    const dataMap: Record<string, { apara: number; tinta: number }> = {};
+    const labels: Record<string, string> = {};
+    const cur = new Date(inicio);
+    while (cur.getTime() <= fim.getTime()) {
+      const dataStr = cur.toLocaleDateString('pt-BR');
+      dataMap[dataStr] = { apara: 0, tinta: 0 };
+      labels[dataStr] = cur.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      cur.setDate(cur.getDate() + 1);
+    }
+    pesagensApara.forEach((r) => {
+      const d = String((r as any).data);
+      if (dataMap[d]) dataMap[d].apara++;
+    });
+    pesagensTinta.forEach((r) => {
+      const d = String((r as any).data);
+      if (dataMap[d]) dataMap[d].tinta++;
+    });
+    return Object.keys(dataMap).map((d) => ({
+      dia: labels[d],
+      Apara: dataMap[d].apara,
+      'Tinta/Solv.': dataMap[d].tinta,
+    }));
+  }, [pesagensApara, pesagensTinta, inicio, fim]);
+
+  // ── Top condutores de pesagens (Apara + Tinta/Solvente) ──
+  const topCondutoresPesagens = useMemo(() => {
+    const counts: Record<string, number> = {};
+    [...pesagensApara, ...pesagensTinta].forEach((r) => {
+      const c = String((r as any).condutor || 'NÃO INFORMADO');
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([condutor, qtd]) => ({
+        condutor: condutor.length > 18 ? condutor.slice(0, 18) + '…' : condutor,
+        pesagens: qtd,
+      }));
+  }, [pesagensApara, pesagensTinta]);
 
   const renderTooltip = (cursorColor = '16,185,129') => (
     <Tooltip content={<ChartTooltip />} trigger={tooltipTrigger} cursor={{ fill: `rgba(${cursorColor},0.1)` }} />
@@ -879,6 +973,104 @@ export default function DashboardPage() {
                       <Legend wrapperStyle={LEGEND_STYLE} />
                       <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" className="cursor-pointer" />
                       <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {pesagensPorDia.some((d) => d.Apara > 0 || d['Tinta/Solv.'] > 0) && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Evolução das Pesagens</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={pesagensPorDia}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="dia" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip('139,92,246')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="Apara" fill="#8b5cf6" radius={[3, 3, 0, 0]} name="Apara" className="cursor-pointer" />
+                      <Line type="monotone" dataKey="Tinta/Solv." stroke="#f43f5e" strokeWidth={2} dot={{ fill: '#f43f5e', r: 3 }} name="Tinta/Solv." className="cursor-pointer" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {aparaPesoCarregadoVazio.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pesagem de Apara — Carregado vs Vazio</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={aparaPesoCarregadoVazio}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="reg" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip('139,92,246')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="Carregado" fill="#8b5cf6" radius={[3, 3, 0, 0]} name="Carregado (kg)" className="cursor-pointer" />
+                      <Bar dataKey="Vazio" fill="#22d3ee" radius={[3, 3, 0, 0]} name="Vazio (kg)" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {tintaPesoPorMaterial.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Tinta/Solvente — Peso por Material</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={tintaPesoPorMaterial} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="material" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip('244,63,94')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="peso" fill="#f43f5e" radius={[0, 4, 4, 0]} name="Peso (kg)" className="cursor-pointer" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {topCondutoresPesagens.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Top Condutores de Pesagens</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topCondutoresPesagens} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="condutor" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip('244,114,182')}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="pesagens" fill="#f472b6" radius={[0, 4, 4, 0]} name="Pesagens" className="cursor-pointer" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
