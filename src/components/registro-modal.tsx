@@ -1679,7 +1679,7 @@ export default function RegistroModal({
                 onChange={(v) => updateField('veiculo', v.toUpperCase())}
                 onSelect={(s) => handleVeiculoSelect(s.data || {})}
                 suggestions={placaSuggestions}
-                placeholder="Placa do veículo"
+                placeholder="Tipo de veículo"
               />
             </div>
             <div className="space-y-3">
@@ -1740,7 +1740,7 @@ export default function RegistroModal({
                 onChange={(v) => updateField('veiculo', v.toUpperCase())}
                 onSelect={(s) => handleVeiculoSelect(s.data || {})}
                 suggestions={placaSuggestions}
-                placeholder="Placa do veículo"
+                placeholder="Tipo de veículo"
               />
             </div>
             <div className="space-y-3">
