@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme-provider';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { onAuthChange, fetchUserProfile, ensureUserProfile } from '@/lib/auth';
@@ -139,15 +139,37 @@ function TacticalParticles() {
 export default function Home() {
   const { isAuthenticated, currentPage, authInitialized, setAuthFromFirebase, settings, user, logout } = useAppStore();
   const { setTheme } = useTheme();
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
 
-  // Force minimum 4 seconds loading screen
+  // Navigation type: 'navigate' (first visit / tab or PWA reopened),
+  // 'reload' (F5), 'back_forward'. Splash only shows on 'navigate'.
+  const navType = useMemo(() => {
+    if (typeof window === 'undefined') return 'navigate';
+    try {
+      const nav = window.performance?.getEntriesByType?.('navigation');
+      return nav?.length ? (nav[0] as any).type : 'navigate';
+    } catch {
+      return 'navigate';
+    }
+  }, []);
+
+  const skipSplash = navType === 'reload' || navType === 'back_forward';
+
+  // Show the branding splash only on a fresh navigation (first visit or after
+  // closing the tab/PWA). On F5 or back/forward it stays hidden.
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (skipSplash) return;
+    const showTimer = setTimeout(() => {
+      setShowLoading(true);
+    }, 0);
+    const hideTimer = setTimeout(() => {
       setShowLoading(false);
     }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [skipSplash]);
 
   // ── Theme management and schedule synchronization ──
   useEffect(() => {
@@ -256,8 +278,8 @@ export default function Home() {
     return () => unsubscribe();
   }, [setAuthFromFirebase]);
 
-  // Show loading while Firebase Auth initializes (first load) or during 4s forced delay
-  if (!authInitialized || showLoading) {
+  // Show the branding splash only on fresh navigation (first visit / tab or PWA reopened)
+  if (showLoading) {
     return (
       <div
         className="min-h-screen w-full flex flex-col items-center justify-between p-4 relative overflow-hidden"
@@ -341,6 +363,11 @@ export default function Home() {
         </div>
       </div>
     );
+  }
+
+  // On F5/back/forward (no splash) show a neutral background while Firebase Auth initializes
+  if (!authInitialized) {
+    return <div className="min-h-screen w-full bg-background" />;
   }
 
   if (!isAuthenticated || currentPage === 'login') {

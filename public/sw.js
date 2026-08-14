@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apex-porter-v2';
+const CACHE_NAME = 'apex-porter-v3';
 
 const PRECACHE_URLS = [
   '/',
