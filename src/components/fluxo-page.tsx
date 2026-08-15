@@ -307,6 +307,12 @@ export default function FluxoPage() {
   // Virtual scroll ref for the list container
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // ── Paginação infinita (20 itens por vez) ──
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
   // Cadastrar Empresa quick modal
   const [cadastrarEmpresaOpen, setCadastrarEmpresaOpen] = useState(false);
   const [novaEmpresaNome, setNovaEmpresaNome] = useState('');
@@ -441,15 +447,60 @@ export default function FluxoPage() {
     return result;
   }, [registrosFluxo, rascunhosFluxo, categoriaAtiva, buscaFluxo, statusFilter, ordenacao, filtroDepartamento, filtroEmpresa, filtroData]);
 
+  // ── Paginação infinita ──
+  const filterKey = `${categoriaAtiva}|${buscaFluxo}|${statusFilter}|${ordenacao}|${filtroDepartamento}|${filtroEmpresa}|${filtroData}`;
+  const filterKeyRef = useRef(filterKey);
+
+  // Reinicia a paginação quando os filtros, busca ou aba mudam
+  useEffect(() => {
+    filterKeyRef.current = filterKey;
+    const t = setTimeout(() => {
+      setVisibleCount(PAGE_SIZE);
+      setIsLoadingMore(false);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [filterKey]);
+
+  const pagedRegistros = useMemo(() => filteredRegistros.slice(0, visibleCount), [filteredRegistros, visibleCount]);
+  const hasMore = visibleCount < filteredRegistros.length;
+
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    const keyAtStart = filterKeyRef.current;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      if (filterKeyRef.current !== keyAtStart) {
+        setIsLoadingMore(false);
+        return;
+      }
+      setVisibleCount((c) => c + PAGE_SIZE);
+      setIsLoadingMore(false);
+    }, 400);
+  }, [isLoadingMore, hasMore]);
+
+  // Observa o sentinela no fim da lista para carregar mais itens
+  useEffect(() => {
+    const el = loadMoreSentinelRef.current;
+    if (!el || !hasMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '250px 0px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [loadMore, hasMore]);
+
   // ── Virtualization: group items into rows of 2 to match grid-cols-2 ──
   const COLS = 2;
   const virtualRows = useMemo(() => {
     const rows: RegistroFluxo[][] = [];
-    for (let i = 0; i < filteredRegistros.length; i += COLS) {
-      rows.push(filteredRegistros.slice(i, i + COLS));
+    for (let i = 0; i < pagedRegistros.length; i += COLS) {
+      rows.push(pagedRegistros.slice(i, i + COLS));
     }
     return rows;
-  }, [filteredRegistros]);
+  }, [pagedRegistros]);
 
   const rowVirtualizer = useVirtualizer({
     count: virtualRows.length,
@@ -953,6 +1004,39 @@ export default function FluxoPage() {
               );
             })}
           </div>
+        )}
+
+        {/* Skeleton ao carregar mais itens */}
+        {isLoadingMore && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2" aria-label="Carregando mais registros">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={`skel-${i}`} className="opacity-70 border-dashed">
+                <CardContent className="p-3.5 space-y-3">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <div className="flex gap-2 pt-2 border-t border-border/40">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Sentinela de scroll: quando entra na tela, carrega mais 20 */}
+        {hasMore && !isLoadingMore && (
+          <div ref={loadMoreSentinelRef} className="h-px" aria-hidden="true" />
+        )}
+        {!hasMore && filteredRegistros.length > 0 && (
+          <p className="text-center text-xs text-muted-foreground pt-4 pb-2">
+            Fim da lista — {filteredRegistros.length} registro{filteredRegistros.length !== 1 ? 's' : ''} exibido{filteredRegistros.length !== 1 ? 's' : ''}
+          </p>
         )}
       </div>
 
