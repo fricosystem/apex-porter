@@ -198,7 +198,7 @@ export type ConfigSlice = {
 export type ChavesSlice = {
   registrosChaves: RegistroChave[];
   addRegistroChave: (registro: RegistroChave) => void;
-  registrarDevolucaoChave: (id: string) => void;
+  registrarDevolucaoChave: (id: string, nomeDevolucao?: string) => void;
   removeRegistroChave: (id: string) => void;
 };
 

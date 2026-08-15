@@ -1388,7 +1388,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao adicionar registro de chave:', err);
     });
   },
-  registrarDevolucaoChave: (id) => {
+  registrarDevolucaoChave: (id, nomeDevolucao) => {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
@@ -1396,10 +1396,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     const porteiroDevolucao = get().user?.nome || '';
     set((state) => ({
       registrosChaves: state.registrosChaves.map((r) =>
-        r.id === id ? { ...r, horarioDevolucao, porteiroDevolucao } : r
+        r.id === id ? { ...r, horarioDevolucao, porteiroDevolucao, ...(nomeDevolucao ? { nomeDevolucao } : {}) } : r
       ),
     }));
-    updateChaveFS(id, { horarioDevolucao, porteiroDevolucao }).catch((err) => {
+    updateChaveFS(id, { horarioDevolucao, porteiroDevolucao, ...(nomeDevolucao ? { nomeDevolucao } : {}) }).catch((err) => {
       console.warn('[Firestore] Falha ao registrar devolução de chave:', err);
     });
   },

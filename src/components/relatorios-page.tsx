@@ -369,10 +369,10 @@ export default function RelatoriosPage() {
         achadosFiltered.forEach(a => rows.push([a.descricao, a.localEncontrado, a.data, cap(a.status), a.cor || '', a.observacoes || '']));
         break;
       case 'chaves':
-        headers = ['Nome', 'Chave', 'Data', 'Horário Retirada', 'Horário Devolução', 'Porteiro Retirada', 'Porteiro Devolução', 'Observação', 'Status'];
+        headers = ['Nome', 'Chave', 'Data', 'Horário Retirada', 'Horário Devolução', 'Porteiro Retirada', 'Porteiro Devolução', 'Devolvida por', 'Observação', 'Status'];
         chavesFiltered.forEach(c => rows.push([
           c.nome, c.chave, c.data, c.horarioRetirada, c.horarioDevolucao || '',
-          c.porteiroRetirada, c.porteiroDevolucao || '', c.observacao || '',
+          c.porteiroRetirada, c.porteiroDevolucao || '', c.nomeDevolucao || '', c.observacao || '',
           c.horarioDevolucao ? 'Devolvida' : 'Retirada',
         ]));
         break;

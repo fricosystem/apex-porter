@@ -216,6 +216,7 @@ export interface RegistroChave {
   horarioDevolucao: string;
   porteiroRetirada: string;
   porteiroDevolucao?: string;
+  nomeDevolucao?: string;
   observacao?: string;
 }
 
