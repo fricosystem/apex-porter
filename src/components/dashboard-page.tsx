@@ -50,7 +50,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
 import { CATEGORIAS_FLUXO, TIPOS_OCORRENCIA, GRAVIDADES_OCORRENCIA } from '@/lib/data';
-import { TIPOS_PESSOA, normalizeTipoPessoa } from '@/lib/data';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const container = {
@@ -497,7 +496,7 @@ export default function DashboardPage() {
     return Object.entries(counts).map(([tipo, qtd]) => ({ name: tipo, value: qtd, fill: colors[tipo] || '#6b7280' }));
   }, [veiculosFiltered]);
 
-  // ── Pessoas por tipo ──
+  // ── Pessoas por tipo (tipos reais cadastrados na aba Fluxo, sem normalização) ──
   const pessoasPorTipo = useMemo(() => {
     const colors: Record<string, string> = {
       Porteiro: '#3b82f6',
@@ -508,18 +507,31 @@ export default function DashboardPage() {
       Colaborador: '#6366f1',
       Coletor: '#f97316',
       Esporadico: '#8b5cf6',
+      Visitante: '#f43f5e',
+      Motorista: '#0ea5e9',
+      Outro: '#a3a3a3',
+    };
+    const labels: Record<string, string> = {
+      Porteiro: 'Porteiro',
+      Vigia: 'Vigia',
+      Vigilante: 'Vigilante',
+      Prestador: 'Prestador de Serviços',
+      Entregador: 'Entregador',
+      Colaborador: 'Colaborador',
+      Coletor: 'Coletor',
+      Esporadico: 'Visitantes',
+      Visitante: 'Visitante',
+      Motorista: 'Motorista',
+      Outro: 'Outro',
     };
     const counts: Record<string, number> = {};
-    TIPOS_PESSOA.forEach((t) => {
-      counts[t.value] = 0;
-    });
     pessoasFiltered.forEach((p) => {
-      const t = normalizeTipoPessoa(p.tipo);
+      const t = p.tipo || 'Visitante';
       counts[t] = (counts[t] || 0) + 1;
     });
-    return TIPOS_PESSOA.map((t) => ({ name: t.label, value: counts[t.value] || 0, fill: colors[t.value] || '#6b7280' })).filter(
-      (d) => d.value > 0
-    );
+    return Object.entries(counts)
+      .map(([tipo, value]) => ({ name: labels[tipo] || tipo, value, fill: colors[tipo] || '#6b7280' }))
+      .sort((a, b) => b.value - a.value);
   }, [pessoasFiltered]);
 
   // ── Pré-autorizações por status ──
