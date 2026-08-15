@@ -26,9 +26,24 @@ import {
   DoorOpen,
   Recycle,
   CalendarClock,
+  BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  Legend,
+} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,7 +65,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppStore } from '@/lib/store';
-import { TIPOS_PESSOA, getTipoPessoaLabel, normalizeTipoPessoa, type TipoPessoa, type Pessoa } from '@/lib/data';
+import { TIPOS_PESSOA, getTipoPessoaLabel, normalizeTipoPessoa, CATEGORIAS_FLUXO, type TipoPessoa, type Pessoa } from '@/lib/data';
 import { toast } from 'sonner';
 import AutocompleteInput from './autocomplete-input';
 import { PESSOAS_INICIAIS, REGISTROS_FLUXO_INICIAIS } from '@/lib/seed-data';
@@ -128,6 +143,8 @@ export default function CadastrosPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsPessoa, setDetailsPessoa] = useState<Pessoa | null>(null);
   const [showMoreVisits, setShowMoreVisits] = useState(false);
+  const [visitPeriodInicio, setVisitPeriodInicio] = useState('');
+  const [visitPeriodFim, setVisitPeriodFim] = useState('');
 
   // ── Paginação infinita (20 itens por vez) ──
   const PAGE_SIZE = 20;
@@ -516,24 +533,146 @@ export default function CadastrosPage() {
     return counts;
   }, [pessoas]);
 
+  // ── Visitas da pessoa (qualquer tipo de categoria, com filtro de período) ──
+  const parseDataVisita = useCallback((d?: string): Date | null => {
+    if (!d) return null;
+    const parts = d.includes('-') ? d.split('-').map(Number) : d.split('/').map(Number);
+    if (parts.length !== 3) return null;
+    const [a, b, c] = parts;
+    const ano = d.includes('-') ? a : c;
+    const mes = b - 1;
+    const dia = d.includes('-') ? c : a;
+    if (Number.isNaN(ano) || Number.isNaN(mes) || Number.isNaN(dia)) return null;
+    return new Date(ano, mes, dia);
+  }, []);
+
   const personVisits = useMemo(() => {
     if (!detailsPessoa) return [];
-    return registrosFluxo
-      .filter((r) => {
-        if ('nome' in r && r.nome === detailsPessoa.nome) return true;
-        if ('motoristaNome' in r && r.motoristaNome === detailsPessoa.nome) return true;
-        if ('visitanteNome' in r && r.visitanteNome === detailsPessoa.nome) return true;
-        return false;
-      })
-      .sort((a, b) => {
-        const da = 'data' in a ? (a as any).data : ('dataPrevista' in a ? (a as any).dataPrevista : '');
-        const ha = a.horarioEntrada || '';
-        const db = 'data' in b ? (b as any).data : ('dataPrevista' in b ? (b as any).dataPrevista : '');
-        const hb = b.horarioEntrada || '';
-        if (da !== db) return da > db ? -1 : 1;
-        return ha > hb ? -1 : 1;
+    const nome = detailsPessoa.nome.trim().toLowerCase();
+    let lista = registrosFluxo.filter((r) => {
+      const campos = [
+        (r as any).nome,
+        (r as any).motorista,
+        (r as any).motoristaNome,
+        (r as any).visitanteNome,
+        (r as any).nomeColaborador,
+        (r as any).destinatario,
+        (r as any).condutor,
+      ];
+      return campos.some((f) => typeof f === 'string' && f && f.trim().toLowerCase() === nome);
+    });
+
+    if (visitPeriodInicio || visitPeriodFim) {
+      const inicio = visitPeriodInicio ? parseDataVisita(visitPeriodInicio) : null;
+      const fim = visitPeriodFim ? parseDataVisita(visitPeriodFim) : null;
+      lista = lista.filter((r) => {
+        const d = parseDataVisita('data' in r ? (r as any).data : (r as any).dataPrevista);
+        if (!d) return false;
+        if (inicio && d < inicio) return false;
+        if (fim) {
+          const fimInclusivo = new Date(fim);
+          fimInclusivo.setDate(fimInclusivo.getDate() + 1);
+          if (d >= fimInclusivo) return false;
+        }
+        return true;
       });
-  }, [detailsPessoa, registrosFluxo]);
+    }
+
+    return lista.sort((a, b) => {
+      const da = 'data' in a ? (a as any).data : ((a as any).dataPrevista || '');
+      const ha = a.horarioEntrada || '';
+      const db = 'data' in b ? (b as any).data : ((b as any).dataPrevista || '');
+      const hb = b.horarioEntrada || '';
+      if (da !== db) return da > db ? -1 : 1;
+      return ha > hb ? -1 : 1;
+    });
+  }, [detailsPessoa, registrosFluxo, visitPeriodInicio, visitPeriodFim, parseDataVisita]);
+
+  // ── Estatísticas e gráficos das visitas ──
+  const CHART_COLORS = ['#3b82f6', '#06b6d4', '#14b8a6', '#f59e0b', '#10b981', '#6366f1', '#f97316', '#8b5cf6', '#f43f5e', '#0ea5e9'];
+
+  const categoriaMaisFrequente = useMemo(() => {
+    const counts: Record<string, number> = {};
+    personVisits.forEach((v) => { counts[v.categoria] = (counts[v.categoria] || 0) + 1; });
+    let best: string | null = null;
+    let bestCount = 0;
+    Object.entries(counts).forEach(([c, n]) => { if (n > bestCount) { best = c; bestCount = n; } });
+    if (!best) return null;
+    return { label: CATEGORIAS_FLUXO.find((x) => x.value === best)?.label || best, count: bestCount };
+  }, [personVisits]);
+
+  const horarioMaisFrequente = useMemo(() => {
+    const counts: Record<number, number> = {};
+    personVisits.forEach((v) => {
+      const h = v.horarioEntrada ? Number(v.horarioEntrada.split(':')[0]) : -1;
+      if (h >= 0 && h <= 23) counts[h] = (counts[h] || 0) + 1;
+    });
+    let best = -1;
+    let bestCount = 0;
+    Object.entries(counts).forEach(([h, c]) => { if (c > bestCount) { best = Number(h); bestCount = c; } });
+    if (best === -1) return null;
+    return { hora: `${best.toString().padStart(2, '0')}:00`, count: bestCount };
+  }, [personVisits]);
+
+  const totalHorasEmpresa = useMemo(() => {
+    let minutos = 0;
+    personVisits.forEach((v) => {
+      if (v.horarioEntrada && v.horarioSaida) {
+        const [h1, m1] = v.horarioEntrada.split(':').map(Number);
+        const [h2, m2] = v.horarioSaida.split(':').map(Number);
+        let diff = h2 * 60 + m2 - (h1 * 60 + m1);
+        if (diff < 0) diff += 24 * 60;
+        minutos += diff;
+      }
+    });
+    return `${Math.floor(minutos / 60)}h ${(minutos % 60).toString().padStart(2, '0')}min`;
+  }, [personVisits]);
+
+  const visitasPorCategoria = useMemo(() => {
+    const counts: Record<string, number> = {};
+    personVisits.forEach((v) => {
+      const label = CATEGORIAS_FLUXO.find((c) => c.value === v.categoria)?.label || v.categoria;
+      counts[label] = (counts[label] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value], i) => ({ name, value, fill: CHART_COLORS[i % CHART_COLORS.length] }));
+  }, [personVisits]);
+
+  const visitasPorHora = useMemo(() => {
+    const counts: Record<number, number> = {};
+    personVisits.forEach((v) => {
+      const h = v.horarioEntrada ? Number(v.horarioEntrada.split(':')[0]) : -1;
+      if (h >= 0 && h <= 23) counts[h] = (counts[h] || 0) + 1;
+    });
+    return Array.from({ length: 24 }, (_, h) => ({
+      hora: `${h.toString().padStart(2, '0')}h`,
+      visitas: counts[h] || 0,
+    }));
+  }, [personVisits]);
+
+  const pesoDiferencaVisitas = useMemo(() => {
+    return personVisits
+      .filter((v) => v.categoria === 'pesagem' || v.categoria === 'coleta' || v.categoria === 'entregas2')
+      .slice(0, 12)
+      .map((v, i) => {
+        const entrada = Number((v as any).pesoEntrada ?? 0);
+        const saida = Number((v as any).pesoSaida ?? 0);
+        return { nome: `#${i + 1}`, Entrada: entrada, Saída: saida };
+      });
+  }, [personVisits]);
+
+  const observacoesVisitas = useMemo(() => {
+    return personVisits
+      .map((v) => ({
+        data: 'data' in v ? (v as any).data : ((v as any).dataPrevista || ''),
+        horario: v.horarioEntrada || '',
+        categoria: v.categoria,
+        texto: String((v as any).observacao || (v as any).detalhes || (v as any).ocorrencia || '').trim(),
+      }))
+      .filter((o) => o.texto)
+      .sort((a, b) => (b.data > a.data ? 1 : -1));
+  }, [personVisits]);
 
   return (
     <motion.div
@@ -720,7 +859,7 @@ export default function CadastrosPage() {
             >
               <Card 
                 className={`overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors ${p.inativo ? 'opacity-60 grayscale-[0.5]' : ''}`}
-                onClick={() => { setDetailsPessoa(p); setShowMoreVisits(false); setDetailsOpen(true); }}
+                onClick={() => { setDetailsPessoa(p); setShowMoreVisits(false); setVisitPeriodInicio(''); setVisitPeriodFim(''); setDetailsOpen(true); }}
               >
                 <CardContent className="p-0">
                   <div className="flex items-stretch">
@@ -818,7 +957,7 @@ export default function CadastrosPage() {
 
       {/* Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-emerald-600" />
@@ -827,7 +966,7 @@ export default function CadastrosPage() {
           </DialogHeader>
 
           {detailsPessoa && (
-            <div className="space-y-5">
+            <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
               <div className="bg-muted/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-lg ${TIPO_COLORS[detailsPessoa.tipo]}`}>
@@ -917,6 +1056,135 @@ export default function CadastrosPage() {
                 </div>
               </div>
 
+              {/* Filtro de período e estatísticas */}
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Período de</Label>
+                    <Input
+                      type="date"
+                      value={visitPeriodInicio}
+                      onChange={(e) => setVisitPeriodInicio(e.target.value)}
+                      className="h-9 text-sm bg-background"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Período até</Label>
+                    <Input
+                      type="date"
+                      value={visitPeriodFim}
+                      onChange={(e) => setVisitPeriodFim(e.target.value)}
+                      className="h-9 text-sm bg-background"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total de visitas</p>
+                    <p className="text-lg font-bold">{personVisits.length}</p>
+                  </div>
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tempo total na empresa</p>
+                    <p className="text-lg font-bold">{totalHorasEmpresa}</p>
+                  </div>
+                  {categoriaMaisFrequente && (
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Categoria mais frequente</p>
+                      <p className="text-sm font-bold leading-tight">{categoriaMaisFrequente.label} <span className="text-muted-foreground font-medium">({categoriaMaisFrequente.count})</span></p>
+                    </div>
+                  )}
+                  {horarioMaisFrequente && (
+                    <div className="rounded-lg border p-2.5">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Horário que mais visitou</p>
+                      <p className="text-lg font-bold">{horarioMaisFrequente.hora} <span className="text-sm text-muted-foreground font-medium">({horarioMaisFrequente.count})</span></p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gráficos */}
+              {personVisits.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    Análise de Visitas
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Visitas por Categoria</p>
+                      <div className="h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={visitasPorCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={3}>
+                              {visitasPorCategoria.map((entry, index) => (
+                                <Cell key={`cat-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Visitas por Hora do Dia</p>
+                      <div className="h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={visitasPorHora}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="hora" tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }} interval={1} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} width={24} />
+                            <Tooltip />
+                            <Bar dataKey="visitas" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Diferença de peso (pesagem/coleta/entregas) */}
+                  {pesoDiferencaVisitas.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Diferença de Peso (Entrada × Saída)</p>
+                      <div className="h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={pesoDiferencaVisitas}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="nome" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} width={40} />
+                            <Tooltip />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <Bar dataKey="Entrada" fill="#10b981" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="Saída" fill="#f97316" radius={[3, 3, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Observações registradas */}
+              {observacoesVisitas.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    Observações Registradas ({observacoesVisitas.length})
+                  </h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {observacoesVisitas.map((o, i) => (
+                      <div key={i} className="p-3 bg-muted/30 rounded-lg border text-sm">
+                        <p className="font-medium text-xs text-muted-foreground mb-1">
+                          {o.data}{o.horario ? ` às ${o.horario}` : ''} • {CATEGORIAS_FLUXO.find((c) => c.value === o.categoria)?.label || o.categoria}
+                        </p>
+                        <p className="text-sm">{o.texto}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Visitas */}
               <div>
                 <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -938,7 +1206,7 @@ export default function CadastrosPage() {
                             <span className="text-muted-foreground ml-2 font-normal">{v.horarioEntrada}</span>
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {v.categoria} • {(v as any).departamento || '-'}
+                            {CATEGORIAS_FLUXO.find((c) => c.value === v.categoria)?.label || v.categoria} • {(v as any).departamento || '-'}
                           </p>
                         </div>
                         {v.horarioSaida && (
