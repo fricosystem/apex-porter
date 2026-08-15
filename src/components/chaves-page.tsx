@@ -16,6 +16,7 @@ import {
   X,
   RotateCcw,
   UserCheck,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,13 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -49,11 +57,12 @@ function getSecondaryFields(r: RegistroChave): { label: string; value: string }[
     fields.push({ label: 'Devolução', value: r.horarioDevolucao });
   }
   if (r.porteiroDevolucao) fields.push({ label: 'Devolução por', value: r.porteiroDevolucao });
+  if (r.nomeDevolucao && r.nomeDevolucao !== r.nome) fields.push({ label: 'Devolvida por', value: r.nomeDevolucao });
   return fields;
 }
 
 function getAllFields(r: RegistroChave): { label: string; value: string }[] {
-  return [
+  const fields = [
     { label: 'Nome', value: r.nome },
     { label: 'Chave', value: r.chave },
     { label: 'Data', value: r.data },
@@ -62,6 +71,10 @@ function getAllFields(r: RegistroChave): { label: string; value: string }[] {
     { label: 'Porteiro (Retirada)', value: r.porteiroRetirada || '-' },
     { label: 'Porteiro (Devolução)', value: r.porteiroDevolucao || '-' },
   ];
+  if (r.nomeDevolucao && r.nomeDevolucao !== r.nome) {
+    fields.push({ label: 'Devolvida por', value: r.nomeDevolucao });
+  }
+  return fields;
 }
 
 interface ChavesModalProps {
@@ -72,16 +85,19 @@ interface ChavesModalProps {
 }
 
 function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
-  const { registrosChaves, addRegistroChave, registrarDevolucaoChave, pessoas, ramais, user } = useAppStore();
+  const { registrosChaves, addRegistroChave, registrarDevolucaoChave, pessoas, ramais, user, addPessoa, departamentos } = useAppStore();
   const isRetirada = modo === 'retirada';
   const [formData, setFormData] = useState<Record<string, string>>({ nome: '', chave: '' });
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        nome: prefill?.nome || '',
-        chave: prefill?.chave || '',
-      });
+      const t = setTimeout(() => {
+        setFormData({
+          nome: '',
+          chave: prefill?.chave || '',
+        });
+      }, 0);
+      return () => clearTimeout(t);
     }
   }, [open, prefill]);
 
@@ -171,6 +187,15 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Nome inserido que ainda não existe na coleção de cadastros → exibe RG/CPF e Departamento
+  const nomeTrim = (formData.nome || '').trim();
+  const pessoaJaCadastrada = useMemo(() => {
+    if (!nomeTrim) return false;
+    const lower = nomeTrim.toLowerCase();
+    return pessoas.some((p) => !p.inativo && p.nome.trim().toLowerCase() === lower);
+  }, [pessoas, nomeTrim]);
+  const mostrarCadastroNovo = !isRetirada && nomeTrim.length > 0 && !pessoaJaCadastrada;
+
   const handleSave = () => {
     const nome = formData.nome?.trim();
     const chave = formData.chave?.trim();
@@ -197,16 +222,27 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
       toast.success('Retirada registrada com sucesso!');
     } else {
       const aberto = registrosChaves.find(
-        (r) =>
-          !r.horarioDevolucao &&
-          r.nome.trim().toLowerCase() === nome.toLowerCase() &&
-          r.chave.trim().toLowerCase() === chave.toLowerCase()
+        (r) => !r.horarioDevolucao && r.chave.trim().toLowerCase() === chave.toLowerCase()
       );
       if (!aberto) {
-        toast.error('Nenhuma retirada em aberto encontrada para este nome e chave.');
+        toast.error('Nenhuma retirada em aberto encontrada para esta chave.');
         return;
       }
-      registrarDevolucaoChave(aberto.id);
+      if (!pessoaJaCadastrada) {
+        addPessoa({
+          id: `pes_${Date.now()}`,
+          nome,
+          tipo: 'Visitante',
+          empresa: '',
+          departamento: (formData.departamento || '').trim(),
+          cargo: '',
+          rgCpf: (formData.rgCpf || '').trim(),
+          placa: '',
+          telefone: '',
+          email: '',
+        });
+      }
+      registrarDevolucaoChave(aberto.id, nome);
       toast.success('Devolução registrada com sucesso!');
     }
     onClose();
@@ -240,14 +276,48 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
 
           <div className="space-y-3">
             <Label className="text-base">Chave *</Label>
-            <AutocompleteInput
-              value={formData.chave || ''}
-              onChange={(v) => updateField('chave', v)}
-              onSelect={handleSelectChave}
-              suggestions={chaveSuggestions}
-              placeholder="Ex: SALA 101, PORTARIA"
-            />
+            {formData.chave ? (
+              <Input value={formData.chave} readOnly className="bg-muted" />
+            ) : (
+              <AutocompleteInput
+                value={formData.chave || ''}
+                onChange={(v) => updateField('chave', v)}
+                onSelect={handleSelectChave}
+                suggestions={chaveSuggestions}
+                placeholder="Ex: SALA 101, PORTARIA"
+              />
+            )}
           </div>
+
+          {/* Cadastro de nova pessoa quando o nome não existe na coleção de cadastros */}
+          {mostrarCadastroNovo && (
+            <>
+              <div className="space-y-3">
+                <Label className="text-base">RG / CPF</Label>
+                <Input
+                  value={formData.rgCpf || ''}
+                  onChange={(e) => updateField('rgCpf', e.target.value)}
+                  placeholder="CPF ou RG da pessoa"
+                  className="bg-muted/50"
+                />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-base">Departamento</Label>
+                <Select value={formData.departamento || ''} onValueChange={(v) => updateField('departamento', v)}>
+                  <SelectTrigger className="w-full bg-muted/50">
+                    <SelectValue placeholder="Selecione o departamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...departamentos]
+                      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                      .map((d) => (
+                        <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           <div className="space-y-3">
             <Label className="text-base">
@@ -280,10 +350,15 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
 }
 
 export default function ChavesPage() {
-  const { registrosChaves, user } = useAppStore();
+  const { registrosChaves, user, pessoas } = useAppStore();
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('aberto');
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [ordenacao, setOrdenacao] = useState<'mais_recentes' | 'mais_antigos'>('mais_recentes');
+  const [filtroDepartamento, setFiltroDepartamento] = useState<string>('todos');
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>('todos');
+  const [filtroData, setFiltroData] = useState<string>('');
   const [retiradaOpen, setRetiradaOpen] = useState(false);
   const [devolucaoOpen, setDevolucaoOpen] = useState(false);
   const [devolucaoPrefill, setDevolucaoPrefill] = useState<{ nome?: string; chave?: string } | undefined>(undefined);
@@ -291,6 +366,33 @@ export default function ChavesPage() {
   const [selectedRegistro, setSelectedRegistro] = useState<RegistroChave | null>(null);
 
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const hasActiveFilters =
+    ordenacao !== 'mais_recentes' ||
+    filtroDepartamento !== 'todos' ||
+    filtroEmpresa !== 'todos' ||
+    filtroData !== '';
+
+  // Opções de departamento/empresa a partir do cadastro das pessoas vinculadas às chaves
+  const chaveDepartamentoOptions = useMemo(() => {
+    const set = new Set<string>();
+    registrosChaves.forEach((r) => {
+      if (!r.nome) return;
+      const p = pessoas.find((x) => !x.inativo && x.nome.trim().toLowerCase() === r.nome.trim().toLowerCase());
+      if (p && p.departamento) set.add(p.departamento);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [registrosChaves, pessoas]);
+
+  const chaveEmpresaOptions = useMemo(() => {
+    const set = new Set<string>();
+    registrosChaves.forEach((r) => {
+      if (!r.nome) return;
+      const p = pessoas.find((x) => !x.inativo && x.nome.trim().toLowerCase() === r.nome.trim().toLowerCase());
+      if (p && p.empresa) set.add(p.empresa);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [registrosChaves, pessoas]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
@@ -300,7 +402,22 @@ export default function ChavesPage() {
     return () => clearTimeout(timer);
   }, [registrosChaves.length]);
 
+  useEffect(() => {
+    if (statusFilter === 'finalizado') {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      setFiltroData(`${ano}-${mes}-${dia}`);
+    }
+  }, [statusFilter]);
+
   const filteredRegistros = useMemo(() => {
+    const pessoaPorNome = new Map<string, Pessoa>();
+    pessoas.forEach((p) => {
+      if (!p.inativo) pessoaPorNome.set(p.nome.trim().toLowerCase(), p);
+    });
+
     let result = registrosChaves.filter((r) => {
       const hasDevolucao = r.horarioDevolucao !== '';
       if (statusFilter === 'aberto' && hasDevolucao) return false;
@@ -310,9 +427,23 @@ export default function ChavesPage() {
         const fields = Object.values(r).filter((v) => typeof v === 'string');
         return fields.some((v) => v.toLowerCase().includes(search));
       }
+      if (filtroDepartamento !== 'todos') {
+        const p = r.nome ? pessoaPorNome.get(r.nome.trim().toLowerCase()) : undefined;
+        if ((p && p.departamento) !== filtroDepartamento) return false;
+      }
+      if (filtroEmpresa !== 'todos') {
+        const p = r.nome ? pessoaPorNome.get(r.nome.trim().toLowerCase()) : undefined;
+        if ((p && p.empresa) !== filtroEmpresa) return false;
+      }
+      if (filtroData) {
+        const [dia, mes, ano] = r.data.split('/');
+        const dataRegistro = `${ano}-${mes}-${dia}`;
+        if (dataRegistro !== filtroData) return false;
+      }
       return true;
     });
 
+    const sign = ordenacao === 'mais_antigos' ? 1 : -1;
     result.sort((a, b) => {
       try {
         const [diaA, mesA, anoA] = a.data.split('/');
@@ -322,14 +453,14 @@ export default function ChavesPage() {
         const [diaB, mesB, anoB] = b.data.split('/');
         const [horaB, minB] = b.horarioRetirada.split(':');
         const dateB = new Date(Number(anoB), Number(mesB) - 1, Number(diaB), Number(horaB) || 0, Number(minB) || 0).getTime();
-        return dateB - dateA;
+        return (dateB - dateA) * sign;
       } catch (e) {
         return 0;
       }
     });
 
     return result;
-  }, [registrosChaves, busca, statusFilter]);
+  }, [registrosChaves, busca, statusFilter, filtroDepartamento, filtroEmpresa, filtroData, ordenacao, pessoas]);
 
   const COLS = 2;
   const virtualRows = useMemo(() => {
@@ -369,15 +500,105 @@ export default function ChavesPage() {
     >
       {/* Top section */}
       <div className="p-4 md:p-6 pb-0 space-y-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, chave..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, chave..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setShowFilters((v) => !v)}
+            title="Filtros"
+            className={showFilters ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+          </Button>
         </div>
+
+        {statusFilter === 'finalizado' && showFilters && (
+          <div className="space-y-3 rounded-xl border bg-muted/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Filtros</p>
+              {hasActiveFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    setOrdenacao('mais_recentes');
+                    setFiltroDepartamento('todos');
+                    setFiltroEmpresa('todos');
+                    setFiltroData('');
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Ordenação</Label>
+                <Select
+                  value={ordenacao}
+                  onValueChange={(v) => setOrdenacao(v as 'mais_recentes' | 'mais_antigos')}
+                >
+                  <SelectTrigger className="h-9 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mais_recentes">Mais recentes</SelectItem>
+                    <SelectItem value="mais_antigos">Mais antigos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Data</Label>
+                <Input
+                  type="date"
+                  value={filtroData}
+                  onChange={(e) => setFiltroData(e.target.value)}
+                  className="h-9 bg-background"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Departamento</Label>
+                <Select value={filtroDepartamento} onValueChange={setFiltroDepartamento}>
+                  <SelectTrigger className="h-9 bg-background">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {chaveDepartamentoOptions.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Empresa</Label>
+                <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                  <SelectTrigger className="h-9 bg-background">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas</SelectItem>
+                    {chaveEmpresaOptions.map((e) => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Tabs
           value={statusFilter}
