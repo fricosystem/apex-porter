@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -127,6 +128,14 @@ export default function CadastrosPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsPessoa, setDetailsPessoa] = useState<Pessoa | null>(null);
   const [showMoreVisits, setShowMoreVisits] = useState(false);
+
+  // ── Paginação infinita (20 itens por vez) ──
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const filterKey = `${search}|${filterTipo}|${filterStatus}|${filterDepartamento}|${filterEmpresa}`;
+  const filterKeyRef = useRef(filterKey);
 
   // ── Unified suggestions ──
   const { nameSuggestions, empresaSuggestions, rgCpfSuggestions } = useMemo(() => {
@@ -373,6 +382,47 @@ export default function CadastrosPage() {
     
     return list;
   }, [pessoas, search, filterTipo, filterStatus, filterDepartamento, filterEmpresa]);
+
+  // Reinicia a paginação quando os filtros ou a busca mudam
+  useEffect(() => {
+    filterKeyRef.current = filterKey;
+    const t = setTimeout(() => {
+      setVisibleCount(PAGE_SIZE);
+      setIsLoadingMore(false);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [filterKey]);
+
+  const visiblePessoas = useMemo(() => filteredPessoas.slice(0, visibleCount), [filteredPessoas, visibleCount]);
+  const hasMore = visibleCount < filteredPessoas.length;
+
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    const keyAtStart = filterKeyRef.current;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      if (filterKeyRef.current !== keyAtStart) {
+        setIsLoadingMore(false);
+        return;
+      }
+      setVisibleCount((c) => c + PAGE_SIZE);
+      setIsLoadingMore(false);
+    }, 400);
+  }, [isLoadingMore, hasMore]);
+
+  // Observa o sentinela no fim da lista para carregar mais itens
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '250px 0px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [loadMore, hasMore]);
 
   const openNewDialog = () => {
     setEditingId(null);
@@ -659,7 +709,7 @@ export default function CadastrosPage() {
             </motion.div>
           )}
 
-          {filteredPessoas.map((p) => (
+          {visiblePessoas.map((p) => (
             <motion.div
               key={p.id}
               layout
@@ -727,6 +777,43 @@ export default function CadastrosPage() {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Skeleton ao carregar mais itens */}
+        {isLoadingMore && (
+          <div className="space-y-2" aria-label="Carregando mais registros">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={`skel-${i}`} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex items-stretch">
+                    <Skeleton className="w-1.5 shrink-0 rounded-none" />
+                    <div className="flex-1 p-3 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-4 w-20 rounded-full" />
+                      </div>
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                    <div className="flex items-center gap-1 px-3 shrink-0">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Sentinela de scroll: quando entra na tela, carrega mais 20 */}
+        {hasMore && !isLoadingMore && (
+          <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+        )}
+        {!hasMore && filteredPessoas.length > 0 && (
+          <p className="text-center text-xs text-muted-foreground py-4">
+            Fim da lista — {filteredPessoas.length} registro{filteredPessoas.length !== 1 ? 's' : ''} exibido{filteredPessoas.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {/* Details Dialog */}
