@@ -1,4 +1,17 @@
-const CACHE_NAME = 'apex-porter-v3';
+const CACHE_NAME = 'apex-porter-v4';
+
+// Notification click handler — traz o app para o foco / abre a janela
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      return self.clients.openWindow('/');
+    })
+  );
+});
 
 const PRECACHE_URLS = [
   '/',

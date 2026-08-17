@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import ThemeColorUpdater from "@/components/theme-color-updater";
+import NotificationBridge from "@/components/notification-bridge";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -74,7 +75,14 @@ export default function RootLayout({
           <div id="app-scroll-root">
             {children}
           </div>
-          <Toaster richColors position="top-center" />
+          <NotificationBridge />
+          <Toaster
+            richColors
+            position="top-center"
+            duration={2500}
+            visibleToasts={1}
+            closeButton
+          />
         </ThemeProvider>
         <Script
           id="pwa-helpers"
