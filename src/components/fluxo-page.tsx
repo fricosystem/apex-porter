@@ -1140,25 +1140,32 @@ export default function FluxoPage() {
               </div>
 
               {/* Diferença de Peso — exibida quando o registro já finalizado possui entrada e saída */}
-              {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2') && selectedRegistro.horarioSaida && (() => {
-                const pesoEntrada = (selectedRegistro as any).pesoEntrada ?? 0;
-                const pesoSaida = (selectedRegistro as any).pesoSaida ?? 0;
+              {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2' || selectedRegistro.categoria === 'pesagem_apara') && selectedRegistro.horarioSaida && (() => {
+                const isApara = selectedRegistro.categoria === 'pesagem_apara';
+                const pesoEntrada = isApara
+                  ? (selectedRegistro as any).pesoCarregado ?? 0
+                  : (selectedRegistro as any).pesoEntrada ?? 0;
+                const pesoSaida = isApara
+                  ? (selectedRegistro as any).pesoVazio ?? 0
+                  : (selectedRegistro as any).pesoSaida ?? 0;
                 if (pesoEntrada <= 0 || pesoSaida <= 0) return null;
                 const diferenca = pesoSaida - pesoEntrada;
+                const labelEntrada = isApara ? 'Carregado' : 'Entrada';
+                const labelSaida = isApara ? 'Vazio' : 'Saída';
                 return (
                   <div className={`rounded-2xl p-4 text-center border-2 ${diferenca >= 0
                     ? 'bg-emerald-500/10 border-emerald-500/40'
                     : 'bg-red-500/10 border-red-500/40'
                     }`}>
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                      Diferença (Saída − Entrada)
+                      Diferença ({labelSaida} − {labelEntrada})
                     </p>
                     <p className={`text-4xl font-black tracking-tight ${diferenca >= 0 ? 'text-emerald-400' : 'text-red-400'
                       }`}>
                       {diferenca >= 0 ? '+' : ''}{diferenca.toLocaleString('pt-BR')} kg
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg • Saída: {pesoSaida.toLocaleString('pt-BR')} kg
+                      {labelEntrada}: {pesoEntrada.toLocaleString('pt-BR')} kg • {labelSaida}: {pesoSaida.toLocaleString('pt-BR')} kg
                     </p>
                   </div>
                 );

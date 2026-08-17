@@ -276,7 +276,7 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
 
           <div className="space-y-3">
             <Label className="text-base">Chave *</Label>
-            {formData.chave ? (
+            {!isRetirada && formData.chave ? (
               <Input value={formData.chave} readOnly className="bg-muted" />
             ) : (
               <AutocompleteInput
@@ -512,92 +512,92 @@ export default function ChavesPage() {
           </div>
           <Button
             type="button"
-            variant="outline"
-            size="icon"
+            variant={showFilters || hasActiveFilters ? "secondary" : "outline"}
+            className="relative h-11 w-11 shrink-0 p-0 border-0 bg-muted/50 hover:bg-muted"
             onClick={() => setShowFilters((v) => !v)}
             title="Filtros"
-            className={showFilters ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
           >
-            <SlidersHorizontal className="h-5 w-5" />
+            <SlidersHorizontal className={`h-5 w-5 ${hasActiveFilters ? 'text-primary' : 'text-muted-foreground'}`} />
+            {hasActiveFilters && !showFilters && (
+              <span className="absolute top-2 right-2 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+            )}
           </Button>
         </div>
 
-        {statusFilter === 'finalizado' && showFilters && (
-          <div className="space-y-3 rounded-xl border bg-muted/30 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">Filtros</p>
-              {hasActiveFilters && (
+        {/* Expandable Filters Area */}
+        {showFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="space-y-3 overflow-hidden"
+          >
+            {/* Filters Row 1: Ordenacao + Departamento */}
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={ordenacao}
+                onValueChange={(v) => setOrdenacao(v as 'mais_recentes' | 'mais_antigos')}
+              >
+                <SelectTrigger className="h-11 text-sm bg-muted/50 border-0 w-full truncate">
+                  <SelectValue placeholder="Ordenar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mais_recentes">Mais recentes</SelectItem>
+                  <SelectItem value="mais_antigos">Mais antigos</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filtroDepartamento} onValueChange={setFiltroDepartamento}>
+                <SelectTrigger className="h-11 text-sm bg-muted/50 border-0 w-full truncate">
+                  <SelectValue placeholder="Departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Deptos</SelectItem>
+                  {chaveDepartamentoOptions.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filters Row 2: Empresa */}
+            <div className="grid grid-cols-2 gap-2">
+              <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 w-full truncate">
+                  <SelectValue placeholder="Empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as Empresas</SelectItem>
+                  {chaveEmpresaOptions.map((e) => (
+                    <SelectItem key={e} value={e}>{e}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filters Row 3: Data */}
+            <div className="relative flex items-center">
+              <Input
+                type="date"
+                value={filtroData}
+                onChange={(e) => setFiltroData(e.target.value)}
+                className="h-10 text-sm bg-muted/50 border-0 w-full pr-10"
+              />
+              {filtroData && (
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => {
-                    setOrdenacao('mais_recentes');
-                    setFiltroDepartamento('todos');
-                    setFiltroEmpresa('todos');
-                    setFiltroData('');
-                  }}
+                  size="icon"
+                  className="absolute right-0 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  onClick={() => setFiltroData('')}
                 >
-                  Limpar
+                  <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Ordenação</Label>
-                <Select
-                  value={ordenacao}
-                  onValueChange={(v) => setOrdenacao(v as 'mais_recentes' | 'mais_antigos')}
-                >
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mais_recentes">Mais recentes</SelectItem>
-                    <SelectItem value="mais_antigos">Mais antigos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Data</Label>
-                <Input
-                  type="date"
-                  value={filtroData}
-                  onChange={(e) => setFiltroData(e.target.value)}
-                  className="h-9 bg-background"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Departamento</Label>
-                <Select value={filtroDepartamento} onValueChange={setFiltroDepartamento}>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {chaveDepartamentoOptions.map((d) => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Empresa</Label>
-                <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
-                  <SelectTrigger className="h-9 bg-background">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todas</SelectItem>
-                    {chaveEmpresaOptions.map((e) => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+          </motion.div>
         )}
 
         <Tabs
