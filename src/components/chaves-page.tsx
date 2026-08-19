@@ -276,7 +276,7 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
 
           <div className="space-y-3">
             <Label className="text-base">Chave *</Label>
-            {!isRetirada && formData.chave ? (
+            {!isRetirada && prefill?.chave ? (
               <Input value={formData.chave} readOnly className="bg-muted" />
             ) : (
               <AutocompleteInput
