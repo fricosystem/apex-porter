@@ -224,10 +224,6 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
       const aberto = registrosChaves.find(
         (r) => !r.horarioDevolucao && r.chave.trim().toLowerCase() === chave.toLowerCase()
       );
-      if (!aberto) {
-        toast.error('Nenhuma retirada em aberto encontrada para esta chave.');
-        return;
-      }
       if (!pessoaJaCadastrada) {
         addPessoa({
           id: `pes_${Date.now()}`,
@@ -242,8 +238,23 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
           email: '',
         });
       }
-      registrarDevolucaoChave(aberto.id, nome);
-      toast.success('Devolução registrada com sucesso!');
+      if (aberto) {
+        registrarDevolucaoChave(aberto.id, nome);
+        toast.success('Devolução registrada com sucesso!');
+      } else {
+        addRegistroChave({
+          id: `chave_${Date.now()}`,
+          nome,
+          chave,
+          data: format(new Date(), 'dd/MM/yyyy'),
+          horarioRetirada: '',
+          horarioDevolucao: format(new Date(), 'HH:mm'),
+          porteiroRetirada: user?.nome || '',
+          porteiroDevolucao: user?.nome || '',
+          nomeDevolucao: nome,
+        });
+        toast.warning('Aviso: nenhuma retirada em aberto encontrada para esta chave. Devolução registrada sem retirada.');
+      }
     }
     onClose();
   };
