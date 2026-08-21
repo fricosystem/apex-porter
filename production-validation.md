@@ -44,3 +44,9 @@ O bundle do alias oficial contém a configuração VAPID e o código FCM após o
 ## Validação visual
 
 O endereço oficial `https://apex-porter.vercel.app` abriu publicamente, exibiu o splash do APEX Portaria e, após a inicialização, apresentou a tela de login sem redirecionamento para a Vercel. Isso confirma a estabilidade básica de carregamento do PWA em produção.
+
+## Correção do teste nativo
+
+O teste anterior confirmava apenas a gravação do pedido e exibiu um toast, mas não chamava diretamente a bandeja do dispositivo. A correção `85f2040` agora chama `ServiceWorkerRegistration.showNotification()` no dispositivo, mantém a requisição `pushTestRequests` para o backend futuro e só mostra sucesso após o navegador confirmar a criação da notificação nativa. O filtro do fallback também deixou de descartar o evento `push-test` direcionado ao próprio aparelho.
+
+A implantação `85f2040` ficou **Ready** na Vercel.
