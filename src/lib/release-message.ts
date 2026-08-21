@@ -27,7 +27,7 @@ function categoryAction(categoria: RegistroFluxo['categoria']): string {
   }
 }
 
-export function buildReleaseMessage(registro: RegistroFluxo): string {
+function buildGroupedReleaseMessage(registro: RegistroFluxo): string {
   const fields = registro as any;
   const principalNome = fields.nome
     || fields.motorista
@@ -65,4 +65,27 @@ export function buildReleaseMessage(registro: RegistroFluxo): string {
   const plural = pessoas.length > 1;
 
   return `Apenas para conhecimento, ${plural ? 'os Srs.' : 'o Sr.'} ${pessoasTexto || 'NOME NÃO INFORMADO'}, ${empresaTexto}, ${plural ? 'já se encontram' : 'já se encontra'} nas dependências da empresa para ${categoryAction(registro.categoria)}.`;
+}
+
+export function buildReleaseMessage(registro: RegistroFluxo): string {
+  const fields = registro as any;
+  const extras = Array.isArray(fields.pessoasExtras) ? fields.pessoasExtras : [];
+
+  // Registros com acompanhantes mantêm a mensagem agrupada já utilizada.
+  if (extras.length > 0) return buildGroupedReleaseMessage(registro);
+
+  const nome = String(
+    fields.nome
+      || fields.motorista
+      || fields.condutor
+      || fields.nomeEmpresa?.split(' / ')[0]
+      || fields.nomeEmpresa
+      || 'NOME NÃO INFORMADO',
+  ).trim().toUpperCase();
+  const documento = formatDocument(fields.rgCpf || fields.cpfRg || '');
+  const empresa = String(fields.empresa || fields.nomeEmpresa?.split(' / ')[1] || 'EMPRESA NÃO INFORMADA')
+    .trim()
+    .toUpperCase();
+
+  return `O Sr. ${nome}, ${documento.label} ${documento.value}, está aqui na portaria pela empresa ${empresa} para ${categoryAction(registro.categoria)}. Podemos liberar?`;
 }
