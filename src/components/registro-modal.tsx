@@ -1232,7 +1232,7 @@ export default function RegistroModal({
         >
           <span className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
             <Users className="h-5 w-5" />
-            Pessoas extras
+            Adicionar acompanhante
             {pessoasExtras.length > 0 && (
               <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs text-white">{pessoasExtras.length}</span>
             )}
@@ -1243,21 +1243,21 @@ export default function RegistroModal({
         {extrasOpen && (
           <div className="space-y-4 border-t border-emerald-500/20 p-4">
             <p className="text-sm text-muted-foreground">
-              Adicione outras pessoas que entrarão no mesmo registro. Os demais campos seguem a entrada principal e ficam vinculados a este registro.
+              Adicione outras pessoas que entrarão no mesmo registro.
             </p>
 
             {pessoasExtras.map((extra, index) => (
               <div key={extra.id} className="space-y-3 rounded-lg border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-sm">Pessoa extra {index + 1}</span>
+                  <span className="font-semibold text-sm">Acompanhante {index + 1}</span>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => removePessoaExtra(extra.id)}
                     className="h-8 w-8 border-red-500/40 text-red-600 hover:bg-red-500/10"
-                    aria-label={`Remover pessoa extra ${index + 1}`}
-                    title="Remover pessoa"
+                    aria-label={`Remover acompanhante ${index + 1}`}
+                    title="Remover acompanhante"
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -1305,7 +1305,7 @@ export default function RegistroModal({
               className="w-full border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Adicionar outra pessoa
+              Adicionar acompanhante
             </Button>
           </div>
         )}
