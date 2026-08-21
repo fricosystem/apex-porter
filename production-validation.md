@@ -50,3 +50,9 @@ O endereço oficial `https://apex-porter.vercel.app` abriu publicamente, exibiu 
 O teste anterior confirmava apenas a gravação do pedido e exibiu um toast, mas não chamava diretamente a bandeja do dispositivo. A correção `85f2040` agora chama `ServiceWorkerRegistration.showNotification()` no dispositivo, mantém a requisição `pushTestRequests` para o backend futuro e só mostra sucesso após o navegador confirmar a criação da notificação nativa. O filtro do fallback também deixou de descartar o evento `push-test` direcionado ao próprio aparelho.
 
 A implantação `85f2040` ficou **Ready** na Vercel.
+
+## Procedimento de teste no Firefox
+
+No Firefox do telefone, abra `https://apex-porter.vercel.app`, faça uma atualização completa e entre novamente em **Configurações → Notificações do dispositivo**. O switch deve permanecer ativado. Pressione **Enviar notificação de teste** e bloqueie a tela ou saia do aplicativo sem fechar o Firefox; a confirmação correta é uma notificação nativa intitulada `TESTE DE NOTIFICAÇÃO` na bandeja do sistema, não apenas um toast dentro da página.
+
+Se não aparecer, a causa deve ser investigada no menu de permissões do site: a permissão de notificações precisa estar como permitida para `apex-porter.vercel.app`, e o Firefox precisa manter permitido o funcionamento do site em segundo plano. O teste atualizado exibirá erro no toast somente quando `showNotification()` falhar.
