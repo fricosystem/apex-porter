@@ -923,6 +923,7 @@ export default function RegistroModal({
           placa: formData.placa || '',
           empresa: formData.empresa,
           motorista: formData.motorista,
+          departamento: formData.departamento || '',
           data: formData.data || format(new Date(), 'dd/MM/yyyy'),
           horarioSaida: '',
           ...(formData.pesoEntrada ? { pesoEntrada: Number(formData.pesoEntrada) } : {}),
@@ -1040,6 +1041,11 @@ export default function RegistroModal({
     if (formData.observacao?.trim()) {
       registro.observacao = formData.observacao.trim();
     }
+
+    // Metadados usados exclusivamente pelo disparo seguro de notificações FCM.
+    registro.criadoPorUid = user?.id || '';
+    registro.criadoPor = user?.nome || '';
+    registro.departamento = registro.departamento || formData.departamento || '';
 
     if (isRascunho && registroInicial) {
       removeRascunhoFluxo(registroInicial.id);
@@ -1458,6 +1464,26 @@ export default function RegistroModal({
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-base">Departamento</Label>
+              <Select
+                value={formData.departamento || ''}
+                onValueChange={(v) => updateField('departamento', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((d) => (
+                      <SelectItem key={d.id || d.nome} value={d.nome}>
+                        {d.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-3">
               <Label className="text-base">Placa</Label>

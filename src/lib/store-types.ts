@@ -45,6 +45,8 @@ export type AppSettings = {
   darkModeEnd: string;
   fixedTheme: boolean;
   autoDarkTheme?: 'dark' | 'dark-apex';
+  /** Usuário autorizou e ativou notificações push neste perfil. */
+  notificationsEnabled: boolean;
 };
 
 export type SystemConfig = {

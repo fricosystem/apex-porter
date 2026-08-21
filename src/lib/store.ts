@@ -43,6 +43,8 @@ import {
   type FirestoreUser,
 } from './auth';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { setupPushNotificationsAfterAuth } from './push-notifications';
+import { createRegistroNotificationEvent } from './notification-events';
 import {
   subscribeEmpresas,
   addEmpresa as addEmpresaFS,
@@ -166,6 +168,7 @@ interface AppSettings {
   darkModeEnd: string;
   fixedTheme: boolean;
   autoDarkTheme?: 'dark' | 'dark-apex';
+  notificationsEnabled: boolean;
 }
 
 // ── System config (loaded from Firestore config collection) ──
@@ -473,6 +476,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
 
+      void setupPushNotificationsAfterAuth(user.id)
+        .then((pushResult) => {
+          if (pushResult.enabled) get().updateSettings({ notificationsEnabled: true });
+        })
+        .catch((error) => console.warn('[FCM] Falha ao ativar notificações após login:', error));
+
       // Persist permissão de Chaves adicionada automaticamente (roll-out para porteiros existentes)
       if (userCargo === 'PORTEIRO' && userPermissoes.length > 0 && !userPermissoes.includes('chaves')) {
         updateUserProfile(firebaseUser.uid, { permissoes: user.permissoes }).catch(() => {});
@@ -512,6 +521,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
       if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
+
+      void setupPushNotificationsAfterAuth(user.id)
+        .then((pushResult) => {
+          if (pushResult.enabled) get().updateSettings({ notificationsEnabled: true });
+        })
+        .catch((error) => console.warn('[FCM] Falha ao ativar notificações após cadastro:', error));
+
       // Start Firestore core subscriptions, then activate dashboard features
       startSubscriptions();
       getFeaturesForPage('dashboard').forEach(activateFeature);
@@ -650,9 +666,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   addRegistroFluxo: (registro) => {
     set((state) => ({ registrosFluxo: [...state.registrosFluxo, registro] }));
     const { id, ...data } = registro;
-    setRegistroFluxoFS(id, data).catch((err) => {
-      console.warn('[Firestore] Falha ao adicionar registro de fluxo:', err);
-    });
+    void setRegistroFluxoFS(id, data)
+      .then(() => createRegistroNotificationEvent(registro))
+      .catch((err) => {
+        console.warn('[Firestore] Falha ao adicionar registro de fluxo ou criar notificação:', err);
+      });
     if (registro.categoria === 'pesagem_apara') {
       setPesagemAparaFS(id, data as Parameters<typeof setPesagemAparaFS>[1]).catch((err) => {
         console.warn('[Firestore] Falha ao adicionar pesagem de apara:', err);
@@ -1315,6 +1333,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     darkModeEnd: '06:00',
     fixedTheme: false,
     autoDarkTheme: 'dark',
+    notificationsEnabled: false,
   },
   updateSettings: (newSettings) => {
     set((state) => ({
@@ -1357,7 +1376,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Usuários
   usuarios: [],
   addUsuario: (usuario) => {
-    set((state) => ({ usuarios: [...state.usuarios, usuario] }));
+    set((state) => {
+      const existingIndex = state.usuarios.findIndex((item) => item.id === usuario.id);
+      if (existingIndex < 0) return { usuarios: [...state.usuarios, usuario] };
+      const usuarios = [...state.usuarios];
+      usuarios[existingIndex] = { ...usuarios[existingIndex], ...usuario };
+      return { usuarios };
+    });
     const { id, ...data } = usuario;
     setUsuarioFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao adicionar usuário:', err);

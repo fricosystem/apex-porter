@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppStore } from '@/lib/store';
+import { requestNotificationPermissionOnAuth } from '@/lib/notifications';
 
 type AuthMode = 'login' | 'register' | 'reset';
 
@@ -89,6 +90,9 @@ export default function LoginPage() {
       setLocalError('Preencha todos os campos');
       return;
     }
+    // Solicita a permissão no gesto explícito de login; o token é sincronizado
+    // pelo store somente depois que a autenticação for confirmada.
+    await requestNotificationPermissionOnAuth().catch(() => 'denied');
     await login(email, password);
   };
 
@@ -104,6 +108,8 @@ export default function LoginPage() {
       setLocalError('A senha deve ter pelo menos 6 caracteres');
       return;
     }
+    // O cadastro também é um ponto válido para solicitar a permissão do navegador.
+    await requestNotificationPermissionOnAuth().catch(() => 'denied');
     await register(nome, email, password, cargo, cpf || undefined);
   };
 

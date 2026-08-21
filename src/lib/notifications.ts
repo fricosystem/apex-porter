@@ -4,19 +4,24 @@
 let lastNotificationBody = '';
 let lastNotificationTime = 0;
 
+const PUSH_PERMISSION_PROMPTED_KEY = 'apex_porter_push_permission_prompted_v1';
+const PUSH_PREFERENCE_SET_KEY = 'apex_porter_push_preference_set_v1';
+
+export type NotificationPermissionState = NotificationPermission | 'unsupported';
+
 export function notificationsSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window && !!window.Notification;
 }
 
-export function getNotificationPermission(): NotificationPermission | 'unsupported' {
+export function getNotificationPermission(): NotificationPermissionState {
   if (!notificationsSupported()) return 'unsupported';
   return window.Notification.permission;
 }
 
-export function requestNotificationPermission(): Promise<NotificationPermission> {
+export function requestNotificationPermission(): Promise<NotificationPermissionState> {
   return new Promise((resolve) => {
     if (!notificationsSupported()) {
-      resolve('denied');
+      resolve('unsupported');
       return;
     }
     if (window.Notification.permission === 'granted' || window.Notification.permission === 'denied') {
@@ -28,6 +33,37 @@ export function requestNotificationPermission(): Promise<NotificationPermission>
       .then((p) => resolve(p))
       .catch(() => resolve('denied'));
   });
+}
+
+export function hasNotificationPermissionPromptBeenShown(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(PUSH_PERMISSION_PROMPTED_KEY) === 'true';
+}
+
+export function markNotificationPermissionPromptAsShown(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(PUSH_PERMISSION_PROMPTED_KEY, 'true');
+}
+
+export function hasNotificationPreferenceBeenSet(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(PUSH_PREFERENCE_SET_KEY) === 'true';
+}
+
+export function markNotificationPreferenceAsSet(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(PUSH_PREFERENCE_SET_KEY, 'true');
+}
+
+/** Solicita a permissão uma única vez durante o primeiro login/cadastro no dispositivo. */
+export async function requestNotificationPermissionOnAuth(): Promise<NotificationPermissionState> {
+  const permission = getNotificationPermission();
+  if (permission !== 'default' || hasNotificationPermissionPromptBeenShown()) {
+    return permission;
+  }
+
+  markNotificationPermissionPromptAsShown();
+  return requestNotificationPermission();
 }
 
 export function showSystemNotification(title: string, body: string): void {
@@ -42,8 +78,8 @@ export function showSystemNotification(title: string, body: string): void {
 
     const notification = new window.Notification(title, {
       body,
-      icon: '/icons/icone-site.png',
-      badge: '/icons/icon-192x192.png',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/maskable-icon-512x512.png',
       tag: `apex-${now}`,
     });
 

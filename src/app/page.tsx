@@ -31,6 +31,7 @@ import ChavesPage from '@/components/chaves-page';
 import AdminPage from '@/components/admin-page';
 import AppHeader from '@/components/app-header';
 import BottomNav from '@/components/bottom-nav';
+import NotificationBridge from '@/components/notification-bridge';
 
 function PageRenderer() {
   const { currentPage, user, setCurrentPage } = useAppStore();
@@ -376,6 +377,7 @@ export default function Home() {
 
   return (
     <div className="h-full flex flex-col bg-background">
+      <NotificationBridge />
       <AppHeader />
       <main className="flex-1 overflow-hidden">
         <PageRenderer />

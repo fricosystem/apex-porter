@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import ThemeColorUpdater from "@/components/theme-color-updater";
-import NotificationBridge from "@/components/notification-bridge";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -75,7 +74,6 @@ export default function RootLayout({
           <div id="app-scroll-root">
             {children}
           </div>
-          <NotificationBridge />
           <Toaster
             richColors
             position="top-center"
@@ -169,7 +167,7 @@ export default function RootLayout({
               // ── Service Worker ──
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
+                  navigator.serviceWorker.register('/sw', { scope: '/', updateViaCache: 'none' })
                     .then(function(registration) {
                       console.log('SW registrado com sucesso:', registration.scope);
                     })

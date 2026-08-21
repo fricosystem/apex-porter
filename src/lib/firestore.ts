@@ -146,6 +146,7 @@ const DONT_UPPERCASE_KEYS = new Set([
   'veiculo',
   'acionadoPor',
   'criadoPor',
+  'criadoPorUid',
   'item',
   'itens',
   'vaga',

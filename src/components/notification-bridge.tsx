@@ -1,69 +1,105 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useAppStore } from '@/lib/store';
 import {
-  notificationsSupported,
-  requestNotificationPermission,
-  showSystemNotification,
-} from '@/lib/notifications';
+  registerPushTokenSilently,
+  subscribeToPushMessages,
+} from '@/lib/push-notifications';
+import { subscribeDeviceNotificationEvents } from '@/lib/notification-events';
+import { showSystemNotification } from '@/lib/notifications';
 
-// Ponte que espelha os toasts do sonner para as notificações nativas do sistema
-// (barra de notificações do Android PWA, tablet e desktop).
-export default function NotificationBridge() {
-  useEffect(() => {
-    if (!notificationsSupported()) return;
+const seenNotificationIds = new Set<string>();
 
-    // Solicita permissão no primeiro gesto do usuário (exigido no iOS/Android)
-    const requestOnGesture = () => {
-      requestNotificationPermission();
-      window.removeEventListener('pointerdown', requestOnGesture);
-      window.removeEventListener('keydown', requestOnGesture);
-      window.removeEventListener('touchstart', requestOnGesture);
-    };
-    if (window.Notification.permission === 'default') {
-      window.addEventListener('pointerdown', requestOnGesture);
-      window.addEventListener('keydown', requestOnGesture);
-      window.addEventListener('touchstart', requestOnGesture);
-    }
+function payloadText(payload: { notification?: { title?: string; body?: string }; data?: Record<string, string> }) {
+  const title = payload.notification?.title || payload.data?.title || 'APEX Portaria';
+  const body = payload.notification?.body || payload.data?.body || 'Nova atualização no sistema.';
+  const notificationId = payload.data?.notificationId || `fcm-${title}-${body}`;
+  const link = payload.data?.link || '/';
+  return { title, body, notificationId, link };
+}
 
-    let observer: MutationObserver | null = null;
+async function showDeviceNotification(input: {
+  title: string;
+  body: string;
+  notificationId: string;
+  link?: string;
+}) {
+  if (seenNotificationIds.has(input.notificationId)) return;
+  seenNotificationIds.add(input.notificationId);
+  if (seenNotificationIds.size > 200) {
+    const firstId = seenNotificationIds.values().next().value;
+    if (firstId) seenNotificationIds.delete(firstId);
+  }
 
-    const startObserving = () => {
-      const toaster = document.querySelector('[data-sonner-toaster]');
-      if (!toaster) return false;
-
-      observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (!(node instanceof HTMLElement)) return;
-            // Toasts de "loading" não geram notificação nativa
-            if (node.getAttribute('data-type') === 'loading') return;
-            const text = (node.textContent || '').trim();
-            if (!text) return;
-            showSystemNotification('APEX Portaria', text);
-          });
-        });
+  try {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(input.title, {
+        body: input.body,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/maskable-icon-512x512.png',
+        tag: input.notificationId,
+        silent: false,
+        data: { link: input.link || '/', notificationId: input.notificationId },
       });
-      observer.observe(toaster, { childList: true, subtree: true });
-      return true;
-    };
-
-    if (startObserving()) {
-      return () => observer?.disconnect();
+      return;
     }
+  } catch (error) {
+    console.warn('[Notifications] Service Worker indisponível; usando fallback nativo:', error);
+  }
 
-    // O toaster pode montar depois deste componente; aguarda aparecer
-    const interval = window.setInterval(() => {
-      if (startObserving()) {
-        window.clearInterval(interval);
-      }
-    }, 500);
+  // Continua sendo uma notificação do sistema, nunca um toast dentro da aplicação.
+  showSystemNotification(input.title, input.body);
+}
+
+// Ponte global de notificações: registra o dispositivo habilitado, escuta eventos
+// Firestore sem servidor e trata FCM quando disponível.
+export default function NotificationBridge() {
+  const userId = useAppStore((state) => state.user?.id);
+  const notificationsEnabled = useAppStore((state) => state.settings.notificationsEnabled);
+
+  useEffect(() => {
+    if (!userId || !notificationsEnabled) return;
+
+    let disposed = false;
+    let unsubscribeFcm = () => {};
+
+    const unsubscribeEvents = subscribeDeviceNotificationEvents(userId, (event) => {
+      if (disposed) return;
+      void showDeviceNotification({
+        title: event.title,
+        body: event.body,
+        notificationId: event.notificationId || event.id,
+        link: event.link,
+      });
+    });
+
+    registerPushTokenSilently(userId)
+      .then((result) => {
+        if (!result.enabled || disposed) return;
+        return subscribeToPushMessages((payload) => {
+          if (disposed) return;
+          const notification = payloadText(payload);
+          void showDeviceNotification(notification);
+        });
+      })
+      .then((cleanup) => {
+        if (cleanup) {
+          if (disposed) cleanup();
+          else unsubscribeFcm = cleanup;
+        }
+      })
+      .catch((error) => {
+        console.warn('[FCM] Falha ao registrar/ouvir notificações:', error);
+      });
 
     return () => {
-      window.clearInterval(interval);
-      observer?.disconnect();
+      disposed = true;
+      unsubscribeEvents();
+      unsubscribeFcm();
     };
-  }, []);
+  }, [userId, notificationsEnabled]);
 
   return null;
 }

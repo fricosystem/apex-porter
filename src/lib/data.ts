@@ -58,6 +58,13 @@ export interface BaseRegistroFluxo {
   motivoRefacao?: string;
   observacao?: string;
   isRascunho?: boolean;
+  /** UID do usuário que criou o registro, usado pelo disparo FCM para excluir o autor. */
+  criadoPorUid?: string;
+  /** Nome exibido do usuário que criou o registro. */
+  criadoPor?: string;
+  /** Departamento normalizado para notificações, quando a categoria possuir esse campo. */
+  departamento?: string;
+  postoId?: string;
 }
 
 export interface RegistroEntregas1 extends BaseRegistroFluxo {
@@ -141,6 +148,7 @@ export interface RegistroColeta extends BaseRegistroFluxo {
   placa: string;
   empresa: string;
   motorista: string;
+  departamento?: string;
   data: string;
   horarioSaida: string;
   pesoEntrada?: number;
@@ -467,6 +475,7 @@ export interface Ocorrencia {
   acaoTomada: string;
   porteiro: string;
   resolucao?: string;
+  postoId?: string;
 }
 
 // ── Ronda / Patrulhamento (Geolocalização) ──

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/components/theme-provider';
 import {
@@ -10,6 +10,8 @@ import {
   Clock,
   LogOut,
   Info,
+  Bell,
+  BellRing,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +22,12 @@ import { Separator } from '@/components/ui/separator';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  createTestPushRequest,
+  disablePushNotifications,
+  enablePushNotifications,
+} from '@/lib/push-notifications';
+import { markNotificationPreferenceAsSet } from '@/lib/notifications';
 
 export default function ConfiguracoesPage() {
   const { user, logout, settings, updateSettings } = useAppStore();
@@ -65,6 +73,57 @@ export default function ConfiguracoesPage() {
   }, [settings.autoTheme, settings.fixedTheme, checkTime]);
 
   const theme = resolvedTheme || 'light';
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [loadingTestNotification, setLoadingTestNotification] = useState(false);
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    if (!user?.id) return;
+    markNotificationPreferenceAsSet();
+    setLoadingNotifications(true);
+    try {
+      if (checked) {
+        const result = await enablePushNotifications(user.id, { requestPermission: true });
+        if (!result.enabled) {
+          updateSettings({ notificationsEnabled: false });
+          if (result.permission === 'denied') {
+            toast.error('A permissão foi bloqueada no navegador. Libere as notificações nas configurações do dispositivo.');
+          } else {
+            toast.error('Este dispositivo não oferece suporte a notificações push do sistema.');
+          }
+          return;
+        }
+        updateSettings({ notificationsEnabled: true });
+        toast.success('Notificações ativadas neste dispositivo.');
+      } else {
+        await disablePushNotifications(user.id);
+        updateSettings({ notificationsEnabled: false });
+        toast.success('Notificações desativadas neste dispositivo.');
+      }
+    } catch (error) {
+      console.warn('[FCM] Falha ao alterar preferência:', error);
+      toast.error('Não foi possível atualizar as notificações neste dispositivo.');
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!user?.id) return;
+    if (!settings.notificationsEnabled) {
+      toast.error('Ative as notificações antes de enviar um teste.');
+      return;
+    }
+    setLoadingTestNotification(true);
+    try {
+      await createTestPushRequest(user.id, user.nome);
+      toast.success('Teste enviado para a barra de notificações do dispositivo.');
+    } catch (error) {
+      console.warn('[FCM] Falha ao solicitar teste:', error);
+      toast.error('Não foi possível solicitar o teste de notificação.');
+    } finally {
+      setLoadingTestNotification(false);
+    }
+  };
 
   const handleThemeChange = (newTheme: string) => {
     const root = document.documentElement;
@@ -293,6 +352,43 @@ export default function ConfiguracoesPage() {
               </motion.div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Device Notifications */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Bell className="h-4 w-4" /> Notificações do dispositivo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border p-4 bg-muted/20">
+            <div className="space-y-1">
+              <Label htmlFor="settings-notifications-enabled" className="text-sm font-semibold">
+                Ativar notificações neste dispositivo
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Receba avisos de novos registros na barra de notificações do PWA, tablet ou desktop.
+              </p>
+            </div>
+            <Switch
+              id="settings-notifications-enabled"
+              checked={Boolean(settings.notificationsEnabled)}
+              onCheckedChange={handleToggleNotifications}
+              disabled={loadingNotifications}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleTestNotification}
+            disabled={loadingTestNotification || loadingNotifications || !settings.notificationsEnabled}
+            className="h-10 px-6 font-medium border-primary/40 hover:bg-primary hover:text-primary-foreground transition-all shadow-2xs w-fit"
+          >
+            <BellRing className="mr-2 h-4 w-4" />
+            {loadingTestNotification ? 'Enviando teste...' : 'Enviar notificação de teste'}
+          </Button>
         </CardContent>
       </Card>
 

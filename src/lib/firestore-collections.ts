@@ -659,7 +659,19 @@ export function subscribeUsuarios(callback: (data: User[]) => void): Unsubscribe
         'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
       ]
     }));
-    callback(usersWithDefaults);
+
+    // Firestore pode conter registros legados duplicados com o mesmo UID
+    // (por exemplo, após uma criação via Auth e outra via addDoc). Normalize
+    // a coleção antes de entregá-la ao React para garantir identidade única.
+    const seenIds = new Set<string>();
+    const uniqueUsers = usersWithDefaults.filter((user) => {
+      const identity = user.id || user.email;
+      if (!identity || seenIds.has(identity)) return false;
+      seenIds.add(identity);
+      return true;
+    });
+
+    callback(uniqueUsers);
   });
 }
 
