@@ -63,6 +63,11 @@ function buildGroupedReleaseMessage(registro: RegistroFluxo): string {
     ? `pela empresa ${empresas[0] || 'EMPRESA NÃO INFORMADA'}`
     : `pelas empresas ${empresas.join(' e ')}`;
   const plural = pessoas.length > 1;
+  const isVisita = registro.categoria === 'visitantes' || registro.categoria === 'prestadores';
+
+  if (isVisita && plural) {
+    return `Os Srs. ${pessoasTexto}, ${empresaTexto} para ${categoryAction(registro.categoria)}. Podemos liberar?`;
+  }
 
   return `Apenas para conhecimento, ${plural ? 'os Srs.' : 'o Sr.'} ${pessoasTexto || 'NOME NÃO INFORMADO'}, ${empresaTexto}, ${plural ? 'já se encontram' : 'já se encontra'} nas dependências da empresa para ${categoryAction(registro.categoria)}.`;
 }
@@ -71,7 +76,8 @@ export function buildReleaseMessage(registro: RegistroFluxo): string {
   const fields = registro as any;
   const extras = Array.isArray(fields.pessoasExtras) ? fields.pessoasExtras : [];
 
-  // Registros com acompanhantes mantêm a mensagem agrupada já utilizada.
+  // Registros de visitante e prestador com acompanhantes usam o novo modelo solicitado;
+  // as demais categorias preservam o modelo agrupado anterior.
   if (extras.length > 0) return buildGroupedReleaseMessage(registro);
 
   const nome = String(
