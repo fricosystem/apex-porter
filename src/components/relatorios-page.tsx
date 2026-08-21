@@ -24,6 +24,7 @@ import {
   type CategoriaFluxo, type RegistroFluxo,
 } from '@/lib/data';
 import { toast } from 'sonner';
+import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 
 type RelatorioTab =
   | 'fluxo' | 'veiculos' | 'correspondencias' | 'pre-autorizacao'
@@ -232,18 +233,21 @@ export default function RelatoriosPage() {
   }, [dateRangeObj]);
 
   const fluxoFiltered = useMemo(() => {
-    return registrosFluxo.filter(r => {
-      if (categoriaFiltro !== 'todos' && r.categoria !== categoriaFiltro) return false;
-      if (departamentoFiltro !== 'todos') {
-        const dep = 'departamento' in r ? (r as any).departamento : '';
-        if (dep !== departamentoFiltro) return false;
-      }
-      const hasSaida = 'horarioSaida' in r && (r as any).horarioSaida !== '';
-      if (statusFiltro === 'pendente' && hasSaida) return false;
-      if (statusFiltro === 'concluido' && !hasSaida) return false;
-      if (!withinRange('data' in r ? (r as any).data : '')) return false;
-      return true;
-    });
+    return registrosFluxo
+      .filter(r => !r.inativo)
+      .flatMap(expandRegistroIndividualmente)
+      .filter(r => {
+        if (categoriaFiltro !== 'todos' && r.categoria !== categoriaFiltro) return false;
+        if (departamentoFiltro !== 'todos') {
+          const dep = 'departamento' in r ? (r as any).departamento : '';
+          if (dep !== departamentoFiltro) return false;
+        }
+        const hasSaida = 'horarioSaida' in r && (r as any).horarioSaida !== '';
+        if (statusFiltro === 'pendente' && hasSaida) return false;
+        if (statusFiltro === 'concluido' && !hasSaida) return false;
+        if (!withinRange('data' in r ? (r as any).data : '')) return false;
+        return true;
+      });
   }, [registrosFluxo, categoriaFiltro, departamentoFiltro, statusFiltro, withinRange]);
 
   const veiculosFiltered = useMemo(() => veiculos.filter(v => withinRange(v.data)), [veiculos, withinRange]);

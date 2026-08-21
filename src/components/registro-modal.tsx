@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { formatCpfRg } from '@/lib/utils';
 import { buildReleaseMessage } from '@/lib/release-message';
+import { getRegistroPessoas } from '@/lib/registro-individualizacao';
 
 // Unified data structure for autocomplete — stores ALL available info
 // regardless of which category it came from
@@ -182,6 +183,19 @@ export function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionDat
   return data;
 }
 
+export function extractUnifiedRecords(r: RegistroFluxo): UnifiedSuggestionData[] {
+  const base = extractUnifiedFromRecord(r);
+  const pessoas = getRegistroPessoas(r);
+  if (pessoas.length <= 1) return [base];
+  return pessoas.map((pessoa) => ({
+    ...base,
+    name: pessoa.nome,
+    company: pessoa.empresa || base.company,
+    doc: pessoa.rgCpf || base.doc,
+    department: pessoa.departamento || base.department,
+  }));
+}
+
 // Merge data from multiple records with the same key (prefer more complete records)
 function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggestionData): UnifiedSuggestionData {
   return {
@@ -232,8 +246,7 @@ export default function RegistroModal({
     
     // Contar registros no histórico
     const contador = registrosFluxo.filter(r => {
-      const doc = extractUnifiedFromRecord(r).doc.replace(/\D/g, '');
-      return doc === cpfLimpo;
+      return extractUnifiedRecords(r).some((unified) => unified.doc.replace(/\D/g, '') === cpfLimpo);
     }).length;
     
     return { isRecorrente: contador >= 3, pessoa, contador };
@@ -390,21 +403,22 @@ export default function RegistroModal({
 
     // From previous fluxo records — merge data for same names
     registrosFluxo.forEach((r) => {
-      const unified = extractUnifiedFromRecord(r);
-      const key = unified.name;
-      if (!key) return;
+      extractUnifiedRecords(r).forEach((unified) => {
+        const key = unified.name;
+        if (!key) return;
 
-      if (map.has(key)) {
-        const existing = map.get(key)!;
-        // Only upgrade sublabel if existing has none
-        map.set(key, {
-          data: mergeUnified(existing.data, unified),
-          sublabel: existing.sublabel || unified.company,
-        });
-      } else {
-        const sublabel = unified.company || unified.department || '';
-        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
-      }
+        if (map.has(key)) {
+          const existing = map.get(key)!;
+          // Only upgrade sublabel if existing has none
+          map.set(key, {
+            data: mergeUnified(existing.data, unified),
+            sublabel: existing.sublabel || unified.company,
+          });
+        } else {
+          const sublabel = unified.company || unified.department || '';
+          map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
+        }
+      });
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
@@ -458,20 +472,21 @@ export default function RegistroModal({
     });
 
     registrosFluxo.forEach((r) => {
-      const unified = extractUnifiedFromRecord(r);
-      const doc = unified.doc;
-      if (!doc) return;
+      extractUnifiedRecords(r).forEach((unified) => {
+        const doc = unified.doc;
+        if (!doc) return;
 
-      if (map.has(doc)) {
-        const existing = map.get(doc)!;
-        map.set(doc, {
-          data: mergeUnified(existing.data, unified),
-          sublabel: existing.sublabel,
-        });
-      } else {
-        const sublabel = unified.name || '';
-        map.set(doc, { data: { ...unified, origin: 'historico' }, sublabel });
-      }
+        if (map.has(doc)) {
+          const existing = map.get(doc)!;
+          map.set(doc, {
+            data: mergeUnified(existing.data, unified),
+            sublabel: existing.sublabel,
+          });
+        } else {
+          const sublabel = unified.name || '';
+          map.set(doc, { data: { ...unified, origin: 'historico' }, sublabel });
+        }
+      });
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({

@@ -70,6 +70,7 @@ import { toast } from 'sonner';
 import AutocompleteInput from './autocomplete-input';
 import { PESSOAS_INICIAIS, REGISTROS_FLUXO_INICIAIS } from '@/lib/seed-data';
 import { formatCpfRg, formatPhone } from '@/lib/utils';
+import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 
 const TIPO_ICONS: Record<TipoPessoa, React.ReactNode> = {
   Porteiro: <DoorOpen className="h-3.5 w-3.5" />,
@@ -237,7 +238,10 @@ export default function CadastrosPage() {
     });
 
     // 2. From historical flow records (registrosFluxo)
-    (registrosFluxo || []).forEach((r) => {
+    (registrosFluxo || [])
+      .filter((r) => !r.inativo)
+      .flatMap(expandRegistroIndividualmente)
+      .forEach((r) => {
       let name = '';
       let doc = '';
       let company = '';
@@ -549,18 +553,21 @@ export default function CadastrosPage() {
   const personVisits = useMemo(() => {
     if (!detailsPessoa) return [];
     const nome = detailsPessoa.nome.trim().toLowerCase();
-    let lista = registrosFluxo.filter((r) => {
-      const campos = [
-        (r as any).nome,
-        (r as any).motorista,
-        (r as any).motoristaNome,
-        (r as any).visitanteNome,
-        (r as any).nomeColaborador,
-        (r as any).destinatario,
-        (r as any).condutor,
-      ];
-      return campos.some((f) => typeof f === 'string' && f && f.trim().toLowerCase() === nome);
-    });
+    let lista = registrosFluxo
+      .filter((r) => !r.inativo)
+      .flatMap(expandRegistroIndividualmente)
+      .filter((r) => {
+        const campos = [
+          (r as any).nome,
+          (r as any).motorista,
+          (r as any).motoristaNome,
+          (r as any).visitanteNome,
+          (r as any).nomeColaborador,
+          (r as any).destinatario,
+          (r as any).condutor,
+        ];
+        return campos.some((f) => typeof f === 'string' && f && f.trim().toLowerCase() === nome);
+      });
 
     if (visitPeriodInicio || visitPeriodFim) {
       const inicio = visitPeriodInicio ? parseDataVisita(visitPeriodInicio) : null;

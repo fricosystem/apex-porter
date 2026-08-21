@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
-import { extractUnifiedFromRecord, mapToFormFields } from './registro-modal';
+import { extractUnifiedFromRecord, extractUnifiedRecords, mapToFormFields } from './registro-modal';
 import { type CategoriaFluxo } from '@/lib/data';
 import { toast } from 'sonner';
 import { X } from 'lucide-react';
@@ -82,8 +82,7 @@ export default function AppHeader() {
     // Find the last record for this pessoa (match by CPF)
     const pessoaCpfLimpo = pessoa.rgCpf.replace(/\D/g, '');
     const lastRecord = registrosFluxo.filter(r => {
-      const recordDoc = extractUnifiedFromRecord(r).doc.replace(/\D/g, '');
-      return recordDoc === pessoaCpfLimpo;
+      return extractUnifiedRecords(r).some((unified) => unified.doc.replace(/\D/g, '') === pessoaCpfLimpo);
     }).sort((a, b) => {
       // Sort by date (DD/MM/YYYY) and time (HH:MM)
       const [aDay, aMonth, aYear] = (a as any).data?.split('/').map(Number) || [0, 0, 0];
@@ -99,7 +98,8 @@ export default function AppHeader() {
 
     if (lastRecord) {
       // Extract data from last record
-      const unifiedData = extractUnifiedFromRecord(lastRecord);
+      const unifiedData = extractUnifiedRecords(lastRecord).find((unified) => unified.doc.replace(/\D/g, '') === pessoaCpfLimpo)
+        || extractUnifiedFromRecord(lastRecord);
       const formFields = mapToFormFields(lastRecord.categoria, unifiedData);
       
       // Add current date and time

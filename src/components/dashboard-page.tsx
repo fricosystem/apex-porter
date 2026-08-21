@@ -49,6 +49,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
+import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { CATEGORIAS_FLUXO, TIPOS_OCORRENCIA, GRAVIDADES_OCORRENCIA } from '@/lib/data';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -274,7 +275,9 @@ export default function DashboardPage() {
 
   // Registros de fluxo: aplicam o filtro de período E excluem os inativados (Refeito)
   const registrosFluxoFiltered = useMemo(
-    () => registrosFluxo.filter((r) => !r.inativo && isDateInRange('data' in r ? (r as any).data : '')),
+    () => registrosFluxo
+      .filter((r) => !r.inativo && isDateInRange('data' in r ? (r as any).data : ''))
+      .flatMap(expandRegistroIndividualmente),
     [registrosFluxo, isDateInRange]
   );
 
@@ -400,13 +403,15 @@ export default function DashboardPage() {
       dataMap[`${dataStr}_label`] = diaSemana;
     }
 
-    registrosFluxo.forEach((r) => {
-      if (r.inativo) return;
-      const data = 'data' in r ? (r as any).data : '';
-      if (data && dataMap[data] !== undefined) {
-        dataMap[data]++;
-      }
-    });
+    registrosFluxo
+      .filter((r) => !r.inativo)
+      .flatMap(expandRegistroIndividualmente)
+      .forEach((r) => {
+        const data = 'data' in r ? (r as any).data : '';
+        if (data && dataMap[data] !== undefined) {
+          dataMap[data]++;
+        }
+      });
 
     return Object.keys(dataMap)
       .filter((k) => !k.includes('_label'))

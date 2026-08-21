@@ -77,6 +77,13 @@ export interface BaseRegistroFluxo {
   porteiroSaidaUid?: string;
   /** Pessoas adicionais vinculadas à mesma entrada principal. */
   pessoasExtras?: PessoaExtra[];
+  /** Metadados da individualização sem perder a origem histórica. */
+  registroGrupoOriginal?: boolean;
+  registroIndividualizado?: boolean;
+  registroPaiId?: string;
+  pessoaOrigemId?: string;
+  pessoaPrincipal?: boolean;
+  individualizadoEm?: string;
   postoId?: string;
 }
 

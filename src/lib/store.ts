@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { format } from 'date-fns';
 import type { AppState } from './store-types';
+import { getRegistroPessoas, individualizarRegistroPessoa } from './registro-individualizacao';
 import type {
   PageType,
   CategoriaFluxo,
@@ -717,6 +718,80 @@ export const useAppStore = create<AppState>((set, get) => ({
     const acompanhantesSelecionados = new Set(
       selecaoInformada ? idsSelecionados.filter((pessoaId) => pessoaId !== 'principal') : []
     );
+    const registroAtual = get().registrosFluxo.find((r) => r.id === id);
+    const deveIndividualizar = Boolean(
+      registroAtual
+      && Array.isArray(registroAtual.pessoasExtras)
+      && registroAtual.pessoasExtras.length > 0
+      && !registroAtual.registroIndividualizado
+    );
+
+    if (deveIndividualizar && registroAtual) {
+      const grupoAtual: any = {
+        ...registroAtual,
+        ...(principalSelecionado ? { horarioSaida } : {}),
+        detalhes: detalhes || registroAtual.detalhes,
+        ocorrencia: ocorrencia || registroAtual.ocorrencia,
+      };
+      if (pesoApara && registroAtual.categoria === 'pesagem_apara') grupoAtual[pesoApara.campo] = pesoApara.valor;
+      if (pesoSaida !== undefined && pesoSaida > 0) {
+        grupoAtual.pesoSaida = pesoSaida;
+        grupoAtual.resultadoDiferenca = pesoSaida - Number((registroAtual as any).pesoEntrada ?? 0);
+      }
+      if (porteiroSaida) grupoAtual.porteiroSaida = porteiroSaida;
+      if (porteiroSaidaUid) grupoAtual.porteiroSaidaUid = porteiroSaidaUid;
+
+      const individualizadoEm = format(new Date(), 'dd/MM/yyyy HH:mm');
+      const pessoas = getRegistroPessoas(grupoAtual as RegistroFluxo);
+      const filhos = pessoas.map((pessoa) => {
+        const saiu = pessoa.principal
+          ? Boolean(grupoAtual.horarioSaida)
+          : Boolean(pessoa.horarioSaida || acompanhantesSelecionados.has(pessoa.id));
+        return individualizarRegistroPessoa(
+          grupoAtual as RegistroFluxo,
+          pessoa,
+          `${id}__${pessoa.id}`,
+          saiu ? (pessoa.horarioSaida || horarioSaida) : '',
+          individualizadoEm,
+          detalhes,
+          ocorrencia,
+          porteiroSaida,
+          porteiroSaidaUid,
+        );
+      });
+      const grupoIndividualizado: any = {
+        ...grupoAtual,
+        pessoasExtras: [],
+        inativo: true,
+        registroGrupoOriginal: true,
+        registroIndividualizado: true,
+        individualizadoEm,
+        dataInativacao: individualizadoEm,
+        motivoRefacao: 'Grupo individualizado em registros independentes',
+      };
+
+      set((state) => ({
+        registrosFluxo: state.registrosFluxo
+          .map((r) => r.id === id ? grupoIndividualizado : r)
+          .concat(filhos),
+      }));
+
+      const grupoFsUpdate: Record<string, unknown> = {
+        ...grupoIndividualizado,
+        id: undefined,
+      };
+      delete grupoFsUpdate.id;
+      const persistGrupo = updateRegistroFluxoFS(id, grupoFsUpdate);
+      const persistFilhos = Promise.all(filhos.map((filho) => {
+        const { id: filhoId, ...filhoData } = filho as any;
+        return setRegistroFluxoFS(filhoId, filhoData);
+      }));
+      void Promise.all([persistGrupo, persistFilhos]).catch((err) => {
+        console.warn('[Firestore] Falha ao individualizar grupo de acompanhantes:', err);
+      });
+      return;
+    }
+
     set((state) => ({
       registrosFluxo: state.registrosFluxo.map((r) => {
         if (r.id !== id) return r;

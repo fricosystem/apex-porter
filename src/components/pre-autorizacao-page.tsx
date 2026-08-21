@@ -26,6 +26,7 @@ import {
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
 import { formatCpfRg } from '@/lib/utils';
 import { toast } from 'sonner';
+import { extractUnifiedRecords } from './registro-modal';
 
 // Reuse the same unified data structure and helpers from registro-modal.tsx
 interface UnifiedSuggestionData {
@@ -161,45 +162,21 @@ export default function PreAutorizacaoPage() {
       }
     });
 
-    // From previous fluxo records
-    registrosFluxo.forEach((r) => {
-      // Replicate extractUnifiedFromRecord from registro-modal.tsx
-      const extractFromFluxo = (r: any): UnifiedSuggestionData => {
-        const data: UnifiedSuggestionData = { name: '', company: '', doc: '', plate: '', department: '' };
-        switch (r.categoria) {
-          case 'entregas1':
-            data.name = r.nome; data.company = r.empresa; data.doc = r.rgCpf; break;
-          case 'visitantes':
-          case 'prestadores':
-            data.name = (r as any).nome || r.nomeEmpresa; data.company = (r as any).empresa || ''; data.department = r.departamento; data.doc = r.rgCpf; break;
-          case 'pesagem':
-            data.company = r.empresa; data.plate = r.placa; data.name = r.motorista; data.doc = (r as any).rgCpf || ''; break;
-          case 'entregas2':
-            data.name = r.motorista; data.doc = r.cpfRg; data.company = r.empresa; data.department = r.departamento; data.plate = r.placa; break;
-          case 'coleta':
-            data.doc = r.rgCpf; data.plate = r.placa; data.company = r.empresa; data.name = r.motorista; break;
-          case 'movimentacao':
-            data.name = r.nomeColaborador; data.doc = r.rgCpf; break;
-          case 'correspondencias':
-            data.name = r.destinatario; data.company = r.remetente; data.department = r.departamento; break;
-          case 'pesagem_apara':
-            data.name = (r as any).condutor || ''; data.plate = (r as any).veiculo || ''; break;
-          case 'pesagem_tinta':
-            data.name = (r as any).condutor || ''; data.plate = (r as any).veiculo || ''; break;
+    // From previous fluxo records — includes nested and individualised companions
+    registrosFluxo
+      .filter((r) => !r.inativo)
+      .flatMap(extractUnifiedRecords)
+      .forEach((unified) => {
+        const key = unified.name;
+        if (!key) return;
+        if (map.has(key)) {
+          const existing = map.get(key)!;
+          map.set(key, { data: mergeUnified(existing.data, unified), sublabel: existing.sublabel || unified.company });
+        } else {
+          const sublabel = unified.company || unified.department || '';
+          map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
         }
-        return data;
-      };
-      const unified = extractFromFluxo(r);
-      const key = unified.name;
-      if (!key) return;
-      if (map.has(key)) {
-        const existing = map.get(key)!;
-        map.set(key, { data: mergeUnified(existing.data, unified), sublabel: existing.sublabel || unified.company });
-      } else {
-        const sublabel = unified.company || unified.department || '';
-        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
-      }
-    });
+      });
 
     // From previous pre-autorizacoes
     preAutorizacoes.forEach((pa) => {
