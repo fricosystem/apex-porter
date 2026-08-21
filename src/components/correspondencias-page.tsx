@@ -392,7 +392,7 @@ export default function CorrespondenciasPage() {
       </div>
 
       {/* Fixed bottom register button */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 pt-3 pb-7 px-4 md:px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
+      <div data-desktop-action-bar className="fixed bottom-16 left-0 right-0 z-30 pt-3 pb-7 px-4 md:px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
         <Button
           onClick={handleOpenModal}
           className="w-full h-13 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold shadow-lg"

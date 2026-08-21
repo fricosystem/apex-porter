@@ -8,6 +8,7 @@ import { AdminRondasTab } from './admin/admin-rondas-tab';
 import { AdminUsuariosTab } from './admin/admin-usuarios-tab';
 import { AdminCargosTab } from './admin/admin-cargos-tab';
 import { AdminPostosTab } from './admin/admin-postos-tab';
+import { useViewport } from '@/hooks/use-viewport';
 
 /**
  * AdminPage — roteador slim da área administrativa.
@@ -15,9 +16,10 @@ import { AdminPostosTab } from './admin/admin-postos-tab';
  */
 export default function AdminPage() {
   const [currentTab, setCurrentTab] = useState<AdminTab>('painel');
+  const { isDesktop } = useViewport();
 
   return (
-    <div className="h-full flex flex-col bg-background relative pb-16">
+    <div className="h-full flex flex-col bg-background relative pb-16 xl:pb-0">
       <div className="flex-1 overflow-y-auto" id="admin-scroll-root">
         <AnimatePresence mode="wait">
           <motion.div
@@ -26,7 +28,7 @@ export default function AdminPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="p-4"
+            className="p-4 xl:p-6"
           >
             {currentTab === 'painel'   && <AdminPainelTab />}
             {currentTab === 'rondas'   && <AdminRondasTab />}
@@ -37,7 +39,7 @@ export default function AdminPage() {
         </AnimatePresence>
       </div>
 
-      <AdminBottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+      {!isDesktop && <AdminBottomNav currentTab={currentTab} onTabChange={setCurrentTab} />}
     </div>
   );
 }

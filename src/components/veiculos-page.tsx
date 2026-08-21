@@ -283,7 +283,7 @@ export default function VeiculosPage() {
       </div>
 
       {/* Botão Registrar */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 p-4 md:px-6 pb-3 bg-background/80 backdrop-blur-md border-t border-border/50">
+      <div data-desktop-action-bar className="fixed bottom-16 left-0 right-0 z-30 p-4 md:px-6 pb-3 bg-background/80 backdrop-blur-md border-t border-border/50">
         <Button onClick={handleOpenModal} className="w-full h-13 bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold shadow-lg">
           <Plus className="h-5 w-5 mr-2" />Registrar Veículo
         </Button>

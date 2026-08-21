@@ -2,75 +2,16 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  LayoutDashboard,
-  ArrowRightLeft,
-  FileText,
-  UserPlus,
-  Mail,
-  Car,
-  UserCheck,
-  Phone,
-  Bell,
-  ShieldBan,
-  Search,
-  Settings,
-  Menu,
-  X,
-  AlertTriangle,
-  Footprints,
-  ClipboardCheck,
-  Eye,
-  Siren,
-  Building2,
-  Building,
-  Shield,
-  KeyRound,
-} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { PageType } from '@/lib/data';
-
-interface NavItem {
-  page: PageType;
-  label: string;
-  icon: React.ElementType;
-  primary?: boolean;
-}
-
-// Items to the left of the center button
-const LEFT_NAV: NavItem[] = [
-  { page: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { page: 'lembretes', label: 'Lembretes', icon: Bell },
-];
-
-// Center (prominent) button
-const CENTER_NAV: NavItem = { page: 'fluxo', label: 'Fluxo', icon: ArrowRightLeft, primary: true };
-
-// Items to the right of the center button
-const RIGHT_NAV: NavItem[] = [
-  { page: 'cadastros', label: 'Cadastros', icon: UserPlus },
-];
-
-const SECONDARY_NAV: NavItem[] = [
-  { page: 'correspondencias', label: 'Corresp.', icon: Mail },
-  { page: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
-  { page: 'ronda', label: 'Rondas', icon: Footprints },
-  { page: 'checklist-turno', label: 'Plantão', icon: ClipboardCheck },
-  { page: 'inspecao-diaria', label: 'Inspeção', icon: Eye },
-  { page: 'protocolos-emergencia', label: 'Emergência', icon: Siren },
-  { page: 'veiculos', label: 'Veículos', icon: Car },
-  { page: 'pre-autorizacao', label: 'Pré-Autorização', icon: UserCheck },
-  { page: 'departamentos', label: 'Departamentos', icon: Building2 },
-  { page: 'empresas', label: 'Empresas', icon: Building },
-  { page: 'relatorios', label: 'Relatórios', icon: FileText },
-  { page: 'ramais', label: 'Ramais', icon: Phone },
-  { page: 'avisos', label: 'Avisos', icon: Bell },
-  { page: 'chaves', label: 'Chaves', icon: KeyRound },
-  { page: 'lista-negra', label: 'Lista Negra', icon: ShieldBan },
-  { page: 'achados-perdidos', label: 'Achados e Perdidos', icon: Search },
-  { page: 'configuracoes', label: 'Configurações', icon: Settings },
-  { page: 'admin', label: 'Admin', icon: Shield },
-];
+import {
+  CENTER_NAV,
+  LEFT_NAV,
+  RIGHT_NAV,
+  SECONDARY_NAV,
+  type NavItem,
+} from './navigation-config';
 
 export default function BottomNav() {
   const { currentPage, setCurrentPage, user } = useAppStore();

@@ -60,14 +60,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background fixed inset-0 z-50 flex flex-col w-full h-full max-w-none m-0 p-0 gap-0 rounded-none border-0 shadow-none data-[state=open]:animate-none data-[state=closed]:animate-none",
+          "bg-background fixed inset-0 z-50 flex flex-col w-full h-full max-w-none m-0 p-0 gap-0 rounded-none border-0 shadow-none data-[state=open]:animate-none data-[state=closed]:animate-none xl:inset-auto xl:left-1/2 xl:top-1/2 xl:h-auto xl:max-h-[calc(100vh-3rem)] xl:w-[calc(100%-3rem)] xl:max-w-3xl xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-2xl xl:border xl:shadow-2xl xl:data-[state=open]:animate-in xl:data-[state=closed]:animate-out",
           className
         )}
         {...props}
       >
         <div 
           data-scroll-area
-          className="flex-1 w-full h-full overflow-y-auto overscroll-contain px-6 py-6"
+          className="flex-1 w-full h-full max-h-full overflow-y-auto overscroll-contain px-6 py-6 xl:max-h-[calc(100vh-3rem)] xl:px-7 xl:py-7"
           style={{ 
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',

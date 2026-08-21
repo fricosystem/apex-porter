@@ -29,8 +29,7 @@ import PerfilPage from '@/components/perfil-page';
 import LembretesPage from '@/components/lembretes-page';
 import ChavesPage from '@/components/chaves-page';
 import AdminPage from '@/components/admin-page';
-import AppHeader from '@/components/app-header';
-import BottomNav from '@/components/bottom-nav';
+import ResponsiveShell from '@/components/responsive-shell';
 import NotificationBridge from '@/components/notification-bridge';
 
 function PageRenderer() {
@@ -376,13 +375,11 @@ export default function Home() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full min-h-0 bg-background">
       <NotificationBridge />
-      <AppHeader />
-      <main className="flex-1 overflow-hidden">
+      <ResponsiveShell>
         <PageRenderer />
-      </main>
-      {currentPage !== 'admin' && <BottomNav />}
+      </ResponsiveShell>
     </div>
   );
 }
