@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -295,6 +296,8 @@ export default function FluxoPage() {
   const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
   const [pesoSaidaInput, setPesoSaidaInput] = useState('');
   const [pesoComplementarInput, setPesoComplementarInput] = useState('');
+  const [saidaSelecaoOpen, setSaidaSelecaoOpen] = useState(false);
+  const [pessoasSaidaSelecionadas, setPessoasSaidaSelecionadas] = useState<string[]>([]);
 
   // Refacao auditavel states
   const [registroRefacao, setRegistroRefacao] = useState<RegistroFluxo | null>(null);
@@ -545,14 +548,19 @@ export default function FluxoPage() {
     return 'pesoCarregado';
   };
 
-  const handleRegistrarSaida = () => {
+  const concluirSaida = (pessoasSaidaIds?: string[]) => {
     if (!selectedRegistro) return;
-    const categoriaComPeso = selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2';
+    const selecaoInformada = Array.isArray(pessoasSaidaIds);
+    const idsSelecionados = pessoasSaidaIds || [];
+    const principalSelecionado = !selecaoInformada || idsSelecionados.includes('principal');
+    const categoriaComPeso = principalSelecionado && (
+      selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2'
+    );
     const pesoSaida = categoriaComPeso
       ? parseFloat(pesoSaidaInput.replace(',', '.')) || 0
       : undefined;
     let pesoApara: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number } | undefined;
-    if (selectedRegistro.categoria === 'pesagem_apara') {
+    if (principalSelecionado && selectedRegistro.categoria === 'pesagem_apara') {
       const campoFaltante = getPesoAparaFaltante(selectedRegistro);
       if (campoFaltante) {
         const valor = parseFloat(pesoComplementarInput.replace(',', '.')) || 0;
@@ -564,14 +572,31 @@ export default function FluxoPage() {
       }
     }
     const porteiroSaida = user?.nome || undefined;
-    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara, user?.id);
-    toast.success('Saída registrada com sucesso!');
+    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara, user?.id, pessoasSaidaIds);
+    toast.success(principalSelecionado && pessoasSaidaIds && pessoasSaidaIds.length > 1
+      ? 'Saída do principal e acompanhantes registrada com sucesso!'
+      : 'Saída registrada com sucesso!');
+    setSaidaSelecaoOpen(false);
     setDetailModalOpen(false);
     setSelectedRegistro(null);
+    setPessoasSaidaSelecionadas([]);
     setDetalhesSaida('');
     setOcorrenciaSaida('');
     setPesoSaidaInput('');
     setPesoComplementarInput('');
+  };
+
+  const handleRegistrarSaida = () => {
+    if (!selectedRegistro) return;
+    const acompanhantesAbertos = Array.isArray((selectedRegistro as any).pessoasExtras)
+      ? (selectedRegistro as any).pessoasExtras.filter((extra: any) => !extra.horarioSaida)
+      : [];
+    if (acompanhantesAbertos.length > 0) {
+      setPessoasSaidaSelecionadas([]);
+      setSaidaSelecaoOpen(true);
+      return;
+    }
+    concluirSaida();
   };
 
   const closeModals = () => {
@@ -580,6 +605,8 @@ export default function FluxoPage() {
     setSelectedRegistro(null);
     setPesoSaidaInput('');
     setPesoComplementarInput('');
+    setSaidaSelecaoOpen(false);
+    setPessoasSaidaSelecionadas([]);
     setMensagemLiberacao(null);
   };
 
@@ -818,7 +845,9 @@ export default function FluxoPage() {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {rowItems.map((r) => {
-                      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
+                      const acompanhantesPendentes = Array.isArray((r as any).pessoasExtras)
+                        && (r as any).pessoasExtras.some((extra: any) => !extra.horarioSaida);
+                      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '' && !acompanhantesPendentes;
                       const mainField = getMainField(r);
                       const secondaryFields = getSecondaryFields(r);
                       const data = 'data' in r ? (r as any).data : '';
@@ -1112,17 +1141,20 @@ export default function FluxoPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-emerald-600" />
-                    <span className="font-semibold text-sm">Pessoas extras vinculadas</span>
+                    <span className="font-semibold text-sm">
+                      {(selectedRegistro as any).pessoasExtras.length === 1 ? 'Acompanhante' : 'Acompanhantes vinculados'}
+                    </span>
                   </div>
                   <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-2">
                     {(selectedRegistro as any).pessoasExtras.map((extra: any, index: number) => {
                       const { label, value } = formatRgCpfField(extra.rgCpf);
-                      const saiu = Boolean(extra.horarioSaida || selectedRegistro.horarioSaida);
+                      const saiu = Boolean(extra.horarioSaida);
                       return (
                         <div key={extra.id || `${extra.nome}-${index}`} className="flex items-start justify-between gap-3 rounded-lg bg-background/70 p-3">
                           <div className="min-w-0">
                             <p className="font-semibold text-sm truncate">{index + 1}. {extra.nome || 'Nome não informado'}</p>
-                            <p className="text-xs text-muted-foreground">{label}: {value} · {extra.empresa || 'Empresa não informada'}</p>
+                            <p className="text-xs text-muted-foreground">{label}: {value}</p>
+                            <p className="text-xs text-muted-foreground">Empresa: {extra.empresa || 'Empresa não informada'}</p>
                           </div>
                           <span className={`shrink-0 text-xs font-semibold ${saiu ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'}`}>
                             {saiu ? 'Saída registrada' : 'Entrada aberta'}
@@ -1130,8 +1162,8 @@ export default function FluxoPage() {
                         </div>
                       );
                     })}
-                    {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
-                      <p className="text-xs text-muted-foreground pt-1">Ao registrar a saída, todas as pessoas extras serão finalizadas junto com a pessoa principal.</p>
+                    {!selectedRegistro.inativo && (
+                      <p className="text-xs text-muted-foreground pt-1">Use Registrar Saída para selecionar quem deixou a empresa. Os demais permanecerão com a entrada em aberto.</p>
                     )}
                   </div>
                 </div>
@@ -1295,22 +1327,31 @@ export default function FluxoPage() {
                 </div>
               )}
 
-              {/* Registrar Saída button - only if not yet finalized */}
-              {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
+              {/* Registrar Saída button — principal ou acompanhantes ainda em aberto */}
+              {!selectedRegistro.inativo && (
+                (() => {
+                  const acompanhantesAbertos = Array.isArray((selectedRegistro as any).pessoasExtras)
+                    && (selectedRegistro as any).pessoasExtras.some((extra: any) => !extra.horarioSaida);
+                  if (selectedRegistro.horarioSaida && !acompanhantesAbertos) return null;
+                  return (
                 <Button
                   onClick={handleRegistrarSaida}
                   className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white text-base font-semibold"
                 >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Registrar Saída
-                </Button>
+                    <LogOut className="h-5 w-5 mr-2" />
+                    Registrar Saída
+                  </Button>
+                  );
+                })()
               )}
 
-              {/* Status badge if already finalized */}
+              {/* Status da saída principal e dos acompanhantes */}
               {selectedRegistro.horarioSaida && (
                 <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
-                    Saída registrada às {selectedRegistro.horarioSaida}
+                    {Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.some((extra: any) => !extra.horarioSaida)
+                      ? `Saída parcial registrada às ${selectedRegistro.horarioSaida}`
+                      : `Saída registrada às ${selectedRegistro.horarioSaida}`}
                   </Badge>
                 </div>
               )}
@@ -1332,6 +1373,74 @@ export default function FluxoPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de seleção de saída parcial dos acompanhantes */}
+      <Dialog open={saidaSelecaoOpen} onOpenChange={(openState) => {
+        setSaidaSelecaoOpen(openState);
+        if (!openState) setPessoasSaidaSelecionadas([]);
+      }}>
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-amber-600" />
+              Registrar saída
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione quem deixou a empresa. Quem não for selecionado permanecerá com a entrada em aberto.
+            </p>
+            <div className="space-y-2">
+              {selectedRegistro && !selectedRegistro.horarioSaida && (
+                <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer hover:bg-muted/50">
+                  <Checkbox
+                    checked={pessoasSaidaSelecionadas.includes('principal')}
+                    onCheckedChange={(checked) => setPessoasSaidaSelecionadas((current) => checked === true ? [...new Set([...current, 'principal'])] : current.filter((id) => id !== 'principal'))}
+                    className="mt-1"
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-sm">Pessoa principal</span>
+                    <span className="block text-sm text-muted-foreground truncate">{getMainField(selectedRegistro)}</span>
+                  </span>
+                </label>
+              )}
+              {selectedRegistro && Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.map((extra: any, index: number) => {
+                const saiu = Boolean(extra.horarioSaida);
+                const { label, value } = formatRgCpfField(extra.rgCpf);
+                return (
+                  <label key={extra.id || `${extra.nome}-${index}`} className={`flex items-start gap-3 rounded-xl border border-border p-3 ${saiu ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50'}`}>
+                    <Checkbox
+                      checked={pessoasSaidaSelecionadas.includes(extra.id)}
+                      disabled={saiu}
+                      onCheckedChange={(checked) => setPessoasSaidaSelecionadas((current) => checked === true ? [...new Set([...current, extra.id])] : current.filter((id) => id !== extra.id))}
+                      className="mt-1"
+                    />
+                    <span className="min-w-0">
+                      <span className="block font-semibold text-sm">Acompanhante {index + 1}: {extra.nome || 'Nome não informado'}</span>
+                      <span className="block text-xs text-muted-foreground">{label}: {value}</span>
+                      <span className="block text-xs text-muted-foreground">Empresa: {extra.empresa || 'Empresa não informada'}</span>
+                      <span className={`block text-xs font-semibold mt-1 ${saiu ? 'text-emerald-600' : 'text-amber-600'}`}>{saiu ? `Saída registrada às ${extra.horarioSaida}` : 'Entrada aberta'}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setSaidaSelecaoOpen(false); setPessoasSaidaSelecionadas([]); }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => concluirSaida(pessoasSaidaSelecionadas)}
+              disabled={pessoasSaidaSelecionadas.length === 0}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Registrar selecionados
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -706,17 +706,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao inativar registro de fluxo:', err);
     });
   },
-  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string) => {
+  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string, pessoasSaidaIds?: string[]) => {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const horarioSaida = `${hours}:${minutes}`;
+    const selecaoInformada = Array.isArray(pessoasSaidaIds);
+    const idsSelecionados = pessoasSaidaIds || [];
+    const principalSelecionado = !selecaoInformada || idsSelecionados.includes('principal');
+    const acompanhantesSelecionados = new Set(
+      selecaoInformada ? idsSelecionados.filter((pessoaId) => pessoaId !== 'principal') : []
+    );
     set((state) => ({
       registrosFluxo: state.registrosFluxo.map((r) => {
         if (r.id !== id) return r;
         const updated: any = {
           ...r,
-          horarioSaida,
+          ...(principalSelecionado ? { horarioSaida } : {}),
           detalhes: detalhes || r.detalhes,
           ocorrencia: ocorrencia || r.ocorrencia,
         };
@@ -730,12 +736,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
         if (porteiroSaida) updated.porteiroSaida = porteiroSaida;
         if (Array.isArray(updated.pessoasExtras) && updated.pessoasExtras.length > 0) {
-          updated.pessoasExtras = updated.pessoasExtras.map((extra: any) => ({ ...extra, horarioSaida }));
+          updated.pessoasExtras = updated.pessoasExtras.map((extra: any) => (
+            (!selecaoInformada || acompanhantesSelecionados.has(extra.id)) && !extra.horarioSaida
+              ? { ...extra, horarioSaida }
+              : extra
+          ));
         }
         return updated;
       }),
     }));
-    const fsUpdate: Record<string, unknown> = { horarioSaida, detalhes, ocorrencia };
+    const fsUpdate: Record<string, unknown> = { detalhes, ocorrencia };
+    if (principalSelecionado) fsUpdate.horarioSaida = horarioSaida;
     if (pesoApara) {
       const current = get().registrosFluxo.find((r) => r.id === id);
       if (current?.categoria === 'pesagem_apara') {
