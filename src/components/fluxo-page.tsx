@@ -32,11 +32,26 @@ import {
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
 import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib/data';
+import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { buildReleaseMessage } from '@/lib/release-message';
 import RegistroModal from './registro-modal';
 import { toast } from 'sonner';
 
 type StatusFilter = 'aberto' | 'finalizado';
+
+type FluxoListItem = {
+  display: RegistroFluxo;
+  source: RegistroFluxo;
+  isVirtualIndividual: boolean;
+};
+
+function expandFluxoListItem(registro: RegistroFluxo): FluxoListItem[] {
+  return expandRegistroIndividualmente(registro).map((display) => ({
+    display,
+    source: registro,
+    isVirtualIndividual: display.id !== registro.id,
+  }));
+}
 
 const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   entregas1: Package,
@@ -66,6 +81,11 @@ function getMainField(r: RegistroFluxo): string {
     case 'pesagem_apara': return (r as any).condutor;
     case 'pesagem_tinta': return (r as any).condutor;
   }
+}
+
+function formatNumberField(value: unknown): string {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? numberValue.toLocaleString('pt-BR') : '0';
 }
 
 function formatRgCpfField(doc?: string): { label: string; value: string } {
@@ -103,7 +123,7 @@ function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[
         { label: 'RG/CPF', value: (r as any).rgCpf || '-' },
         { label: 'Empresa', value: r.empresa },
         { label: 'Placa', value: r.placa },
-        { label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` },
+        { label: 'Peso Entrada', value: `${formatNumberField(r.pesoEntrada)} kg` },
       ];
     case 'entregas2':
       return [
@@ -133,14 +153,14 @@ function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[
       return [
         { label: 'Veículo', value: (r as any).veiculo || '-' },
         { label: 'Tipo de Reboque', value: (r as any).tipoReboque || '-' },
-        { label: 'Peso Carregado', value: `${((r as any).pesoCarregado ?? 0).toLocaleString('pt-BR')} kg` },
-        { label: 'Peso Vazio', value: `${((r as any).pesoVazio ?? 0).toLocaleString('pt-BR')} kg` },
+        { label: 'Peso Carregado', value: `${formatNumberField((r as any).pesoCarregado)} kg` },
+        { label: 'Peso Vazio', value: `${formatNumberField((r as any).pesoVazio)} kg` },
       ];
     case 'pesagem_tinta':
       return [
         { label: 'Material', value: (r as any).material || '-' },
         { label: 'Veículo', value: (r as any).veiculo || '-' },
-        { label: 'Peso', value: `${((r as any).peso ?? 0).toLocaleString('pt-BR')} kg` },
+        { label: 'Peso', value: `${formatNumberField((r as any).peso)} kg` },
       ];
   }
 }
@@ -158,14 +178,14 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'visitantes':
-      base.push({ label: 'Nome', value: (r as any).nome || r.nomeEmpresa.split(' / ')[0] || r.nomeEmpresa });
-      base.push({ label: 'Empresa', value: (r as any).empresa || r.nomeEmpresa.split(' / ')[1] || '' });
+      base.push({ label: 'Nome', value: (r as any).nome || String(r.nomeEmpresa || '').split(' / ')[0] || r.nomeEmpresa });
+      base.push({ label: 'Empresa', value: (r as any).empresa || String(r.nomeEmpresa || '').split(' / ')[1] || '' });
       base.push({ label: 'Departamento', value: r.departamento });
       base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'prestadores':
-      base.push({ label: 'Nome', value: (r as any).nome || r.nomeEmpresa.split(' / ')[0] || r.nomeEmpresa });
-      base.push({ label: 'Empresa', value: (r as any).empresa || r.nomeEmpresa.split(' / ')[1] || '' });
+      base.push({ label: 'Nome', value: (r as any).nome || String(r.nomeEmpresa || '').split(' / ')[0] || r.nomeEmpresa });
+      base.push({ label: 'Empresa', value: (r as any).empresa || String(r.nomeEmpresa || '').split(' / ')[1] || '' });
       base.push({ label: 'Departamento', value: r.departamento });
       base.push(formatRgCpfField(r.rgCpf));
       break;
@@ -174,8 +194,8 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push(formatRgCpfField((r as any).rgCpf));
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Placa', value: r.placa });
-      base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
-      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
+      base.push({ label: 'Peso Entrada', value: `${formatNumberField(r.pesoEntrada)} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${formatNumberField(r.pesoSaida)} kg` });
       break;
     case 'entregas2':
       base.push({ label: 'Nome do Motorista', value: r.motorista });
@@ -183,16 +203,16 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Departamento', value: r.departamento });
       if (r.placa) base.push({ label: 'Placa', value: r.placa });
-      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
-      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
+      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${formatNumberField(r.pesoEntrada)} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${formatNumberField(r.pesoSaida)} kg` });
       break;
     case 'coleta':
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Nome do Motorista', value: r.motorista });
       base.push({ label: 'Placa', value: r.placa });
       base.push(formatRgCpfField(r.rgCpf));
-      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
-      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
+      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${formatNumberField(r.pesoEntrada)} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${formatNumberField(r.pesoSaida)} kg` });
       break;
     case 'movimentacao':
       base.push({ label: 'Nome do Colaborador', value: r.nomeColaborador });
@@ -213,14 +233,14 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push({ label: 'Condutor', value: (r as any).condutor || '-' });
       base.push({ label: 'Veículo', value: (r as any).veiculo || '-' });
       base.push({ label: 'Tipo de Reboque', value: (r as any).tipoReboque || '-' });
-      base.push({ label: 'Peso Carregado', value: `${((r as any).pesoCarregado ?? 0).toLocaleString('pt-BR')} kg` });
-      base.push({ label: 'Peso Vazio', value: `${((r as any).pesoVazio ?? 0).toLocaleString('pt-BR')} kg` });
+      base.push({ label: 'Peso Carregado', value: `${formatNumberField((r as any).pesoCarregado)} kg` });
+      base.push({ label: 'Peso Vazio', value: `${formatNumberField((r as any).pesoVazio)} kg` });
       break;
     case 'pesagem_tinta':
       base.push({ label: 'Condutor', value: (r as any).condutor || '-' });
       base.push({ label: 'Material', value: (r as any).material || '-' });
       base.push({ label: 'Veículo', value: (r as any).veiculo || '-' });
-      base.push({ label: 'Peso', value: `${((r as any).peso ?? 0).toLocaleString('pt-BR')} kg` });
+      base.push({ label: 'Peso', value: `${formatNumberField((r as any).peso)} kg` });
       break;
   }
 
@@ -292,6 +312,7 @@ export default function FluxoPage() {
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] = useState<RegistroFluxo | null>(null);
+  const [selectedListItem, setSelectedListItem] = useState<FluxoListItem | null>(null);
   const [detalhesSaida, setDetalhesSaida] = useState('');
   const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
   const [pesoSaidaInput, setPesoSaidaInput] = useState('');
@@ -375,77 +396,79 @@ export default function FluxoPage() {
     }
   }, [statusFilter]);
 
+  const registrosFluxoExibiveis = useMemo(
+    () => registrosFluxo.filter((r) => !r.inativo).flatMap(expandRegistroIndividualmente),
+    [registrosFluxo],
+  );
+
   const departamentoOptions = useMemo(() => {
     const set = new Set<string>();
     departamentos.forEach((d) => set.add(d.nome));
-    registrosFluxo.forEach((r) => {
+    registrosFluxoExibiveis.forEach((r) => {
       if ('departamento' in r && r.departamento) set.add(r.departamento);
     });
     return Array.from(set).sort();
-  }, [departamentos, registrosFluxo]);
+  }, [departamentos, registrosFluxoExibiveis]);
 
   const empresaOptions = useMemo(() => {
     const set = new Set<string>();
     empresas.forEach((e) => set.add(e.nome));
-    registrosFluxo.forEach((r) => {
+    registrosFluxoExibiveis.forEach((r) => {
       if ('empresa' in r && r.empresa) set.add(r.empresa);
       if ('nomeEmpresa' in r && r.nomeEmpresa) {
-        const partes = r.nomeEmpresa.split(' / ');
+        const partes = String(r.nomeEmpresa || '').split(' / ');
         if (partes[1]) set.add(partes[1]);
       }
     });
     return Array.from(set).sort();
-  }, [empresas, registrosFluxo]);
+  }, [empresas, registrosFluxoExibiveis]);
 
-  const filteredRegistros = useMemo(() => {
-    let result = [...rascunhosFluxo, ...registrosFluxo].filter((r) => {
-      // Registros inativados (Refeito) não aparecem nas listas Em aberto/Finalizados
-      if (r.inativo) return false;
+  const filteredRegistros = useMemo<FluxoListItem[]>(() => {
+    const candidates = [...rascunhosFluxo, ...registrosFluxo]
+      .filter((r) => !r.inativo)
+      .flatMap(expandFluxoListItem);
+
+    const result = candidates.filter(({ display: r }) => {
       if (categoriaAtiva !== 'todos' && r.categoria !== categoriaAtiva) return false;
-      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
+      const hasSaida = Boolean(r.horarioSaida);
       if (statusFilter === 'aberto' && hasSaida) return false;
       if (statusFilter === 'finalizado' && !hasSaida) return false;
+
       if (buscaFluxo) {
-        const search = buscaFluxo.toLowerCase();
-        const fields = Object.values(r).filter((v) => typeof v === 'string');
-        return fields.some((v) => v.toLowerCase().includes(search));
+        const search = buscaFluxo.toLowerCase().trim();
+        const fields = [
+          getMainField(r),
+          ...getSecondaryFields(r).map((field) => field.value),
+          (r as any).nomeEmpresa,
+          (r as any).observacao,
+          (r as any).detalhes,
+          (r as any).ocorrencia,
+        ].filter((value): value is string => typeof value === 'string');
+        if (!fields.some((value) => value.toLowerCase().includes(search))) return false;
       }
 
       if (filtroDepartamento !== 'todos') {
-        const d = ('departamento' in r) ? (r as any).departamento : '';
-        if (d !== filtroDepartamento) return false;
+        const departamento = ('departamento' in r) ? (r as any).departamento || '' : '';
+        if (departamento !== filtroDepartamento) return false;
       }
-      if (filtroEmpresa !== 'todos') {
-        const e = getEmpresaDoRegistro(r);
-        if (e !== filtroEmpresa) return false;
-      }
+      if (filtroEmpresa !== 'todos' && getEmpresaDoRegistro(r) !== filtroEmpresa) return false;
       if (filtroData) {
         const [ano, mes, dia] = filtroData.split('-');
-        const formattedDate = `${dia}/${mes}/${ano}`;
-        if (r.data !== formattedDate) return false;
+        if (r.data !== `${dia}/${mes}/${ano}`) return false;
       }
 
       return true;
     });
 
-    result.sort((a, b) => {
-      try {
-        const [diaA, mesA, anoA] = a.data.split('/');
-        const [horaA, minA] = a.horarioEntrada.split(':');
-        const dateA = new Date(Number(anoA), Number(mesA) - 1, Number(diaA), Number(horaA) || 0, Number(minA) || 0).getTime();
-
-        const [diaB, mesB, anoB] = b.data.split('/');
-        const [horaB, minB] = b.horarioEntrada.split(':');
-        const dateB = new Date(Number(anoB), Number(mesB) - 1, Number(diaB), Number(horaB) || 0, Number(minB) || 0).getTime();
-
-        if (ordenacao === 'mais_recentes') {
-          return dateB - dateA;
-        } else {
-          return dateA - dateB;
-        }
-      } catch (e) {
-        return 0;
-      }
+    result.sort(({ display: a }, { display: b }) => {
+      const parseDate = (registro: RegistroFluxo) => {
+        const [dia, mes, ano] = String(registro.data || '').split('/');
+        const [hora, minuto] = String(registro.horarioEntrada || '').split(':');
+        return new Date(Number(ano), Number(mes) - 1, Number(dia), Number(hora) || 0, Number(minuto) || 0).getTime();
+      };
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      return ordenacao === 'mais_recentes' ? dateB - dateA : dateA - dateB;
     });
 
     return result;
@@ -499,7 +522,7 @@ export default function FluxoPage() {
   // ── Virtualization: group items into rows of 2 to match grid-cols-2 ──
   const COLS = 2;
   const virtualRows = useMemo(() => {
-    const rows: RegistroFluxo[][] = [];
+    const rows: FluxoListItem[][] = [];
     for (let i = 0; i < pagedRegistros.length; i += COLS) {
       rows.push(pagedRegistros.slice(i, i + COLS));
     }
@@ -521,18 +544,21 @@ export default function FluxoPage() {
     setModalOpen(true);
   };
 
-  const handleOpenDetail = (r: RegistroFluxo) => {
-    if (r.isRascunho) {
-      setRegistroRefacao(r);
+  const handleOpenDetail = (item: FluxoListItem) => {
+    const source = item.source;
+    const display = item.display;
+    if (source.isRascunho) {
+      setRegistroRefacao(source);
       setIsRefacao(false);
       setIsRascunhoEditing(true);
-      setModalCategoria(r.categoria);
+      setModalCategoria(source.categoria);
       setModalOpen(true);
       return;
     }
-    setSelectedRegistro(r);
-    setDetalhesSaida(r.detalhes || '');
-    setOcorrenciaSaida(r.ocorrencia || '');
+    setSelectedListItem(item);
+    setSelectedRegistro(display);
+    setDetalhesSaida(display.detalhes || '');
+    setOcorrenciaSaida(display.ocorrencia || '');
     setPesoSaidaInput('');
     setPesoComplementarInput('');
     setDetailModalOpen(true);
@@ -549,19 +575,20 @@ export default function FluxoPage() {
   };
 
   const concluirSaida = (pessoasSaidaIds?: string[]) => {
-    if (!selectedRegistro) return;
+    const registroSaida = selectedListItem?.source || selectedRegistro;
+    if (!registroSaida) return;
     const selecaoInformada = Array.isArray(pessoasSaidaIds);
     const idsSelecionados = pessoasSaidaIds || [];
     const principalSelecionado = !selecaoInformada || idsSelecionados.includes('principal');
     const categoriaComPeso = principalSelecionado && (
-      selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2'
+      registroSaida.categoria === 'pesagem' || registroSaida.categoria === 'coleta' || registroSaida.categoria === 'entregas2'
     );
     const pesoSaida = categoriaComPeso
       ? parseFloat(pesoSaidaInput.replace(',', '.')) || 0
       : undefined;
     let pesoApara: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number } | undefined;
-    if (principalSelecionado && selectedRegistro.categoria === 'pesagem_apara') {
-      const campoFaltante = getPesoAparaFaltante(selectedRegistro);
+    if (principalSelecionado && registroSaida.categoria === 'pesagem_apara') {
+      const campoFaltante = getPesoAparaFaltante(registroSaida);
       if (campoFaltante) {
         const valor = parseFloat(pesoComplementarInput.replace(',', '.')) || 0;
         if (valor <= 0) {
@@ -572,13 +599,14 @@ export default function FluxoPage() {
       }
     }
     const porteiroSaida = user?.nome || undefined;
-    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara, user?.id, pessoasSaidaIds);
+    registrarSaida(registroSaida.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara, user?.id, pessoasSaidaIds);
     toast.success(principalSelecionado && pessoasSaidaIds && pessoasSaidaIds.length > 1
       ? 'Saída do principal e acompanhantes registrada com sucesso!'
       : 'Saída registrada com sucesso!');
     setSaidaSelecaoOpen(false);
     setDetailModalOpen(false);
     setSelectedRegistro(null);
+    setSelectedListItem(null);
     setPessoasSaidaSelecionadas([]);
     setDetalhesSaida('');
     setOcorrenciaSaida('');
@@ -587,9 +615,10 @@ export default function FluxoPage() {
   };
 
   const handleRegistrarSaida = () => {
-    if (!selectedRegistro) return;
-    const acompanhantesAbertos = Array.isArray((selectedRegistro as any).pessoasExtras)
-      ? (selectedRegistro as any).pessoasExtras.filter((extra: any) => !extra.horarioSaida)
+    const registroSaida = selectedListItem?.source || selectedRegistro;
+    if (!registroSaida) return;
+    const acompanhantesAbertos = Array.isArray((registroSaida as any).pessoasExtras)
+      ? (registroSaida as any).pessoasExtras.filter((extra: any) => !extra.horarioSaida)
       : [];
     if (acompanhantesAbertos.length > 0) {
       setPessoasSaidaSelecionadas([]);
@@ -603,12 +632,15 @@ export default function FluxoPage() {
     setModalOpen(false);
     setDetailModalOpen(false);
     setSelectedRegistro(null);
+    setSelectedListItem(null);
     setPesoSaidaInput('');
     setPesoComplementarInput('');
     setSaidaSelecaoOpen(false);
     setPessoasSaidaSelecionadas([]);
     setMensagemLiberacao(null);
   };
+
+  const registroOrigemSelecionado = selectedListItem?.source || selectedRegistro;
 
   const gerarMensagemLiberacao = (r: RegistroFluxo) => buildReleaseMessage(r);
 
@@ -624,6 +656,7 @@ export default function FluxoPage() {
     setConfirmarRefacaoOpen(false);
     setDetailModalOpen(false);
     setSelectedRegistro(null);
+    setSelectedListItem(null);
     setRegistroRefacao(registroParaConfirmar);
     setIsRefacao(true);
     setModalCategoria(registroParaConfirmar.categoria);
@@ -844,10 +877,10 @@ export default function FluxoPage() {
                   }}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {rowItems.map((r) => {
-                      const acompanhantesPendentes = Array.isArray((r as any).pessoasExtras)
-                        && (r as any).pessoasExtras.some((extra: any) => !extra.horarioSaida);
-                      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '' && !acompanhantesPendentes;
+                    {rowItems.map((item) => {
+                      const r = item.display;
+                      const source = item.source;
+                      const hasSaida = Boolean(r.horarioSaida);
                       const mainField = getMainField(r);
                       const secondaryFields = getSecondaryFields(r);
                       const data = 'data' in r ? (r as any).data : '';
@@ -863,7 +896,8 @@ export default function FluxoPage() {
                       const CardIcon = catIcons[r.categoria] || Package;
 
                       const isInactive = r.inativo;
-                      const pessoasExtrasCount = Array.isArray((r as any).pessoasExtras) ? (r as any).pessoasExtras.length : 0;
+                      const sourceExtrasCount = Array.isArray((source as any).pessoasExtras) ? (source as any).pessoasExtras.length : 0;
+                      const pessoasExtrasCount = item.isVirtualIndividual && r.pessoaPrincipal === false ? 0 : sourceExtrasCount;
                       const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
                       return (
                         <Card
@@ -875,7 +909,7 @@ export default function FluxoPage() {
                                 ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30'
                                 : 'hover:bg-muted/50'
                           }`}
-                          onClick={() => handleOpenDetail(r)}
+                          onClick={() => handleOpenDetail(item)}
                         >
                           <CardContent className="p-3.5">
                             {/* Topo: badge de categoria + badges de status */}
@@ -899,6 +933,14 @@ export default function FluxoPage() {
                               ) : (
                                 <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
                                   Pendente
+                                </Badge>
+                              )}
+                              {item.isVirtualIndividual && (
+                                <Badge variant="outline" className={r.pessoaPrincipal === false
+                                  ? 'text-sky-600 border-sky-300 dark:text-sky-400 dark:border-sky-800 text-xs px-1.5 py-0'
+                                  : 'text-emerald-600 border-emerald-300 dark:text-emerald-400 dark:border-emerald-800 text-xs px-1.5 py-0'}
+                                >
+                                  {r.pessoaPrincipal === false ? 'Acompanhante' : 'Principal'}
                                 </Badge>
                               )}
                               {pessoasExtrasCount > 0 && (
@@ -1062,7 +1104,7 @@ export default function FluxoPage() {
       />
 
       {/* Detail Modal */}
-      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setPesoSaidaInput(''); } }}>
+      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setSelectedListItem(null); setPesoSaidaInput(''); } }}>
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
@@ -1077,7 +1119,7 @@ export default function FluxoPage() {
               {selectedRegistro && !selectedRegistro.inativo && (
                 <button
                   type="button"
-                  onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(selectedRegistro))}
+                  onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(registroOrigemSelecionado || selectedRegistro))}
                   className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-14"
                   title="Gerar Mensagem de Liberação"
                 >
@@ -1137,16 +1179,16 @@ export default function FluxoPage() {
                 </div>
               </div>
 
-              {Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.length > 0 && (
+              {Array.isArray((registroOrigemSelecionado as any)?.pessoasExtras) && (registroOrigemSelecionado as any).pessoasExtras.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-emerald-600" />
                     <span className="font-semibold text-sm">
-                      {(selectedRegistro as any).pessoasExtras.length === 1 ? 'Acompanhante' : 'Acompanhantes vinculados'}
+                      {(registroOrigemSelecionado as any).pessoasExtras.length === 1 ? 'Acompanhante' : 'Acompanhantes vinculados'}
                     </span>
                   </div>
                   <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-2">
-                    {(selectedRegistro as any).pessoasExtras.map((extra: any, index: number) => {
+                    {(registroOrigemSelecionado as any).pessoasExtras.map((extra: any, index: number) => {
                       const { label, value } = formatRgCpfField(extra.rgCpf);
                       const saiu = Boolean(extra.horarioSaida);
                       return (
@@ -1162,7 +1204,7 @@ export default function FluxoPage() {
                         </div>
                       );
                     })}
-                    {!selectedRegistro.inativo && (
+                    {!registroOrigemSelecionado?.inativo && (
                       <p className="text-xs text-muted-foreground pt-1">Use Registrar Saída para selecionar quem deixou a empresa. Os demais permanecerão com a entrada em aberto.</p>
                     )}
                   </div>
@@ -1330,8 +1372,8 @@ export default function FluxoPage() {
               {/* Registrar Saída button — principal ou acompanhantes ainda em aberto */}
               {!selectedRegistro.inativo && (
                 (() => {
-                  const acompanhantesAbertos = Array.isArray((selectedRegistro as any).pessoasExtras)
-                    && (selectedRegistro as any).pessoasExtras.some((extra: any) => !extra.horarioSaida);
+                  const acompanhantesAbertos = Array.isArray((registroOrigemSelecionado as any)?.pessoasExtras)
+                    && (registroOrigemSelecionado as any).pessoasExtras.some((extra: any) => !extra.horarioSaida);
                   if (selectedRegistro.horarioSaida && !acompanhantesAbertos) return null;
                   return (
                 <Button
@@ -1349,7 +1391,7 @@ export default function FluxoPage() {
               {selectedRegistro.horarioSaida && (
                 <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
-                    {Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.some((extra: any) => !extra.horarioSaida)
+                    {Array.isArray((registroOrigemSelecionado as any)?.pessoasExtras) && (registroOrigemSelecionado as any).pessoasExtras.some((extra: any) => !extra.horarioSaida)
                       ? `Saída parcial registrada às ${selectedRegistro.horarioSaida}`
                       : `Saída registrada às ${selectedRegistro.horarioSaida}`}
                   </Badge>
@@ -1363,7 +1405,7 @@ export default function FluxoPage() {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => handleRefazer(selectedRegistro)}
+                    onClick={() => handleRefazer(selectedListItem?.source || selectedRegistro)}
                     className="w-full h-11 border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
@@ -1393,7 +1435,7 @@ export default function FluxoPage() {
               Selecione quem deixou a empresa. Quem não for selecionado permanecerá com a entrada em aberto.
             </p>
             <div className="space-y-2">
-              {selectedRegistro && !selectedRegistro.horarioSaida && (
+              {registroOrigemSelecionado && !registroOrigemSelecionado.horarioSaida && (
                 <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer hover:bg-muted/50">
                   <Checkbox
                     checked={pessoasSaidaSelecionadas.includes('principal')}
@@ -1402,11 +1444,11 @@ export default function FluxoPage() {
                   />
                   <span className="min-w-0">
                     <span className="block font-semibold text-sm">Pessoa principal</span>
-                    <span className="block text-sm text-muted-foreground truncate">{getMainField(selectedRegistro)}</span>
+                    <span className="block text-sm text-muted-foreground truncate">{getMainField(registroOrigemSelecionado)}</span>
                   </span>
                 </label>
               )}
-              {selectedRegistro && Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.map((extra: any, index: number) => {
+              {registroOrigemSelecionado && Array.isArray((registroOrigemSelecionado as any).pessoasExtras) && (registroOrigemSelecionado as any).pessoasExtras.map((extra: any, index: number) => {
                 const saiu = Boolean(extra.horarioSaida);
                 const { label, value } = formatRgCpfField(extra.rgCpf);
                 return (

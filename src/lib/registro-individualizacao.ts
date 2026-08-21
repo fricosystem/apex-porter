@@ -61,8 +61,9 @@ function principalDoRegistro(registro: RegistroFluxo): RegistroPessoa {
 export function getRegistroPessoas(registro: RegistroFluxo): RegistroPessoa[] {
   const principal = principalDoRegistro(registro);
   const extras = Array.isArray(registro.pessoasExtras)
-    ? registro.pessoasExtras.map((extra) => ({
+    ? registro.pessoasExtras.map((extra, index) => ({
         ...extra,
+        id: extra.id || `extra-${index + 1}`,
         principal: false,
         departamento: (registro as any).departamento || '',
       }))
