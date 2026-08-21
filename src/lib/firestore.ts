@@ -47,7 +47,6 @@ const DONT_UPPERCASE_KEYS = new Set([
   'prioridade',
   'turno',
   'email',
-  'senha',
   'fotoUrl',
   'foto',
   'assinatura',

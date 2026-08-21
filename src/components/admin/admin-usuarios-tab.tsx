@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, User, Check, EyeOff, Eye, MapPin } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { User as UserType, PageType } from '@/lib/data';
-import { signUpWithEmail, getAuthErrorMessage } from '@/lib/auth';
+import { createUserAccountWithoutChangingSession, getAuthErrorMessage } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -71,7 +71,7 @@ export function AdminUsuariosTab() {
   const handleSalvarUsuario = async (usuario: UserType, senha?: string) => {
     const existe = usuarios.find((u) => u.id === usuario.id);
     if (existe) {
-      updateUsuario(senha ? { ...usuario, senha } : usuario);
+      updateUsuario(usuario);
       setModalOpen(false);
       setUsuarioSelecionado(null);
     } else {
@@ -80,13 +80,12 @@ export function AdminUsuariosTab() {
         return;
       }
       try {
-        const firebaseUser = await signUpWithEmail(usuario.nome, usuario.email, senha, usuario.cargo);
+        const firebaseUser = await createUserAccountWithoutChangingSession(usuario.nome, usuario.email, senha, usuario.cargo, usuario.cpf);
         addUsuario({
           ...usuario,
           id: firebaseUser.uid,
           dataCadastro: new Date().toISOString(),
           ativo: true,
-          senha,
         });
         setModalOpen(false);
         setUsuarioSelecionado(null);

@@ -2,20 +2,24 @@
 
 // ── Firebase Authentication Service ──
 // Provides sign-in, sign-up, sign-out, password reset, and auth state observation
-// Collection: "usuarios" (with email, nome, dataCadastro, ultimoLogin, senha)
+// Collection: "usuarios" (with profile and access metadata; credentials stay in Firebase Authentication)
 
+import { deleteApp, initializeApp } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
+  getAuth,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
   updateProfile,
   updatePassword,
+  setPersistence,
+  inMemoryPersistence,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, type FieldValue } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { auth, db, firebaseConfig } from './firebase';
 
 import { PageType } from './data';
 
@@ -24,7 +28,6 @@ export interface FirestoreUser {
   nome: string;
   email: string;
   cpf?: string;
-  senha: string;
   dataCadastro: Timestamp | FieldValue | null;
   ultimoLogin: Timestamp | FieldValue | null;
   settings?: any;
@@ -86,7 +89,6 @@ export async function signUpWithEmail(
       nome: nome.toUpperCase(),
       email,
       ...(cpf ? { cpf } : {}),
-      senha: password,
       dataCadastro: serverTimestamp(),
       ultimoLogin: serverTimestamp(),
       ativo: true,
@@ -101,6 +103,52 @@ export async function signUpWithEmail(
   }
 
   return credential.user;
+}
+
+// ── Create a collaborator without changing the current admin session ──
+// A secondary named Firebase app uses in-memory Auth persistence. The primary
+// Auth instance remains signed in as the administrator throughout the flow.
+export async function createUserAccountWithoutChangingSession(
+  nome: string,
+  email: string,
+  password: string,
+  cargo?: string,
+  cpf?: string,
+): Promise<FirebaseUser> {
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    throw new Error('Firebase não está configurado.');
+  }
+
+  const secondaryApp = initializeApp(firebaseConfig, `admin-user-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const secondaryAuth = getAuth(secondaryApp);
+
+  try {
+    await setPersistence(secondaryAuth, inMemoryPersistence);
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+
+    try {
+      await updateProfile(credential.user, { displayName: nome });
+    } catch (err) {
+      console.warn('[Firebase] Falha ao atualizar displayName do colaborador:', err);
+    }
+
+    const userDoc: FirestoreUser = {
+      nome: nome.toUpperCase(),
+      email,
+      ...(cpf ? { cpf } : {}),
+      dataCadastro: serverTimestamp(),
+      ultimoLogin: null,
+      ativo: true,
+      permissoes: DEFAULT_PERMISSIONS,
+      cargo,
+    };
+    await setDoc(doc(db, USUARIOS_COL, credential.user.uid), userDoc);
+
+    return credential.user;
+  } finally {
+    await signOut(secondaryAuth).catch(() => undefined);
+    await deleteApp(secondaryApp).catch(() => undefined);
+  }
 }
 
 // ── Sign out ──
@@ -141,7 +189,7 @@ export async function fetchUserProfile(uid: string): Promise<FirestoreUser | nul
 // Used when the Firestore document doesn't exist yet (e.g., previous registration failed)
 export async function ensureUserProfile(
   uid: string,
-  data: { nome: string; email: string; senha: string }
+  data: { nome: string; email: string }
 ): Promise<void> {
   try {
     const existing = await getDoc(doc(db, USUARIOS_COL, uid));
@@ -161,7 +209,6 @@ export async function ensureUserProfile(
       const userDoc: FirestoreUser = {
         nome: data.nome.toUpperCase(),
         email: data.email,
-        senha: data.senha,
         dataCadastro: serverTimestamp(),
         ultimoLogin: serverTimestamp(),
         ativo: true,
@@ -196,12 +243,11 @@ export async function updateUserProfile(
   }
 }
 
-// ── Update password on Firebase Auth + Firestore ──
+// ── Update password in Firebase Authentication only ──
 export async function updateUserPassword(newPassword: string): Promise<boolean> {
   if (!auth.currentUser) return false;
   try {
     await updatePassword(auth.currentUser, newPassword);
-    await setDoc(doc(db, USUARIOS_COL, auth.currentUser.uid), { senha: newPassword }, { merge: true });
     return true;
   } catch (err) {
     console.warn('[Firebase] Falha ao alterar senha:', err);

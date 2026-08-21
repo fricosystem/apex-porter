@@ -416,7 +416,6 @@ export default function LoginPage() {
                       >
                         <option value="Porteiro" className="bg-emerald-950 text-emerald-50">PORTEIRO</option>
                         <option value="Supervisor" className="bg-emerald-950 text-emerald-50">SUPERVISOR</option>
-                        <option value="Diretor" className="bg-emerald-950 text-emerald-50">DIRETOR</option>
                         <option value="RH" className="bg-emerald-950 text-emerald-50">RH</option>
                       </select>
                     </div>

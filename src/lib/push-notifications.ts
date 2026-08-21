@@ -163,6 +163,7 @@ export async function createTestPushRequest(uid: string, userName: string): Prom
 
   await createDeviceNotificationEvent({
     kind: 'push-test',
+    authorUid: uid,
     targetUid: uid,
     notificationId: `push-test-${ref.id}`,
     title: 'TESTE DE NOTIFICAÇÃO',

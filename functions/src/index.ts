@@ -12,7 +12,7 @@ setGlobalOptions({
 
 const db = getFirestore();
 const messaging = getMessaging();
-const APP_LINK = process.env.APP_PUBLIC_URL || 'https://apex-porter.web.app/';
+const APP_LINK = process.env.APP_PUBLIC_URL || 'https://apex-porter.vercel.app/';
 
 const TITLE_BY_CATEGORY: Record<string, string> = {
   entregas1: 'REGISTRO DE ENTREGA',

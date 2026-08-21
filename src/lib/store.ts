@@ -431,7 +431,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // (handles the case where registration created Auth user but Firestore write failed)
       if (!profile) {
         const nome = firebaseUser.displayName || email.split('@')[0];
-        await ensureUserProfile(firebaseUser.uid, { nome, email, senha: password });
+        await ensureUserProfile(firebaseUser.uid, { nome, email });
       } else {
         // Update ultimoLogin in Firestore (non-blocking)
         updateUltimoLogin(firebaseUser.uid);

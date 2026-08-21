@@ -262,7 +262,7 @@ export default function Home() {
           // This handles the case where registration created Auth user but Firestore write failed
           const nome = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuário';
           const email = firebaseUser.email || '';
-          await ensureUserProfile(firebaseUser.uid, { nome, email, senha: '******' });
+          await ensureUserProfile(firebaseUser.uid, { nome, email });
         }
 
         setAuthFromFirebase(firebaseUser, profile);
