@@ -848,7 +848,7 @@ export default function FluxoPage() {
         </Tabs>
       </div>
 
-      {preAutorizacoesHoje.length > 0 && (
+      {statusFilter === 'aberto' && preAutorizacoesHoje.length > 0 && (
         <PreAutorizacaoBanner
           key={preAutorizacoesHoje.map((preAutorizacao) => preAutorizacao.id).join('|')}
           items={preAutorizacoesHoje}
