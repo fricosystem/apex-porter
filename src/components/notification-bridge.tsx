@@ -7,7 +7,7 @@ import {
   subscribeToPushMessages,
 } from '@/lib/push-notifications';
 import { subscribeDeviceNotificationEvents } from '@/lib/notification-events';
-import { showSystemNotification } from '@/lib/notifications';
+import { showNativeNotification } from '@/lib/notifications';
 
 const seenNotificationIds = new Set<string>();
 
@@ -32,25 +32,10 @@ async function showDeviceNotification(input: {
     if (firstId) seenNotificationIds.delete(firstId);
   }
 
-  try {
-    if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(input.title, {
-        body: input.body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/maskable-icon-512x512.png',
-        tag: input.notificationId,
-        silent: false,
-        data: { link: input.link || '/', notificationId: input.notificationId },
-      });
-      return;
-    }
-  } catch (error) {
-    console.warn('[Notifications] Service Worker indisponível; usando fallback nativo:', error);
+  const result = await showNativeNotification(input.title, input.body, input.link || '/');
+  if (!result.shown) {
+    console.warn('[Notifications] Notificação nativa não exibida:', result.reason || 'motivo desconhecido');
   }
-
-  // Continua sendo uma notificação do sistema, nunca um toast dentro da aplicação.
-  showSystemNotification(input.title, input.body);
 }
 
 // Ponte global de notificações: registra o dispositivo habilitado, escuta eventos

@@ -66,13 +66,63 @@ export async function requestNotificationPermissionOnAuth(): Promise<Notificatio
   return requestNotificationPermission();
 }
 
-export function showSystemNotification(title: string, body: string): void {
-  if (!notificationsSupported()) return;
-  if (window.Notification.permission !== 'granted') return;
+export type NativeNotificationResult = {
+  shown: boolean;
+  reason?: 'unsupported' | 'permission-denied' | 'service-worker-failed' | 'native-failed';
+};
+
+function notificationOptions(body: string, link = '/') {
+  return {
+    body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/maskable-icon-512x512.png',
+    tag: `apex-${Date.now()}`,
+    renotify: true,
+    silent: false,
+    data: { link },
+  };
+}
+
+/** Exibe uma notificação na bandeja do dispositivo, sem usar toast interno. */
+export async function showNativeNotification(
+  title: string,
+  body: string,
+  link = '/',
+): Promise<NativeNotificationResult> {
+  if (!notificationsSupported()) return { shown: false, reason: 'unsupported' };
+  if (window.Notification.permission !== 'granted') {
+    return { shown: false, reason: 'permission-denied' };
+  }
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const existing = await navigator.serviceWorker.getRegistration('/');
+      if (!existing) {
+        await navigator.serviceWorker.register('/sw', {
+          scope: '/',
+          updateViaCache: 'none',
+        });
+      }
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, notificationOptions(body, link));
+      return { shown: true };
+    }
+  } catch (error) {
+    console.warn('[Notifications] Falha ao exibir pelo service worker:', error);
+  }
+
+  return showSystemNotification(title, body)
+    ? { shown: true }
+    : { shown: false, reason: 'native-failed' };
+}
+
+export function showSystemNotification(title: string, body: string): boolean {
+  if (!notificationsSupported()) return false;
+  if (window.Notification.permission !== 'granted') return false;
   try {
     const now = Date.now();
     // Evita duplicar a mesma mensagem disparada em sequência
-    if (body === lastNotificationBody && now - lastNotificationTime < 3000) return;
+    if (body === lastNotificationBody && now - lastNotificationTime < 3000) return false;
     lastNotificationBody = body;
     lastNotificationTime = now;
 
@@ -89,7 +139,9 @@ export function showSystemNotification(title: string, body: string): void {
         window.focus();
       }
     };
-  } catch {
-    // Nunca deve quebrar o fluxo do app por causa de notificação
+    return true;
+  } catch (error) {
+    console.warn('[Notifications] Falha ao exibir notificação nativa:', error);
+    return false;
   }
 }

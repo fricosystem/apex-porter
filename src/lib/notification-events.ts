@@ -124,7 +124,10 @@ export function subscribeDeviceNotificationEvents(
     snapshot.docChanges().forEach((change) => {
       if (change.type !== 'added') return;
       const data = change.doc.data() as Omit<DeviceNotificationEvent, 'id'>;
-      if (data.authorUid === uid) return;
+      // O autor não recebe o próprio registro do Fluxo. O evento push-test,
+      // porém, é deliberadamente direcionado ao próprio dispositivo para
+      // comprovar a exibição nativa e deve continuar sendo entregue.
+      if (data.kind === 'registro-fluxo' && data.authorUid === uid) return;
       if (data.targetUid && data.targetUid !== uid) return;
       if (!data.title || !data.body) return;
 

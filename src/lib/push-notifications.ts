@@ -3,7 +3,6 @@
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import type { MessagePayload, Messaging } from 'firebase/messaging';
 import { app, db } from './firebase';
-import { createDeviceNotificationEvent } from './notification-events';
 import {
   getNotificationPermission,
   requestNotificationPermission,
@@ -159,16 +158,6 @@ export async function createTestPushRequest(uid: string, userName: string): Prom
     targetUid: uid,
     requestedByName: userName,
     createdAt: serverTimestamp(),
-  });
-
-  await createDeviceNotificationEvent({
-    kind: 'push-test',
-    authorUid: uid,
-    targetUid: uid,
-    notificationId: `push-test-${ref.id}`,
-    title: 'TESTE DE NOTIFICAÇÃO',
-    body: `Olá, ${userName}. As notificações do dispositivo estão funcionando.`,
-    link: '/#perfil',
   });
 
   return ref.id;

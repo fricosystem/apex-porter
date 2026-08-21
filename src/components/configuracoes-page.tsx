@@ -27,7 +27,7 @@ import {
   disablePushNotifications,
   enablePushNotifications,
 } from '@/lib/push-notifications';
-import { markNotificationPreferenceAsSet } from '@/lib/notifications';
+import { markNotificationPreferenceAsSet, showNativeNotification } from '@/lib/notifications';
 
 export default function ConfiguracoesPage() {
   const { user, logout, settings, updateSettings } = useAppStore();
@@ -115,11 +115,28 @@ export default function ConfiguracoesPage() {
     }
     setLoadingTestNotification(true);
     try {
-      await createTestPushRequest(user.id, user.nome);
-      toast.success('Teste enviado para a barra de notificações do dispositivo.');
+      const nativeResult = await showNativeNotification(
+        'TESTE DE NOTIFICAÇÃO',
+        `Olá, ${user.nome}. As notificações do dispositivo estão funcionando.`,
+        '/#configuracoes',
+      );
+
+      if (!nativeResult.shown) {
+        const message = nativeResult.reason === 'permission-denied'
+          ? 'A permissão do navegador está bloqueada. Libere notificações para apex-porter.vercel.app e tente novamente.'
+          : 'O navegador não conseguiu exibir a notificação nativa. Atualize o PWA e tente novamente.';
+        toast.error(message);
+        return;
+      }
+
+      // Também cria a requisição para o backend FCM quando Cloud Functions estiverem disponíveis.
+      await createTestPushRequest(user.id, user.nome).catch((error) => {
+        console.warn('[FCM] Teste nativo exibido, mas requisição FCM não foi gravada:', error);
+      });
+      toast.success('Notificação nativa exibida na barra do dispositivo.');
     } catch (error) {
-      console.warn('[FCM] Falha ao solicitar teste:', error);
-      toast.error('Não foi possível solicitar o teste de notificação.');
+      console.warn('[FCM] Falha no teste nativo:', error);
+      toast.error('Não foi possível exibir a notificação nativa neste dispositivo.');
     } finally {
       setLoadingTestNotification(false);
     }
