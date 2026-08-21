@@ -32,6 +32,7 @@ import {
 import {
   ArrowDown,
   ArrowUp,
+  ArrowRight,
   Car,
   AlertTriangle,
   ShieldBan,
@@ -45,8 +46,12 @@ import {
   Bell,
   Weight,
   Fuel,
+  Building2,
+  Clock3,
+  UserRound,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
@@ -182,19 +187,17 @@ export default function DashboardPage() {
     avisos,
     checklists,
     inspecoes,
+    setCurrentPage,
   } = useAppStore();
 
   // Auto-clear loading state when data arrives or after a short timeout
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
-    if (registrosFluxo.length > 0 || ocorrencias.length > 0 || avisos.length > 0) {
-      setIsLoading(false);
-    }
     return () => clearTimeout(timer);
-  }, [registrosFluxo.length, ocorrencias.length, avisos.length]);
+  }, []);
 
   type DateRange = 'hoje' | 'semana' | 'mes' | 'ano' | 'personalizado';
-  const [dateRange, setDateRange] = useState<DateRange>('semana');
+  const [dateRange, setDateRange] = useState<DateRange>('hoje');
   const [dataInicio, setDataInicio] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -303,6 +306,23 @@ export default function DashboardPage() {
   const listaNegraFiltered = useMemo(() => listaNegra.filter((l) => isDateInRange(l.data)), [listaNegra, isDateInRange]);
   const achadosFiltered = useMemo(() => achadosPerdidos.filter((a) => isDateInRange(a.data)), [achadosPerdidos, isDateInRange]);
   const preAuthFiltered = useMemo(() => preAutorizacoes.filter((p) => isDateInRange(p.dataPrevista)), [preAutorizacoes, isDateInRange]);
+  const preAuthPendentes = useMemo(
+    () => preAuthFiltered
+      .filter((p) => p.status === 'agendado' && !p.registroFluxoId)
+      .sort((a, b) => {
+        const getTime = (value: typeof a) => {
+          const rawDate = String(value.dataPrevista || '');
+          const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
+          const isoDate = rawDate.includes('/')
+            ? `${parts[2]}-${parts[1]}-${parts[0]}`
+            : rawDate;
+          const time = value.horarioPrevisto || '23:59';
+          return new Date(`${isoDate}T${time}:00`).getTime();
+        };
+        return getTime(a) - getTime(b);
+      }),
+    [preAuthFiltered],
+  );
   const checklistsFiltered = useMemo(() => checklists.filter((c) => isDateInRange(c.data)), [checklists, isDateInRange]);
   const inspecoesFiltered = useMemo(() => inspecoes.filter((i) => isDateInRange(i.data)), [inspecoes, isDateInRange]);
   const avisosFiltered = useMemo(() => avisos.filter((a) => isDateInRange(a.data)), [avisos, isDateInRange]);
@@ -323,7 +343,7 @@ export default function DashboardPage() {
     const listaNegraAtiva = listaNegraFiltered.filter((l) => l.status === 'ativo').length;
     const achadosNaoDevolvidos = achadosFiltered.filter((a) => a.status !== 'devolvido').length;
     const achadosDevolvidos = achadosFiltered.filter((a) => a.status === 'devolvido').length;
-    const preAuthPendentes = preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
+    const preAuthPendentesCount = preAuthPendentes.length;
     const pessoasCadastradas = pessoasFiltered.length;
     const checklistsConcluidos = checklistsFiltered.filter((c) => c.status === 'concluido').length;
     const checklistsPendentes = checklistsFiltered.filter((c) => c.status !== 'concluido').length;
@@ -340,7 +360,7 @@ export default function DashboardPage() {
       { title: 'Lista Negra Ativa', value: listaNegraAtiva, icon: ShieldBan, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/30' },
       { title: 'Achados e Perdidos', value: achadosNaoDevolvidos, icon: PackageSearch, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/30' },
       { title: 'Itens Devolvidos', value: achadosDevolvidos, icon: PackageSearch, color: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30' },
-      { title: 'Pré-Autorizações', value: preAuthPendentes, icon: CalendarCheck, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/30' },
+      { title: 'Pré-Autorizações Pendentes', value: preAuthPendentesCount, icon: CalendarCheck, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-950/30' },
       { title: 'Pessoas Cadastradas', value: pessoasCadastradas, icon: Users, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
       { title: 'Checklists Concluídos', value: checklistsConcluidos, icon: ClipboardCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Checklists Pendentes', value: checklistsPendentes, icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
@@ -351,7 +371,7 @@ export default function DashboardPage() {
       { title: 'Inspeções Diárias', value: inspecoesRealizadas, icon: ClipboardCheck, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
       { title: 'Avisos Publicados', value: avisosAtivos, icon: Bell, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30' },
     ];
-  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoasFiltered, checklistsFiltered, inspecoesFiltered, avisosFiltered, pesagensApara, pesagensTinta, pesoTotalApara, pesoTotalTinta]);
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, preAuthPendentes, pessoasFiltered, checklistsFiltered, inspecoesFiltered, avisosFiltered, pesagensApara, pesagensTinta, pesoTotalApara, pesoTotalTinta]);
 
   // ── Real Data for Charts ──
   const entradasSaidasPorHora = useMemo(() => {
@@ -806,6 +826,73 @@ export default function DashboardPage() {
           ))
         )}
       </div>
+
+      {/* ── Pré-autorizações pendentes de entrada ── */}
+      <motion.div variants={item}>
+        <Card className="overflow-hidden border-cyan-200/70 dark:border-cyan-900/60">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/50 pb-3">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <CalendarCheck className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                Pré-Autorizações Pendentes de Entrada
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">Pendências do período selecionado, sem entrada registrada no Fluxo.</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => setCurrentPage('pre-autorizacao')}
+            >
+              Ver pendentes
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {preAuthPendentes.length === 0 ? (
+              <div className="flex items-center gap-3 px-4 py-5 text-sm text-muted-foreground">
+                <CalendarCheck className="h-4 w-4 text-emerald-500" />
+                Não há pré-autorizações pendentes de entrada no período selecionado.
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {preAuthPendentes.slice(0, 6).map((preAutorizacao) => (
+                  <button
+                    key={preAutorizacao.id}
+                    type="button"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                    onClick={() => setCurrentPage('pre-autorizacao')}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400">
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="truncate text-sm font-semibold">{preAutorizacao.visitanteNome}</span>
+                        <span className="text-xs text-muted-foreground">{preAutorizacao.visitanteDoc || 'Documento não informado'}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="inline-flex min-w-0 items-center gap-1 truncate"><Building2 className="h-3.5 w-3.5 shrink-0" />{preAutorizacao.visitanteEmpresa || 'Empresa não informada'}</span>
+                        {preAutorizacao.departamento && <span className="truncate">{preAutorizacao.departamento}</span>}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
+                      <span className="inline-flex items-center gap-1 font-semibold text-cyan-700 dark:text-cyan-300"><Clock3 className="h-3.5 w-3.5" />{preAutorizacao.horarioPrevisto || 'Sem horário'}</span>
+                      <span className="text-muted-foreground">{preAutorizacao.dataPrevista}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {preAuthPendentes.length > 6 && (
+              <div className="border-t border-border/50 px-4 py-2 text-center text-xs text-muted-foreground">
+                +{preAuthPendentes.length - 6} pendências. Use “Ver pendentes” para abrir a tela Pré-Autorização.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* ── Todos os gráficos em um único grid contínuo (auto-flow 2x2) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
