@@ -9,6 +9,7 @@ import type { PreAutorizacao } from '@/lib/data';
 
 type Props = {
   items: PreAutorizacao[];
+  onOpen: () => void;
 };
 
 function toIsoDate(value: string): string {
@@ -50,7 +51,7 @@ function formatCountdown(target: Date | null, now: number): { label: string; ton
   const hours = Math.floor(absoluteMinutes / 60);
   const minutes = absoluteMinutes % 60;
 
-  if (Math.abs(diff) < 60_000) return { label: 'Chegada prevista agora', tone: 'now' };
+  if (Math.abs(diff) < 60_000) return { label: 'Chegada agora', tone: 'now' };
   if (diff < 0) {
     return {
       label: `Atrasado há ${hours ? `${hours}h ` : ''}${minutes}min`,
@@ -63,7 +64,7 @@ function formatCountdown(target: Date | null, now: number): { label: string; ton
   };
 }
 
-export default function PreAutorizacaoBanner({ items }: Props) {
+export default function PreAutorizacaoBanner({ items, onOpen }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState(false);
@@ -97,27 +98,36 @@ export default function PreAutorizacaoBanner({ items }: Props) {
   const item = orderedItems[safeIndex];
   const document = formatDocument(item.visitanteDoc);
   const countdown = formatCountdown(toDateTime(item), now);
-  const horario = item.horarioPrevisto || 'Horário não informado';
+  const horario = item.horarioPrevisto || 'Não informado';
 
   return (
     <section
-      className="mx-4 mt-3 overflow-hidden rounded-xl border border-orange-300/80 bg-orange-100/95 text-orange-950 shadow-sm dark:border-orange-800/70 dark:bg-orange-950/35 dark:text-orange-50 md:mx-6 xl:mx-6"
-      aria-label="Pré-autorizações previstas para hoje"
+      className="mx-4 mt-2 cursor-pointer overflow-hidden rounded-lg border border-orange-300/80 bg-orange-100/95 text-orange-950 shadow-sm outline-none transition-colors hover:bg-orange-200/90 focus-visible:ring-2 focus-visible:ring-orange-500 dark:border-orange-800/70 dark:bg-orange-950/35 dark:text-orange-50 dark:hover:bg-orange-900/45 md:mx-6 xl:mx-6"
+      aria-label="Abrir Pré-Autorização"
       aria-live="polite"
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
     >
-      <div className="relative flex min-h-[76px] items-center gap-3 px-3 py-2.5 sm:px-4">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-orange-200/80 text-orange-700 dark:bg-orange-900/60 dark:text-orange-200">
-          <CalendarClock className="size-5" />
+      <div className="relative flex min-h-[56px] items-center gap-2 px-2.5 py-1.5 sm:px-3">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-orange-200/80 text-orange-700 dark:bg-orange-900/60 dark:text-orange-200">
+          <CalendarClock className="size-4" />
         </div>
 
         <div className="min-w-0 flex-1 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, x: 52 }}
+              initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -52 }}
-              transition={{ duration: 0.28, ease: 'easeOut' }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.24, ease: 'easeOut' }}
               drag={orderedItems.length > 1 ? 'x' : false}
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
@@ -131,33 +141,33 @@ export default function PreAutorizacaoBanner({ items }: Props) {
               }}
               className="cursor-grab active:cursor-grabbing"
             >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-orange-700/80 dark:text-orange-200/80">
-                <span className="inline-flex items-center gap-1"><CalendarClock className="size-3.5" />Pré-autorização</span>
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0 text-[9px] font-semibold uppercase tracking-[0.08em] text-orange-700/80 dark:text-orange-200/80">
+                <span className="inline-flex items-center gap-1"><CalendarClock className="size-3" />Pré-autorização</span>
                 {orderedItems.length > 1 && <span>{safeIndex + 1} / {orderedItems.length}</span>}
               </div>
-              <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm leading-tight sm:text-[15px]">
+              <div className="mt-0 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0 text-[13px] leading-tight sm:text-sm">
                 <span className="inline-flex min-w-0 items-center gap-1 font-bold">
-                  <UserRound className="size-3.5 shrink-0" />
+                  <UserRound className="size-3 shrink-0" />
                   <span className="truncate">{item.visitanteNome || 'Visitante não informado'}</span>
                 </span>
                 <span className="hidden text-orange-700/50 sm:inline dark:text-orange-200/50">·</span>
                 <span className="font-medium">{document.label} {document.value}</span>
                 <span className="hidden text-orange-700/50 sm:inline dark:text-orange-200/50">·</span>
                 <span className="inline-flex min-w-0 items-center gap-1 font-medium">
-                  <Building2 className="size-3.5 shrink-0" />
+                  <Building2 className="size-3 shrink-0" />
                   <span className="truncate">{item.visitanteEmpresa || 'Empresa não informada'}</span>
                 </span>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-orange-800/80 dark:text-orange-100/80">
-                <span className="inline-flex items-center gap-1 font-semibold"><Clock3 className="size-3.5" />Visita às {horario}</span>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0 text-[10px] text-orange-800/80 dark:text-orange-100/80">
+                <span className="inline-flex items-center gap-1 font-semibold"><Clock3 className="size-3" />Visita às {horario}</span>
                 <Badge
                   variant="outline"
                   className={
                     countdown.tone === 'late'
-                      ? 'border-red-400 bg-red-100/80 text-red-700 dark:border-red-700 dark:bg-red-950/50 dark:text-red-200'
+                      ? 'h-4 px-1.5 text-[9px] border-red-400 bg-red-100/80 text-red-700 dark:border-red-700 dark:bg-red-950/50 dark:text-red-200'
                       : countdown.tone === 'now'
-                        ? 'border-emerald-400 bg-emerald-100/80 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'
-                        : 'border-orange-400 bg-orange-200/70 text-orange-800 dark:border-orange-700 dark:bg-orange-900/50 dark:text-orange-100'
+                        ? 'h-4 px-1.5 text-[9px] border-emerald-400 bg-emerald-100/80 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'
+                        : 'h-4 px-1.5 text-[9px] border-orange-400 bg-orange-200/70 text-orange-800 dark:border-orange-700 dark:bg-orange-900/50 dark:text-orange-100'
                   }
                 >
                   {countdown.label}
@@ -171,11 +181,14 @@ export default function PreAutorizacaoBanner({ items }: Props) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0 rounded-full text-orange-800 hover:bg-orange-200/80 hover:text-orange-950 dark:text-orange-100 dark:hover:bg-orange-900/60 dark:hover:text-white"
+          className="size-7 shrink-0 rounded-full text-orange-800 hover:bg-orange-200/80 hover:text-orange-950 dark:text-orange-100 dark:hover:bg-orange-900/60 dark:hover:text-white"
           aria-label="Ocultar faixa de pré-autorização"
-          onClick={() => setDismissed(true)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setDismissed(true);
+          }}
         >
-          <X className="size-4" />
+          <X className="size-3.5" />
         </Button>
       </div>
     </section>

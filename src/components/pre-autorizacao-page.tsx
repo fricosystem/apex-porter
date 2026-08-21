@@ -72,7 +72,7 @@ function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggesti
   };
 }
 
-type StatusFilter = 'agendado' | 'confirmado' | 'todos';
+type StatusFilter = 'pendentes' | 'concluidos' | 'todos';
 
 const statusIcons: Record<StatusPreAutorizacao, React.ElementType> = {
   agendado: Clock4,
@@ -99,7 +99,7 @@ export default function PreAutorizacaoPage() {
   const { preAutorizacoes, addPreAutorizacao, updatePreAutorizacao, cancelarPreAutorizacao, user, pessoas, empresas, departamentos, ramais, registrosFluxo } = useAppStore();
 
   const [busca, setBusca] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('agendado');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pendentes');
 
   // Modal registro
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,8 +112,8 @@ export default function PreAutorizacaoPage() {
   // Filtered
   const filtered = useMemo(() => {
     return preAutorizacoes.filter(pa => {
-      if (statusFilter === 'agendado' && pa.status !== 'agendado' && pa.status !== 'confirmado') return false;
-      if (statusFilter === 'confirmado' && pa.status !== 'confirmado') return false;
+      if (statusFilter === 'pendentes' && pa.status !== 'agendado') return false;
+      if (statusFilter === 'concluidos' && pa.status !== 'confirmado') return false;
       if (busca) {
         const s = busca.toLowerCase();
         return [pa.visitanteNome, pa.visitanteEmpresa, pa.departamento, pa.autorizadoPor, pa.motivo, pa.criadoPor]
@@ -343,8 +343,8 @@ export default function PreAutorizacaoPage() {
         {/* Status tabs */}
         <Tabs value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
           <TabsList className="w-full grid grid-cols-3 h-10">
-            <TabsTrigger value="agendado" className="text-sm data-[state=active]:bg-amber-600 data-[state=active]:text-white">Pendentes</TabsTrigger>
-            <TabsTrigger value="confirmado" className="text-sm data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Confirmados</TabsTrigger>
+            <TabsTrigger value="pendentes" className="text-sm data-[state=active]:bg-amber-600 data-[state=active]:text-white">Pendentes</TabsTrigger>
+            <TabsTrigger value="concluidos" className="text-sm data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Concluídos</TabsTrigger>
             <TabsTrigger value="todos" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Todos</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -357,7 +357,13 @@ export default function PreAutorizacaoPage() {
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Inbox className="h-10 w-10 text-muted-foreground/60" />
             </div>
-            <p className="text-lg font-medium mb-1">Nenhuma pré-autorização encontrada</p>
+            <p className="text-lg font-medium mb-1">
+              {statusFilter === 'pendentes'
+                ? 'Nenhuma pré-autorização pendente'
+                : statusFilter === 'concluidos'
+                  ? 'Nenhuma pré-autorização concluída'
+                  : 'Nenhuma pré-autorização encontrada'}
+            </p>
             <p className="text-sm text-muted-foreground/70">Toque em Nova para agendar uma visita.</p>
           </div>
         ) : (

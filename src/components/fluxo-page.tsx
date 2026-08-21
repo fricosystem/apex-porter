@@ -291,6 +291,7 @@ export default function FluxoPage() {
     prefilledRegistroModal,
     clearPrefilledRegistroModal,
     preAutorizacoes,
+    setCurrentPage,
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(
@@ -851,6 +852,7 @@ export default function FluxoPage() {
         <PreAutorizacaoBanner
           key={preAutorizacoesHoje.map((preAutorizacao) => preAutorizacao.id).join('|')}
           items={preAutorizacoesHoje}
+          onOpen={() => setCurrentPage('pre-autorizacao')}
         />
       )}
 
