@@ -34,3 +34,13 @@ Fonte da evidência: respostas HTTP externas via curl e páginas autenticadas da
 A implantação pública em `https://apex-porter.vercel.app` respondeu HTTP 200. A resposta inclui HSTS, `X-Content-Type-Options`, `X-Frame-Options`, política de referência e a política de permissões configuradas no Next.js. O endpoint `/sw` respondeu HTTP 200 como JavaScript, com `Service-Worker-Allowed: /`, carregamento do Firebase Messaging compat e configuração Firebase real. O manifesto e os ícones PWA também responderam HTTP 200.
 
 A chave VAPID não é embutida no service worker, pois o worker não precisa dela para operar; o código de registro FCM foi encontrado nos chunks JavaScript públicos do novo build, confirmando que a variável foi incorporada ao cliente durante a compilação. Isso é esperado para uma chave pública VAPID usada pelo navegador.
+
+## Resultado final de implantação
+
+Após duas falhas de build corrigidas — a exportação de `firebaseConfig` e o isolamento das Functions no `tsconfig` — a implantação do commit `2750006` ficou **Ready** na Vercel. O alias `https://apex-porter.vercel.app` passou a responder HTTP 200 com HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy` restritiva. O endpoint `/sw` continua público e retorna JavaScript com escopo `/`, enquanto manifesto e ícones retornam HTTP 200.
+
+O bundle do alias oficial contém a configuração VAPID e o código FCM após o redeploy. O repositório está limpo, com `origin/main` no commit `2750006`.
+
+## Validação visual
+
+O endereço oficial `https://apex-porter.vercel.app` abriu publicamente, exibiu o splash do APEX Portaria e, após a inicialização, apresentou a tela de login sem redirecionamento para a Vercel. Isso confirma a estabilidade básica de carregamento do PWA em produção.
