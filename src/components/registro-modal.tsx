@@ -880,21 +880,26 @@ export default function RegistroModal({
       const nomeTrim = nome.trim();
       if (!nomeTrim) return;
       const existing = pessoas.find(
-        (p) => p.nome.toLowerCase() === nomeTrim.toLowerCase() && !p.inativo
+        (p) => p.nome.trim().toLowerCase() === nomeTrim.toLowerCase()
       );
       if (existing) {
-        // Atualiza campos se vierem preenchidos e ainda não estiverem salvos
+        // Mantém um único cadastro por nome e completa os dados com o registro atual.
         const updates: Partial<typeof existing> = {};
-        if (opts.empresa && !existing.empresa) updates.empresa = opts.empresa.trim();
-        if (opts.departamento && !existing.departamento) updates.departamento = opts.departamento.trim();
-        if (opts.rgCpf && !existing.rgCpf) updates.rgCpf = opts.rgCpf.trim();
-        if (opts.placa && !existing.placa) updates.placa = opts.placa.trim();
+        const empresaAtual = opts.empresa?.trim() || '';
+        const documentoAtual = opts.rgCpf?.trim() || '';
+        const departamentoAtual = opts.departamento?.trim() || '';
+        const placaAtual = opts.placa?.trim() || '';
+        if (empresaAtual && empresaAtual !== (existing.empresa || '').trim()) updates.empresa = empresaAtual;
+        if (departamentoAtual && departamentoAtual !== (existing.departamento || '').trim()) updates.departamento = departamentoAtual;
+        if (documentoAtual && documentoAtual !== (existing.rgCpf || '').trim()) updates.rgCpf = documentoAtual;
+        if (placaAtual && placaAtual !== (existing.placa || '').trim()) updates.placa = placaAtual;
+        if (existing.inativo) updates.inativo = false;
         if (Object.keys(updates).length > 0) {
           updatePessoa({ ...existing, ...updates });
         }
       } else {
         addPessoa({
-          id: `pessoa_${Date.now()}`,
+          id: `pessoa_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
           nome: nomeTrim,
           tipo: (opts.tipo || 'Visitante') as import('@/lib/data').TipoPessoa,
           empresa: opts.empresa?.trim() || '',
@@ -1169,7 +1174,7 @@ export default function RegistroModal({
         if (formData.nome) checkAndCadastrarPessoa(formData.nome, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.rgCpf, tipo: 'Prestador' });
         break;
       case 'pesagem':
-        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, tipo: 'Motorista', placa: formData.placa });
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, rgCpf: formData.rgCpf, tipo: 'Motorista', placa: formData.placa });
         break;
       case 'entregas2':
         if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.cpfRg, tipo: 'Motorista', placa: formData.placa });
