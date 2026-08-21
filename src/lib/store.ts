@@ -1177,6 +1177,54 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao cancelar pré-autorização:', err);
     });
   },
+  confirmarChegadaPreAutorizacao: (id) => {
+    const state = get();
+    const preAutorizacao = state.preAutorizacoes.find((p) => p.id === id);
+    if (!preAutorizacao || preAutorizacao.status !== 'agendado' || preAutorizacao.registroFluxoId) return;
+
+    const registroExistente = state.registrosFluxo.find((registro) => registro.preAutorizacaoId === id);
+    const agora = new Date();
+    const dataConfirmacao = format(agora, 'dd/MM/yyyy');
+    const horaConfirmacao = format(agora, 'HH:mm');
+    const registroId = registroExistente?.id || `reg_pa_${id}`;
+    const usuarioAtual = state.user;
+
+    if (!registroExistente) {
+      const registro: RegistroFluxo = {
+        id: registroId,
+        categoria: 'visitantes',
+        nomeEmpresa: `${preAutorizacao.visitanteNome} / ${preAutorizacao.visitanteEmpresa}`,
+        nome: preAutorizacao.visitanteNome,
+        empresa: preAutorizacao.visitanteEmpresa,
+        departamento: preAutorizacao.departamento,
+        rgCpf: preAutorizacao.visitanteDoc,
+        data: dataConfirmacao,
+        horarioEntrada: horaConfirmacao,
+        horarioSaida: '',
+        criadoPorUid: usuarioAtual?.id,
+        criadoPor: usuarioAtual?.nome || preAutorizacao.porteiro || '',
+        preAutorizacaoId: preAutorizacao.id,
+        entradaOriginadaDePreAutorizacao: true,
+      };
+      get().addRegistroFluxo(registro);
+    }
+
+    const atualizada: PreAutorizacao = {
+      ...preAutorizacao,
+      status: 'confirmado',
+      registroFluxoId: registroId,
+      dataConfirmacao,
+      horaConfirmacao,
+      porteiro: usuarioAtual?.nome || preAutorizacao.porteiro || '',
+    };
+    set((current) => ({
+      preAutorizacoes: current.preAutorizacoes.map((p) => p.id === id ? atualizada : p),
+    }));
+    const { id: preAutorizacaoId, ...dados } = atualizada;
+    void updatePreAutorizacaoFS(preAutorizacaoId, dados).catch((err) => {
+      console.warn('[Firestore] Falha ao vincular pré-autorização ao registro de fluxo:', err);
+    });
+  },
 
   // Ocorrências (Firestore-backed — Phase 4)
   ocorrencias: [],

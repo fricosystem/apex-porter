@@ -77,6 +77,10 @@ export interface BaseRegistroFluxo {
   porteiroSaidaUid?: string;
   /** Pessoas adicionais vinculadas à mesma entrada principal. */
   pessoasExtras?: PessoaExtra[];
+  /** ID da pré-autorização que originou esta entrada, quando aplicável. */
+  preAutorizacaoId?: string;
+  /** Indica que a entrada foi criada a partir de uma pré-autorização confirmada. */
+  entradaOriginadaDePreAutorizacao?: boolean;
   /** Metadados da individualização sem perder a origem histórica. */
   registroGrupoOriginal?: boolean;
   registroIndividualizado?: boolean;
@@ -445,6 +449,7 @@ export interface PreAutorizacao {
   status: StatusPreAutorizacao;
   registroFluxoId?: string;
   dataConfirmacao?: string;
+  horaConfirmacao?: string;
   porteiro?: string;
   criadoPor?: string;
 }

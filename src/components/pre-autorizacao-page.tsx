@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
 import {
   Plus, Search, Inbox, Clock, Calendar, UserCheck, User, ShieldCheck, XCircle, Clock4, CheckCircle2,
 } from 'lucide-react';
@@ -72,7 +71,7 @@ function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggesti
   };
 }
 
-type StatusFilter = 'pendentes' | 'concluidos' | 'todos';
+type StatusFilter = 'pendentes' | 'concluidos';
 
 const statusIcons: Record<StatusPreAutorizacao, React.ElementType> = {
   agendado: Clock4,
@@ -90,13 +89,13 @@ const statusColors: Record<StatusPreAutorizacao, string> = {
 
 const statusLabels: Record<StatusPreAutorizacao, string> = {
   agendado: 'Agendado',
-  confirmado: 'Confirmado',
+  confirmado: 'Concluído',
   cancelado: 'Cancelado',
   expirado: 'Expirado',
 };
 
 export default function PreAutorizacaoPage() {
-  const { preAutorizacoes, addPreAutorizacao, updatePreAutorizacao, cancelarPreAutorizacao, user, pessoas, empresas, departamentos, ramais, registrosFluxo } = useAppStore();
+  const { preAutorizacoes, addPreAutorizacao, cancelarPreAutorizacao, confirmarChegadaPreAutorizacao, user, pessoas, empresas, departamentos, ramais, registrosFluxo } = useAppStore();
 
   const [busca, setBusca] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pendentes');
@@ -108,6 +107,8 @@ export default function PreAutorizacaoPage() {
   // Modal detalhe
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<PreAutorizacao | null>(null);
+  const [confirmarChegadaOpen, setConfirmarChegadaOpen] = useState(false);
+  const [preAutorizacaoParaConfirmar, setPreAutorizacaoParaConfirmar] = useState<PreAutorizacao | null>(null);
 
   // Filtered
   const filtered = useMemo(() => {
@@ -295,13 +296,18 @@ export default function PreAutorizacaoPage() {
   };
 
   const handleConfirmar = (pa: PreAutorizacao) => {
-    updatePreAutorizacao({
-      ...pa,
-      status: 'confirmado',
-      dataConfirmacao: format(new Date(), 'dd/MM/yyyy'),
-      porteiro: user?.nome || '',
-    });
-    toast.success('Chegada confirmada!');
+    setPreAutorizacaoParaConfirmar(pa);
+    setDetailOpen(false);
+    setConfirmarChegadaOpen(true);
+  };
+
+  const confirmarChegada = () => {
+    if (!preAutorizacaoParaConfirmar) return;
+    confirmarChegadaPreAutorizacao(preAutorizacaoParaConfirmar.id);
+    toast.success('Chegada confirmada e entrada registrada no Fluxo!');
+    setConfirmarChegadaOpen(false);
+    setPreAutorizacaoParaConfirmar(null);
+    setSelected(null);
   };
 
   const handleCancelar = (id: string) => {
@@ -320,7 +326,7 @@ export default function PreAutorizacaoPage() {
           </div>
           <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-2.5 text-center">
             <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{stats.confirmados}</p>
-            <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300">Confirmados</p>
+            <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300">Concluídos</p>
           </div>
           <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-2.5 text-center">
             <p className="text-xl font-bold text-red-600 dark:text-red-400">{stats.cancelados}</p>
@@ -342,10 +348,9 @@ export default function PreAutorizacaoPage() {
 
         {/* Status tabs */}
         <Tabs value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
-          <TabsList className="w-full grid grid-cols-3 h-10">
+          <TabsList className="w-full grid grid-cols-2 h-10">
             <TabsTrigger value="pendentes" className="text-sm data-[state=active]:bg-amber-600 data-[state=active]:text-white">Pendentes</TabsTrigger>
             <TabsTrigger value="concluidos" className="text-sm data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Concluídos</TabsTrigger>
-            <TabsTrigger value="todos" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Todos</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -444,6 +449,56 @@ export default function PreAutorizacaoPage() {
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} className="bg-amber-600 hover:bg-amber-700">Salvar</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+          {/* Modal de confirmação de chegada */}
+      <Dialog
+        open={confirmarChegadaOpen}
+        onOpenChange={(open) => {
+          setConfirmarChegadaOpen(open);
+          if (!open) setPreAutorizacaoParaConfirmar(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              Confirmar chegada
+            </DialogTitle>
+          </DialogHeader>
+          {preAutorizacaoParaConfirmar && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                  Deseja confirmar a chegada de {preAutorizacaoParaConfirmar.visitanteNome}?
+                </p>
+                <div className="mt-3 space-y-1 text-sm text-emerald-800/80 dark:text-emerald-100/80">
+                  <p><span className="font-medium">RG/CPF:</span> {preAutorizacaoParaConfirmar.visitanteDoc || 'Não informado'}</p>
+                  <p><span className="font-medium">Empresa:</span> {preAutorizacaoParaConfirmar.visitanteEmpresa || 'Não informada'}</p>
+                  <p><span className="font-medium">Visita prevista:</span> {preAutorizacaoParaConfirmar.dataPrevista} às {preAutorizacaoParaConfirmar.horarioPrevisto || 'horário não informado'}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Ao confirmar, será criado um registro de entrada em <strong>Fluxo &gt; Em aberto</strong>. A saída deverá ser registrada posteriormente pelo processo normal do Fluxo.
+              </p>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setConfirmarChegadaOpen(false);
+                    setPreAutorizacaoParaConfirmar(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={confirmarChegada}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Confirmar chegada
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

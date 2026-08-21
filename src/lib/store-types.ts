@@ -149,6 +149,7 @@ export type SegurancaSlice = {
   addPreAutorizacao: (pa: PreAutorizacao) => void;
   updatePreAutorizacao: (pa: PreAutorizacao) => void;
   cancelarPreAutorizacao: (id: string) => void;
+  confirmarChegadaPreAutorizacao: (id: string) => void;
   ocorrencias: Ocorrencia[];
   addOcorrencia: (oc: Ocorrencia) => void;
   updateOcorrencia: (oc: Ocorrencia) => void;
