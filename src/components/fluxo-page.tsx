@@ -31,10 +31,11 @@ import {
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
-import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib/data';
+import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo, type PreAutorizacao } from '@/lib/data';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { buildReleaseMessage } from '@/lib/release-message';
 import RegistroModal from './registro-modal';
+import PreAutorizacaoBanner from './pre-autorizacao-banner';
 import { toast } from 'sonner';
 
 type StatusFilter = 'aberto' | 'finalizado';
@@ -65,6 +66,19 @@ const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   pesagem_apara: Weight,
   pesagem_tinta: Fuel,
 };
+
+function isPreAutorizacaoToday(preAutorizacao: PreAutorizacao): boolean {
+  const rawDate = String(preAutorizacao.dataPrevista || '');
+  const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
+  if (parts.length !== 3) return false;
+  const [year, month, day] = rawDate.includes('/')
+    ? [parts[2], parts[1], parts[0]]
+    : [parts[0], parts[1], parts[2]];
+  const today = new Date();
+  return Number(year) === today.getFullYear()
+    && Number(month) === today.getMonth() + 1
+    && Number(day) === today.getDate();
+}
 
 function getMainField(r: RegistroFluxo): string {
   switch (r.categoria) {
@@ -275,7 +289,8 @@ export default function FluxoPage() {
     empresas,
     addEmpresa,
     prefilledRegistroModal,
-    clearPrefilledRegistroModal
+    clearPrefilledRegistroModal,
+    preAutorizacoes,
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(
@@ -292,6 +307,16 @@ export default function FluxoPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [todayKey, setTodayKey] = useState(() => new Date().toDateString());
+
+  // Keep the current-day banner accurate across midnight without a page reload.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const nextKey = new Date().toDateString();
+      setTodayKey((currentKey) => currentKey === nextKey ? currentKey : nextKey);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Auto-clear loading state when data arrives or after a short timeout
   useEffect(() => {
@@ -409,6 +434,15 @@ export default function FluxoPage() {
     });
     return Array.from(set).sort();
   }, [departamentos, registrosFluxoExibiveis]);
+
+  const preAutorizacoesHoje = useMemo(
+    () => preAutorizacoes.filter((preAutorizacao) => (
+      (preAutorizacao.status === 'agendado' || preAutorizacao.status === 'confirmado')
+      && !preAutorizacao.registroFluxoId
+      && isPreAutorizacaoToday(preAutorizacao)
+    )),
+    [preAutorizacoes, todayKey],
+  );
 
   const empresaOptions = useMemo(() => {
     const set = new Set<string>();
@@ -812,6 +846,13 @@ export default function FluxoPage() {
           </TabsList>
         </Tabs>
       </div>
+
+      {preAutorizacoesHoje.length > 0 && (
+        <PreAutorizacaoBanner
+          key={preAutorizacoesHoje.map((preAutorizacao) => preAutorizacao.id).join('|')}
+          items={preAutorizacoesHoje}
+        />
+      )}
 
       {/* Content area - virtualized card list */}
       <div
