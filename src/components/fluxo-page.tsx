@@ -31,6 +31,7 @@ import {
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
 import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib/data';
+import { buildReleaseMessage } from '@/lib/release-message';
 import RegistroModal from './registro-modal';
 import { toast } from 'sonner';
 
@@ -582,48 +583,7 @@ export default function FluxoPage() {
     setMensagemLiberacao(null);
   };
 
-  const gerarMensagemLiberacao = (r: RegistroFluxo) => {
-    let nome = (r as any).nome || (r as any).motorista || (r as any).condutor || '';
-    if (r.categoria === 'visitantes' || r.categoria === 'prestadores') {
-       nome = (r as any).nome || (r as any).nomeEmpresa?.split(' / ')[0] || (r as any).nomeEmpresa || '';
-    }
-    const empresa = (r as any).empresa || (r as any).nomeEmpresa?.split(' / ')[1] || '';
-    
-    // Convertendo para caixa alta
-    const nomeUppercase = nome.toUpperCase();
-    const empresaUppercase = empresa.toUpperCase();
-    
-    // extrair doc
-    let doc = (r as any).rgCpf || (r as any).cpfRg || '';
-    let docLabel = 'RG/CPF';
-    let docValue = doc || '-';
-    if (doc) {
-      const digits = doc.replace(/\D/g, '');
-      if (digits.length === 11) {
-        docLabel = 'CPF';
-        docValue = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-      } else if (digits.length > 0) {
-        docLabel = 'RG';
-        docValue = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      }
-    }
-    
-    let acao = 'uma visita';
-    switch (r.categoria) {
-      case 'coleta': acao = 'retirar a coleta'; break;
-      case 'visitantes': acao = 'uma visita'; break;
-      case 'prestadores': acao = 'uma prestação de serviço'; break;
-      case 'entregas1':
-      case 'entregas2': acao = 'uma entrega'; break;
-      case 'pesagem': acao = 'uma pesagem'; break;
-      case 'pesagem_apara': acao = 'uma pesagem de apara'; break;
-      case 'pesagem_tinta': acao = 'uma pesagem de tinta/solvente'; break;
-      case 'correspondencias': acao = 'uma entrega de correspondência'; break;
-      default: acao = r.categoria;
-    }
-    
-    return `O Sr. ${nomeUppercase}, ${docLabel} ${docValue}, está aqui pela empresa ${empresaUppercase} para ${acao}. Podemos liberar?`;
-  };
+  const gerarMensagemLiberacao = (r: RegistroFluxo) => buildReleaseMessage(r);
 
   const handleRefazer = (r: RegistroFluxo) => {
     setRegistroParaConfirmar(r);
@@ -874,6 +834,7 @@ export default function FluxoPage() {
                       const CardIcon = catIcons[r.categoria] || Package;
 
                       const isInactive = r.inativo;
+                      const pessoasExtrasCount = Array.isArray((r as any).pessoasExtras) ? (r as any).pessoasExtras.length : 0;
                       const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
                       return (
                         <Card
@@ -910,6 +871,14 @@ export default function FluxoPage() {
                                 <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
                                   Pendente
                                 </Badge>
+                              )}
+                              {pessoasExtrasCount > 0 && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold"
+                                  title={`${pessoasExtrasCount} pessoa(s) extra(s) vinculada(s)`}
+                                >
+                                  <Users className="h-4 w-4" />+{pessoasExtrasCount}
+                                </span>
                               )}
                             </div>
 
@@ -1138,6 +1107,35 @@ export default function FluxoPage() {
                   })}
                 </div>
               </div>
+
+              {Array.isArray((selectedRegistro as any).pessoasExtras) && (selectedRegistro as any).pessoasExtras.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-emerald-600" />
+                    <span className="font-semibold text-sm">Pessoas extras vinculadas</span>
+                  </div>
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-2">
+                    {(selectedRegistro as any).pessoasExtras.map((extra: any, index: number) => {
+                      const { label, value } = formatRgCpfField(extra.rgCpf);
+                      const saiu = Boolean(extra.horarioSaida || selectedRegistro.horarioSaida);
+                      return (
+                        <div key={extra.id || `${extra.nome}-${index}`} className="flex items-start justify-between gap-3 rounded-lg bg-background/70 p-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm truncate">{index + 1}. {extra.nome || 'Nome não informado'}</p>
+                            <p className="text-xs text-muted-foreground">{label}: {value} · {extra.empresa || 'Empresa não informada'}</p>
+                          </div>
+                          <span className={`shrink-0 text-xs font-semibold ${saiu ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600'}`}>
+                            {saiu ? 'Saída registrada' : 'Entrada aberta'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {!selectedRegistro.horarioSaida && !selectedRegistro.inativo && (
+                      <p className="text-xs text-muted-foreground pt-1">Ao registrar a saída, todas as pessoas extras serão finalizadas junto com a pessoa principal.</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Diferença de Peso — exibida quando o registro já finalizado possui entrada e saída */}
               {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2' || selectedRegistro.categoria === 'pesagem_apara') && selectedRegistro.horarioSaida && (() => {

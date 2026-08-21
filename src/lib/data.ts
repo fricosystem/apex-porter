@@ -50,6 +50,14 @@ export const CATEGORIAS_FLUXO: { value: CategoriaFluxo; label: string }[] = [
   { value: 'pesagem_tinta', label: 'PESAGEM DE TINTA/SOLVENTE' },
 ];
 
+export interface PessoaExtra {
+  id: string;
+  nome: string;
+  rgCpf: string;
+  empresa: string;
+  horarioSaida?: string;
+}
+
 export interface BaseRegistroFluxo {
   id: string;
   inativo?: boolean;
@@ -67,6 +75,8 @@ export interface BaseRegistroFluxo {
   /** Operador e UID que concluíram a saída do registro. */
   porteiroSaida?: string;
   porteiroSaidaUid?: string;
+  /** Pessoas adicionais vinculadas à mesma entrada principal. */
+  pessoasExtras?: PessoaExtra[];
   postoId?: string;
 }
 

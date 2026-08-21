@@ -729,6 +729,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           updated.resultadoDiferenca = pesoSaida - pesoEntrada;
         }
         if (porteiroSaida) updated.porteiroSaida = porteiroSaida;
+        if (Array.isArray(updated.pessoasExtras) && updated.pessoasExtras.length > 0) {
+          updated.pessoasExtras = updated.pessoasExtras.map((extra: any) => ({ ...extra, horarioSaida }));
+        }
         return updated;
       }),
     }));
@@ -750,6 +753,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (porteiroSaidaUid) fsUpdate.porteiroSaidaUid = porteiroSaidaUid;
 
     const updatedRegistro = get().registrosFluxo.find((r) => r.id === id);
+    if (updatedRegistro?.pessoasExtras?.length) {
+      fsUpdate.pessoasExtras = updatedRegistro.pessoasExtras;
+    }
     const persistRegistro = updateRegistroFluxoFS(id, fsUpdate);
     const persistPesagemApara = pesoApara && updatedRegistro?.categoria === 'pesagem_apara'
       ? updatePesagemAparaFS(id, { [pesoApara.campo]: pesoApara.valor })

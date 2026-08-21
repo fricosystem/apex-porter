@@ -12,7 +12,7 @@ import {
   DialogOverlay,
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, Ticket } from 'lucide-react';
+import { ChevronDown, ChevronUp, Minus, Plus, Ticket, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,14 +30,22 @@ import {
   type CategoriaFluxo,
   type RegistroFluxo,
   type Pessoa,
+  type PessoaExtra,
 } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { formatCpfRg } from '@/lib/utils';
+import { buildReleaseMessage } from '@/lib/release-message';
 
 // Unified data structure for autocomplete — stores ALL available info
 // regardless of which category it came from
+const EXTRA_PERSON_CATEGORIES: CategoriaFluxo[] = ['visitantes', 'prestadores', 'pesagem', 'entregas2', 'coleta'];
+
+function supportsExtraPeople(categoria: CategoriaFluxo | ''): boolean {
+  return Boolean(categoria && EXTRA_PERSON_CATEGORIES.includes(categoria));
+}
+
 export interface UnifiedSuggestionData {
   name: string;       // person's name
   company: string;    // company name
@@ -210,6 +218,8 @@ export default function RegistroModal({
   const [coletaMessage, setColetaMessage] = useState<string | null>(null);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [ticketGerado, setTicketGerado] = useState<string | null>(null);
+  const [pessoasExtras, setPessoasExtras] = useState<PessoaExtra[]>([]);
+  const [extrasOpen, setExtrasOpen] = useState(false);
 
   // Função para verificar recorrência por CPF
   const verificarRecorrencia = (cpf: string): { isRecorrente: boolean; pessoa?: Pessoa; contador: number } => {
@@ -301,6 +311,8 @@ export default function RegistroModal({
       pesoCarregado: '',
       pesoVazio: '',
     });
+    setPessoasExtras([]);
+    setExtrasOpen(false);
     if (!categoriaInicial) {
       setCategoria('');
     }
@@ -311,17 +323,23 @@ export default function RegistroModal({
     if (open) {
       if (prefilledFormData) {
         setFormData(prefilledFormData);
+        setPessoasExtras([]);
+        setExtrasOpen(false);
         setCategoria(categoriaInicial);
       } else if (registroInicial && (isRefacao || isRascunho)) {
         setCategoria(registroInicial.categoria);
-        const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, ...rest } = registroInicial as any;
+        const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, pessoasExtras: extrasSalvos, ...rest } = registroInicial as any;
         setFormData({ ...rest });
+        setPessoasExtras(Array.isArray(extrasSalvos) ? extrasSalvos : []);
+        setExtrasOpen(false);
       } else {
         setFormData({
           data: format(new Date(), 'dd/MM/yyyy'),
           horarioEntrada: format(new Date(), 'HH:mm'),
           porteiro: user?.nome || '',
         });
+        setPessoasExtras([]);
+        setExtrasOpen(false);
         if (!categoriaInicial) {
           setCategoria('');
         }
@@ -631,10 +649,84 @@ export default function RegistroModal({
     });
     
     setCategoria(novaCategoria);
+    setPessoasExtras([]);
+    setExtrasOpen(false);
   };
 
   const updateField = (field: string, value: string) => {
+    if (field === 'empresa' && supportsExtraPeople(categoria)) {
+      const empresaAnterior = formData.empresa || '';
+      setPessoasExtras((extras) => extras.map((extra) => (
+        !extra.empresa || extra.empresa === empresaAnterior
+          ? { ...extra, empresa: value }
+          : extra
+      )));
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const addPessoaExtra = () => {
+    setPessoasExtras((extras) => [
+      ...extras,
+      {
+        id: `extra_${Date.now()}_${extras.length}`,
+        nome: '',
+        rgCpf: '',
+        empresa: formData.empresa || '',
+      },
+    ]);
+    setExtrasOpen(true);
+  };
+
+  const updatePessoaExtra = (id: string, field: keyof PessoaExtra, value: string) => {
+    setPessoasExtras((extras) => extras.map((extra) => (
+      extra.id === id ? { ...extra, [field]: value } : extra
+    )));
+  };
+
+  const handlePessoaExtraSelect = (id: string, suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    setPessoasExtras((extras) => extras.map((extra) => (
+      extra.id === id
+        ? {
+            ...extra,
+            nome: unified.name || extra.nome,
+            rgCpf: unified.doc ? formatCpfRg(unified.doc) : extra.rgCpf,
+            empresa: extra.empresa || formData.empresa || unified.company || '',
+          }
+        : extra
+    )));
+  };
+
+  const handlePessoaExtraEmpresaSelect = (id: string, suggestionData: Record<string, string>) => {
+    const unified = suggestionData as unknown as UnifiedSuggestionData;
+    if (unified.company) updatePessoaExtra(id, 'empresa', unified.company);
+  };
+
+  const removePessoaExtra = (id: string) => {
+    setPessoasExtras((extras) => extras.filter((extra) => extra.id !== id));
+  };
+
+  const getPessoasExtrasParaSalvar = (): PessoaExtra[] => pessoasExtras
+    .map((extra) => ({
+      id: extra.id,
+      nome: extra.nome.trim(),
+      rgCpf: extra.rgCpf.trim(),
+      empresa: extra.empresa.trim(),
+      ...(extra.horarioSaida ? { horarioSaida: extra.horarioSaida } : {}),
+    }))
+    .filter((extra) => extra.nome || extra.rgCpf || extra.empresa);
+
+  const validatePessoasExtras = (): PessoaExtra[] | null => {
+    if (!supportsExtraPeople(categoria)) return [];
+    const extras = getPessoasExtrasParaSalvar();
+    const incompleto = extras.find((extra) => !extra.nome || !extra.rgCpf || !extra.empresa);
+    if (incompleto) {
+      toast.error('Preencha Nome Completo, RG/CPF e Empresa de todas as pessoas extras');
+      setExtrasOpen(true);
+      return null;
+    }
+    return extras;
   };
 
   const handleSaveDraft = () => {
@@ -686,6 +778,11 @@ export default function RegistroModal({
         break;
     }
 
+    if (supportsExtraPeople(categoria)) {
+      const extras = getPessoasExtrasParaSalvar();
+      if (extras.length > 0) registro.pessoasExtras = extras;
+    }
+
     if (isRascunho) {
       updateRascunhoFluxo(registro);
       toast.success('Rascunho atualizado com sucesso!');
@@ -720,16 +817,16 @@ export default function RegistroModal({
       horarioEntrada: format(new Date(), 'HH:mm'),
       porteiro: prev.porteiro || user?.nome || '',
     }));
+    if (mapped.empresa && supportsExtraPeople(activeCatForAuto)) {
+      setPessoasExtras((extras) => extras.map((extra) => (
+        !extra.empresa ? { ...extra, empresa: mapped.empresa } : extra
+      )));
+    }
   };
 
   const handleEmpresaSelect = (suggestionData: Record<string, string>) => {
     const unified = suggestionData as unknown as UnifiedSuggestionData;
-    if (unified.company) {
-      setFormData((prev) => ({
-        ...prev,
-        empresa: unified.company,
-      }));
-    }
+    if (unified.company) updateField('empresa', unified.company);
   };
 
   const handleReboqueSelect = (suggestionData: Record<string, string>) => {
@@ -810,6 +907,9 @@ export default function RegistroModal({
         });
       }
     };
+
+    const extrasPersistidos = validatePessoasExtras();
+    if (extrasPersistidos === null) return;
 
     if (formData.empresa) {
       checkAndCadastrarEmpresa(formData.empresa);
@@ -1028,6 +1128,10 @@ export default function RegistroModal({
         return;
     }
 
+    if (extrasPersistidos.length > 0) {
+      registro.pessoasExtras = extrasPersistidos;
+    }
+
     if (registroInicial && isRefacao) {
       registro.versaoAnteriorId = registroInicial.id;
       if (registro.detalhes) {
@@ -1087,25 +1191,20 @@ export default function RegistroModal({
         break;
     }
 
+    if (extrasPersistidos.length > 0) {
+      const tipoExtra = categoria === 'prestadores' ? 'Prestador' : categoria === 'pesagem' || categoria === 'entregas2' || categoria === 'coleta' ? 'Motorista' : 'Visitante';
+      extrasPersistidos.forEach((extra) => checkAndCadastrarPessoa(extra.nome, {
+        empresa: extra.empresa,
+        rgCpf: extra.rgCpf,
+        departamento: formData.departamento,
+        tipo: tipoExtra,
+      }));
+    }
+
     toast.success(isRefacao ? 'Nova versão do registro salva com sucesso!' : 'Registro adicionado com sucesso!');
 
     if (categoria === 'coleta') {
-      let docLabel = 'RG/CPF';
-      let docValue = formData.rgCpf || '-';
-      
-      if (formData.rgCpf) {
-        const digits = formData.rgCpf.replace(/\D/g, '');
-        if (digits.length === 11) {
-          docLabel = 'CPF';
-          docValue = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-        } else if (digits.length > 0) {
-          docLabel = 'RG';
-          docValue = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
-      }
-      
-      const mensagem = `O Sr. ${formData.motorista || ''}, ${docLabel} ${docValue}, está aqui pela empresa ${formData.empresa || ''} para retirar a coleta. Podemos liberar?`;
-      
+      const mensagem = buildReleaseMessage(registro);
       setColetaMessage(mensagem);
       limparCampos();
       return; // Do not call onClose() yet, wait for user to close the message modal
@@ -1113,6 +1212,100 @@ export default function RegistroModal({
 
     limparCampos();
     onClose();
+  };
+
+  const renderPessoasExtras = () => {
+    if (!supportsExtraPeople(categoria)) return null;
+
+    return (
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setExtrasOpen((openState) => !openState)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-emerald-500/10 transition-colors"
+          aria-expanded={extrasOpen}
+        >
+          <span className="flex items-center gap-2 font-semibold text-emerald-700 dark:text-emerald-400">
+            <Users className="h-5 w-5" />
+            Pessoas extras
+            {pessoasExtras.length > 0 && (
+              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs text-white">{pessoasExtras.length}</span>
+            )}
+          </span>
+          {extrasOpen ? <ChevronUp className="h-5 w-5 text-emerald-600" /> : <ChevronDown className="h-5 w-5 text-emerald-600" />}
+        </button>
+
+        {extrasOpen && (
+          <div className="space-y-4 border-t border-emerald-500/20 p-4">
+            <p className="text-sm text-muted-foreground">
+              Adicione outras pessoas que entrarão no mesmo registro. Os demais campos seguem a entrada principal e ficam vinculados a este registro.
+            </p>
+
+            {pessoasExtras.map((extra, index) => (
+              <div key={extra.id} className="space-y-3 rounded-lg border border-border bg-background p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-sm">Pessoa extra {index + 1}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removePessoaExtra(extra.id)}
+                    className="h-8 w-8 border-red-500/40 text-red-600 hover:bg-red-500/10"
+                    aria-label={`Remover pessoa extra ${index + 1}`}
+                    title="Remover pessoa"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nome Completo *</Label>
+                  <AutocompleteInput
+                    value={extra.nome}
+                    onChange={(value) => updatePessoaExtra(extra.id, 'nome', value)}
+                    onSelect={(suggestion) => handlePessoaExtraSelect(extra.id, suggestion.data || {})}
+                    suggestions={nameSuggestions}
+                    placeholder="Nome completo"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>RG/CPF *</Label>
+                  <AutocompleteInput
+                    value={extra.rgCpf}
+                    onChange={(value) => updatePessoaExtra(extra.id, 'rgCpf', formatCpfRg(value))}
+                    onSelect={(suggestion) => handlePessoaExtraSelect(extra.id, suggestion.data || {})}
+                    suggestions={rgCpfSuggestions}
+                    placeholder="00.000.000-0"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Empresa *</Label>
+                  <AutocompleteInput
+                    value={extra.empresa}
+                    onChange={(value) => updatePessoaExtra(extra.id, 'empresa', value)}
+                    onSelect={(suggestion) => handlePessoaExtraEmpresaSelect(extra.id, suggestion.data || {})}
+                    suggestions={empresaSuggestions}
+                    placeholder="Empresa da pessoa"
+                  />
+                </div>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addPessoaExtra}
+              className="w-full border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar outra pessoa
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderFields = () => {
@@ -1123,7 +1316,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
@@ -1166,7 +1359,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
@@ -1229,7 +1422,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
@@ -1292,7 +1485,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome do Motorista *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
@@ -1354,7 +1547,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome do Motorista *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
@@ -1436,7 +1629,7 @@ export default function RegistroModal({
         return (
           <>
             <div className="space-y-3">
-              <Label className="text-base">Nome do Motorista *</Label>
+              <Label className="text-base">Nome Completo *</Label>
               <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
@@ -1874,6 +2067,8 @@ export default function RegistroModal({
           </div>
 
           <div className="grid grid-cols-1 gap-4">{renderFields()}</div>
+
+          {renderPessoasExtras()}
 
           {categoria && (
             <div className="space-y-3 pt-2 border-t border-border/50">
