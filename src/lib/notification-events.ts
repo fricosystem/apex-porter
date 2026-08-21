@@ -16,7 +16,7 @@ const NOTIFICATION_EVENTS_COLLECTION = 'notificationEvents';
 
 export type DeviceNotificationEvent = {
   id: string;
-  kind: 'registro-fluxo' | 'push-test';
+  kind: 'registro-fluxo' | 'registro-saida' | 'push-test';
   title: string;
   body: string;
   link?: string;
@@ -57,6 +57,21 @@ function clean(value: unknown, fallback: string): string {
   return normalized || fallback;
 }
 
+function formatPesoApara(value: unknown): string {
+  const peso = Number(value ?? 0);
+  if (!Number.isFinite(peso)) return '0';
+  return peso.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+function buildPesagemAparaBody(registro: RegistroFluxo): string {
+  const fields = registro as unknown as Record<string, unknown>;
+  const condutor = clean(fields.condutor, 'CONDUTOR NÃO INFORMADO');
+  const pesoCarregado = formatPesoApara(fields.pesoCarregado);
+  const tipoReboque = clean(fields.tipoReboque, 'TIPO DE REBOQUE NÃO INFORMADO');
+  const veiculo = clean(fields.veiculo, 'VEÍCULO NÃO INFORMADO');
+  return `${condutor} acabou de pesar ${pesoCarregado} KG de APARA com ${tipoReboque} cheia com o ${veiculo}.`;
+}
+
 export function buildRegistroNotification(registro: RegistroFluxo) {
   const fields = registro as unknown as Record<string, unknown>;
   const categoria = clean(fields.categoria, 'registro');
@@ -69,11 +84,25 @@ export function buildRegistroNotification(registro: RegistroFluxo) {
   const departamento = clean(fields.departamento, 'DEPARTAMENTO NÃO INFORMADO');
   const author = clean(fields.criadoPor, 'USUÁRIO NÃO INFORMADO');
   const action = ACTION_BY_CATEGORY[categoria] || categoria.toUpperCase();
+  const body = categoria === 'pesagem_apara'
+    ? buildPesagemAparaBody(registro)
+    : `${person} pela empresa ${empresa} foi liberado por ${author} e irá fazer ${action} no ${departamento}.`;
 
   return {
     title,
-    body: `${person} pela empresa ${empresa} foi liberado por ${author} e irá fazer ${action} no ${departamento}.`,
+    body,
     link: '/#fluxo',
+  };
+}
+
+export function buildRegistroSaidaNotification(registro: RegistroFluxo) {
+  const fields = registro as unknown as Record<string, unknown>;
+  const title = TITLE_BY_CATEGORY.pesagem_apara;
+  return {
+    title,
+    body: buildPesagemAparaBody(registro),
+    link: '/#fluxo',
+    authorUid: clean(fields.porteiroSaidaUid || fields.criadoPorUid, ''),
   };
 }
 
@@ -107,6 +136,19 @@ export async function createRegistroNotificationEvent(registro: RegistroFluxo): 
   });
 }
 
+export async function createRegistroSaidaNotificationEvent(registro: RegistroFluxo): Promise<string | null> {
+  if (registro.categoria !== 'pesagem_apara') return null;
+  const notification = buildRegistroSaidaNotification(registro);
+  return createDeviceNotificationEvent({
+    kind: 'registro-saida',
+    title: notification.title,
+    body: notification.body,
+    authorUid: notification.authorUid,
+    notificationId: `registro-saida-${registro.id}-${registro.horarioSaida || Date.now()}`,
+    link: notification.link,
+  });
+}
+
 export function subscribeDeviceNotificationEvents(
   uid: string,
   onEvent: (event: DeviceNotificationEvent) => void,
@@ -127,7 +169,7 @@ export function subscribeDeviceNotificationEvents(
       // O autor não recebe o próprio registro do Fluxo. O evento push-test,
       // porém, é deliberadamente direcionado ao próprio dispositivo para
       // comprovar a exibição nativa e deve continuar sendo entregue.
-      if (data.kind === 'registro-fluxo' && data.authorUid === uid) return;
+      if ((data.kind === 'registro-fluxo' || data.kind === 'registro-saida') && data.authorUid === uid) return;
       if (data.targetUid && data.targetUid !== uid) return;
       if (!data.title || !data.body) return;
 

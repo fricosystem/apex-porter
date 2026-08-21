@@ -44,7 +44,7 @@ import {
 } from './auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { setupPushNotificationsAfterAuth } from './push-notifications';
-import { createRegistroNotificationEvent } from './notification-events';
+import { createRegistroNotificationEvent, createRegistroSaidaNotificationEvent } from './notification-events';
 import {
   subscribeEmpresas,
   addEmpresa as addEmpresaFS,
@@ -706,7 +706,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao inativar registro de fluxo:', err);
     });
   },
-  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }) => {
+  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string) => {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
@@ -747,17 +747,27 @@ export const useAppStore = create<AppState>((set, get) => ({
       fsUpdate.resultadoDiferenca = pesoSaida - pesoEntrada;
     }
     if (porteiroSaida) fsUpdate.porteiroSaida = porteiroSaida;
-    updateRegistroFluxoFS(id, fsUpdate).catch((err) => {
-      console.warn('[Firestore] Falha ao registrar saída de fluxo:', err);
-    });
-    if (pesoApara) {
-      const current = get().registrosFluxo.find((r) => r.id === id);
-      if (current?.categoria === 'pesagem_apara') {
-        updatePesagemAparaFS(id, { [pesoApara.campo]: pesoApara.valor }).catch((err) => {
-          console.warn('[Firestore] Falha ao atualizar peso complementar de pesagem de apara:', err);
-        });
-      }
-    }
+    if (porteiroSaidaUid) fsUpdate.porteiroSaidaUid = porteiroSaidaUid;
+
+    const updatedRegistro = get().registrosFluxo.find((r) => r.id === id);
+    const persistRegistro = updateRegistroFluxoFS(id, fsUpdate);
+    const persistPesagemApara = pesoApara && updatedRegistro?.categoria === 'pesagem_apara'
+      ? updatePesagemAparaFS(id, { [pesoApara.campo]: pesoApara.valor })
+      : Promise.resolve();
+
+    void Promise.all([persistRegistro, persistPesagemApara])
+      .then(() => {
+        if (updatedRegistro?.categoria === 'pesagem_apara') {
+          return createRegistroSaidaNotificationEvent({
+            ...updatedRegistro,
+            porteiroSaidaUid,
+          });
+        }
+        return null;
+      })
+      .catch((err) => {
+        console.warn('[Firestore] Falha ao registrar saída ou criar notificação:', err);
+      });
   },
   buscaFluxo: '',
   setBuscaFluxo: (busca) => set({ buscaFluxo: busca }),

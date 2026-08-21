@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, type DocumentReference } from 'firebase-admin/firestore';
 import { getMessaging, type MulticastMessage } from 'firebase-admin/messaging';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
 
 initializeApp();
@@ -54,6 +54,11 @@ type FluxoRecord = {
   criadoPor?: string;
   autorUid?: string;
   autorNome?: string;
+  horarioSaida?: string;
+  porteiroSaidaUid?: string;
+  pesoCarregado?: number;
+  tipoReboque?: string;
+  veiculo?: string;
 };
 
 type PushTarget = {
@@ -67,7 +72,21 @@ function clean(value: unknown, fallback: string): string {
   return normalized || fallback;
 }
 
-function createRecordNotification(registro: FluxoRecord, registroId: string) {
+function formatPesoApara(value: unknown): string {
+  const peso = Number(value ?? 0);
+  if (!Number.isFinite(peso)) return '0';
+  return peso.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+function createPesagemAparaBody(registro: FluxoRecord): string {
+  const condutor = clean(registro.condutor, 'CONDUTOR NÃO INFORMADO');
+  const pesoCarregado = formatPesoApara(registro.pesoCarregado);
+  const tipoReboque = clean(registro.tipoReboque, 'TIPO DE REBOQUE NÃO INFORMADO');
+  const veiculo = clean(registro.veiculo, 'VEÍCULO NÃO INFORMADO');
+  return `${condutor} acabou de pesar ${pesoCarregado} KG de APARA com ${tipoReboque} cheia com o ${veiculo}.`;
+}
+
+function createRecordNotification(registro: FluxoRecord, registroId: string, type: 'registro-fluxo' | 'registro-saida' = 'registro-fluxo') {
   const categoria = clean(registro.categoria, 'registro');
   const title = TITLE_BY_CATEGORY[categoria] || `NOVO ${categoria.toUpperCase()}`;
   const person = clean(
@@ -78,21 +97,25 @@ function createRecordNotification(registro: FluxoRecord, registroId: string) {
   const departamento = clean(registro.departamento, 'DEPARTAMENTO NÃO INFORMADO');
   const author = clean(registro.criadoPor || registro.autorNome, 'USUÁRIO NÃO INFORMADO');
   const action = ACTION_BY_CATEGORY[categoria] || categoria.toUpperCase();
-  const body = `${person} pela empresa ${empresa} foi liberado por ${author} e irá fazer ${action} no ${departamento}.`;
-  const authorUid = clean(registro.criadoPorUid || registro.autorUid, '');
+  const body = categoria === 'pesagem_apara'
+    ? createPesagemAparaBody(registro)
+    : `${person} pela empresa ${empresa} foi liberado por ${author} e irá fazer ${action} no ${departamento}.`;
+  const authorUid = type === 'registro-saida'
+    ? clean((registro as Record<string, unknown>).porteiroSaidaUid || registro.criadoPorUid || registro.autorUid, '')
+    : clean(registro.criadoPorUid || registro.autorUid, '');
 
   return {
     title,
     body,
     authorUid,
     data: {
-      type: 'registro-fluxo',
+      type,
       registroId,
       categoria,
       title,
       body,
       link: `${APP_LINK}#fluxo`,
-      notificationId: `registro-${registroId}`,
+      notificationId: `${type}-${registroId}`,
     },
   };
 }
@@ -163,6 +186,27 @@ export const notifyOnFluxoCreated = onDocumentCreated(
     console.log('[FCM] Registro enviado', {
       registroId: snapshot.id,
       categoria: registro.categoria,
+      destinatarios: targets.length,
+      ...result,
+    });
+  },
+);
+
+export const notifyOnPesagemAparaExit = onDocumentUpdated(
+  'registrosFluxo/{registroId}',
+  async (event) => {
+    const before = event.data?.before.data() as FluxoRecord | undefined;
+    const after = event.data?.after.data() as FluxoRecord | undefined;
+    if (!before || !after || after.categoria !== 'pesagem_apara') return;
+    if (before.horarioSaida || !after.horarioSaida) return;
+
+    const notification = createRecordNotification(after, event.params.registroId, 'registro-saida');
+    const targets = await getEnabledTargets(notification.authorUid || undefined);
+    if (targets.length === 0) return;
+
+    const result = await sendToTargets(targets, notification.data);
+    console.log('[FCM] Saída de pesagem de apara enviada', {
+      registroId: event.params.registroId,
       destinatarios: targets.length,
       ...result,
     });

@@ -64,6 +64,9 @@ export interface BaseRegistroFluxo {
   criadoPor?: string;
   /** Departamento normalizado para notificações, quando a categoria possuir esse campo. */
   departamento?: string;
+  /** Operador e UID que concluíram a saída do registro. */
+  porteiroSaida?: string;
+  porteiroSaidaUid?: string;
   postoId?: string;
 }
 

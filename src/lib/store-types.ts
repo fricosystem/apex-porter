@@ -84,7 +84,7 @@ export type FluxoSlice = {
   registrosFluxo: RegistroFluxo[];
   addRegistroFluxo: (registro: RegistroFluxo) => void;
   inativarRegistroFluxo: (id: string, versaoNovaId?: string, motivoRefacao?: string) => void;
-  registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }) => void;
+  registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string) => void;
   buscaFluxo: string;
   setBuscaFluxo: (busca: string) => void;
   rascunhosFluxo: RegistroFluxo[];

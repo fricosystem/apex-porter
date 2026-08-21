@@ -563,7 +563,7 @@ export default function FluxoPage() {
       }
     }
     const porteiroSaida = user?.nome || undefined;
-    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara);
+    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida, pesoApara, user?.id);
     toast.success('Saída registrada com sucesso!');
     setDetailModalOpen(false);
     setSelectedRegistro(null);
