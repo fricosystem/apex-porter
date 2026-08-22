@@ -138,7 +138,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
         className={cn(
           'sticky top-0 z-40 shadow-md',
           isDesktop
-            ? 'rounded-none border-b border-border/70 bg-background text-foreground shadow-sm'
+            ? 'rounded-none border-b border-border/70 !bg-background !text-foreground shadow-sm'
             : 'bg-primary text-primary-foreground',
         )}
         style={{ paddingTop: isDesktop ? undefined : 'env(safe-area-inset-top, 0px)' }}
