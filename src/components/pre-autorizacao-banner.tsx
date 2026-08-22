@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { PreAutorizacao } from '@/lib/data';
 import { getPreAutorizacaoDateTime } from '@/lib/pre-autorizacao-utils';
+import { cn } from '@/lib/utils';
 
 type Props = {
   items: PreAutorizacao[];
@@ -28,23 +29,39 @@ function formatDocument(value: string): { label: string; value: string } {
   };
 }
 
-function formatCountdown(target: Date | null, now: number): { label: string; tone: 'normal' | 'late' | 'now' } {
-  if (!target) return { label: 'Horário não informado', tone: 'normal' };
-  const diff = target.getTime() - now;
-  const absoluteMinutes = Math.floor(Math.abs(diff) / 60_000);
-  const hours = Math.floor(absoluteMinutes / 60);
-  const minutes = absoluteMinutes % 60;
+type CountdownTone = 'normal' | 'urgent' | 'late' | 'now';
 
-  if (Math.abs(diff) < 60_000) return { label: 'Chegada agora', tone: 'now' };
-  if (diff < 0) {
+type Countdown = {
+  label: string;
+  tone: CountdownTone;
+};
+
+function formatCountdown(target: Date | null, now: number): Countdown {
+  if (!target) return { label: 'Horário não informado', tone: 'normal' };
+
+  const diff = target.getTime() - now;
+  const absoluteSeconds = Math.floor(Math.abs(diff) / 1000);
+  const hours = Math.floor(absoluteSeconds / 3600);
+  const minutes = Math.floor((absoluteSeconds % 3600) / 60);
+  const seconds = absoluteSeconds % 60;
+  const formattedSeconds = String(seconds).padStart(2, '0');
+  const formattedMinutes = String(minutes).padStart(2, '0');
+
+  if (diff <= 0) {
+    if (absoluteSeconds < 60) return { label: 'Chegada agora', tone: 'now' };
     return {
       label: `Atrasado há ${hours ? `${hours}h ` : ''}${minutes}min`,
       tone: 'late',
     };
   }
+
+  const label = hours > 0
+    ? `Chega em ${hours}h ${formattedMinutes}min ${formattedSeconds}s`
+    : `Chega em ${minutes}min ${formattedSeconds}s`;
+
   return {
-    label: `Chega em ${hours ? `${hours}h ` : ''}${minutes}min`,
-    tone: 'normal',
+    label,
+    tone: diff <= 15 * 60 * 1000 ? 'urgent' : 'normal',
   };
 }
 
@@ -83,10 +100,16 @@ export default function PreAutorizacaoBanner({ items, onOpen }: Props) {
   const document = formatDocument(item.visitanteDoc);
   const countdown = formatCountdown(getPreAutorizacaoDateTime(item), now);
   const horario = item.horarioPrevisto || 'Não informado';
+  const isUrgent = countdown.tone === 'urgent' || countdown.tone === 'now';
 
   return (
     <section
-      className="mx-4 mt-2 cursor-pointer overflow-hidden rounded-lg border border-orange-300/80 bg-orange-100/95 text-orange-950 shadow-sm outline-none transition-colors hover:bg-orange-200/90 focus-visible:ring-2 focus-visible:ring-orange-500 dark:border-orange-800/70 dark:bg-orange-950/35 dark:text-orange-50 dark:hover:bg-orange-900/45 md:mx-6 xl:mx-6"
+      className={cn(
+        'mx-4 mt-2 cursor-pointer overflow-hidden rounded-lg border text-orange-950 shadow-sm outline-none transition-colors hover:bg-orange-200/90 focus-visible:ring-2 focus-visible:ring-orange-500 dark:text-orange-50 dark:hover:bg-orange-900/45 md:mx-6 xl:mx-6',
+        isUrgent
+          ? 'motion-safe:animate-pulse border-emerald-400 bg-emerald-100/95 hover:bg-emerald-200/90 dark:border-emerald-700 dark:bg-emerald-950/45 dark:hover:bg-emerald-900/55'
+          : 'border-orange-300/80 bg-orange-100/95 dark:border-orange-800/70 dark:bg-orange-950/35',
+      )}
       aria-label="Abrir Pré-Autorização"
       aria-live="polite"
       role="button"
@@ -149,8 +172,8 @@ export default function PreAutorizacaoBanner({ items, onOpen }: Props) {
                   className={
                     countdown.tone === 'late'
                       ? 'h-4 px-1.5 text-[9px] border-red-400 bg-red-100/80 text-red-700 dark:border-red-700 dark:bg-red-950/50 dark:text-red-200'
-                      : countdown.tone === 'now'
-                        ? 'h-4 px-1.5 text-[9px] border-emerald-400 bg-emerald-100/80 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200'
+                      : isUrgent
+                        ? 'h-4 px-1.5 text-[9px] border-emerald-500 bg-emerald-200/80 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-100'
                         : 'h-4 px-1.5 text-[9px] border-orange-400 bg-orange-200/70 text-orange-800 dark:border-orange-700 dark:bg-orange-900/50 dark:text-orange-100'
                   }
                 >
