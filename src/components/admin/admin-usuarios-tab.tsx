@@ -274,7 +274,7 @@ function ModalUsuario({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="nome">Nome</Label>
             <Input
               id="nome"
@@ -285,7 +285,7 @@ function ModalUsuario({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="email">E-mail</Label>
             <Input
               id="email"
@@ -297,7 +297,7 @@ function ModalUsuario({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="cargo">Cargo</Label>
             <Select
               value={formData.cargo || ''}
@@ -318,7 +318,7 @@ function ModalUsuario({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="senha">Senha</Label>
             <Input
               id="senha"
@@ -330,7 +330,7 @@ function ModalUsuario({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="posto">Posto</Label>
             <Select
               value={formData.postoId || ''}
@@ -373,7 +373,7 @@ function ModalUsuario({
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label>Permissões</Label>
               <div className="flex gap-1">
@@ -413,7 +413,7 @@ function ModalUsuario({
             </div>
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>

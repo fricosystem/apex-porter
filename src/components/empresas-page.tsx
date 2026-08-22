@@ -298,7 +298,7 @@ export default function EmpresasPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             {/* Campo Nome */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Nome da Empresa *</Label>
@@ -330,7 +330,7 @@ export default function EmpresasPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
@@ -402,7 +402,7 @@ export default function EmpresasPage() {
                     Nenhum registro encontrado.
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {empresaVisits.slice(0, showMoreVisits ? 25 : 5).map((v) => (
                       <div key={v.id} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg border text-sm">
                         <div>
@@ -441,7 +441,7 @@ export default function EmpresasPage() {
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDetailsOpen(false)} className="w-full sm:w-auto">
               Fechar
             </Button>

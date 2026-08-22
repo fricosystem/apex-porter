@@ -1234,7 +1234,7 @@ export default function RondaPage() {
 
 
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Previsto</Label>
                             <div className="bg-muted/50 rounded-lg px-3 py-2 border border-border">
@@ -1262,7 +1262,7 @@ export default function RondaPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Status</Label>
                             <Select
@@ -1322,7 +1322,7 @@ export default function RondaPage() {
               </div>
 
               {/* Progress Bar */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-muted-foreground">
                     Progresso: {countChecked(selectedRonda)}/{selectedRonda.pontos.length} pontos
@@ -1375,7 +1375,7 @@ export default function RondaPage() {
               Você ainda não verificou todos os pontos da ronda. Deseja finalizar a ronda parcialmente?
             </p>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setConfirmFinalizeOpen(false)} className="text-base">
               Cancelar
             </Button>
@@ -1400,7 +1400,7 @@ export default function RondaPage() {
               Tem certeza que deseja excluir esta ronda? Esta ação não pode ser desfeita.
             </p>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)} className="text-base">
               Cancelar
             </Button>

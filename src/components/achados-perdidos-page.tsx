@@ -181,7 +181,7 @@ export default function AchadosPerdidosPage() {
             <DialogTitle>Novo Item</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Descrição *</Label>
               <Input
                 placeholder="Descrição do item"
@@ -189,7 +189,7 @@ export default function AchadosPerdidosPage() {
                 onChange={(e) => setDescricao(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Local Encontrado *</Label>
               <Input
                 placeholder="Onde o item foi encontrado"
@@ -197,7 +197,7 @@ export default function AchadosPerdidosPage() {
                 onChange={(e) => setLocalEncontrado(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Cor</Label>
               <Input
                 placeholder="Cor do item"
@@ -205,7 +205,7 @@ export default function AchadosPerdidosPage() {
                 onChange={(e) => setCor(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Status</Label>
               <Select
                 value={status}
@@ -221,7 +221,7 @@ export default function AchadosPerdidosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Observações</Label>
               <Textarea
                 placeholder="Observações adicionais..."
@@ -231,7 +231,7 @@ export default function AchadosPerdidosPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>

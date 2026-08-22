@@ -435,7 +435,7 @@ export default function ChecklistTurnoPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Porteiro Saindo *</Label>
               <Input
                 value={porteiroSaindo}
@@ -443,7 +443,7 @@ export default function ChecklistTurnoPage() {
                 placeholder="Nome do porteiro que está saindo"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Porteiro Entrando *</Label>
               <Input
                 value={porteiroEntrando}
@@ -451,7 +451,7 @@ export default function ChecklistTurnoPage() {
                 placeholder="Nome do porteiro que está entrando"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Horário da Passagem</Label>
               <Input
                 type="time"
@@ -467,7 +467,7 @@ export default function ChecklistTurnoPage() {
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setNewDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white">Criar Passagem</Button>
           </DialogFooter>
@@ -537,7 +537,7 @@ export default function ChecklistTurnoPage() {
               </div>
 
               {/* Interactive checklist (pendente) or read-only (concluido) */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <h3 className="text-sm font-semibold">Itens do Checklist</h3>
                 <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-1 rounded-xl border border-border/50 p-2">
                   {(selected.status === 'pendente' ? editItens : selected.itens).map((item) => (

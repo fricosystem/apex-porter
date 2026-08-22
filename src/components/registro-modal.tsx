@@ -2104,7 +2104,7 @@ export default function RegistroModal({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 flex-wrap justify-between sm:justify-end w-full pt-4">
+        <DialogFooter className="mt-4 gap-3 flex-wrap justify-between sm:justify-end w-full pt-0 sm:gap-3">
           {isRascunho ? (
             <Button variant="destructive" onClick={handleDeleteDraft} className="w-full sm:w-auto mb-2 sm:mb-0 sm:mr-auto text-base">
               Excluir Rascunho
@@ -2141,13 +2141,13 @@ export default function RegistroModal({
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
         >
-          <DialogTitle className="text-base font-medium mb-3">Mensagem de Liberação</DialogTitle>
-          <div className="bg-muted p-2 rounded text-base text-foreground select-all">
+          <DialogTitle className="text-base font-medium mb-5">Mensagem de Liberação</DialogTitle>
+          <div className="bg-muted p-3 rounded-lg text-base text-foreground select-all">
             {coletaMessage}
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -2192,9 +2192,9 @@ export default function RegistroModal({
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
-          className="data-[state=open]:animate-none data-[state=closed]:animate-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+          className="data-[state=open]:animate-none data-[state=closed]:animate-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
         >
-          <DialogTitle className="flex items-center gap-2 text-base font-medium mb-3">
+          <DialogTitle className="flex items-center gap-2 text-base font-medium mb-5">
             <Ticket className="h-5 w-5 text-amber-500" />
             Ticket Gerado com Sucesso!
           </DialogTitle>
@@ -2202,7 +2202,7 @@ export default function RegistroModal({
             <p className="text-base text-muted-foreground mb-1">Guarde este código para visitas futuras</p>
             <p className="text-2xl font-bold tracking-wider text-amber-700 dark:text-amber-400 select-all">{ticketGerado}</p>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex gap-3">
             <Button
               variant="outline"
               size="sm"

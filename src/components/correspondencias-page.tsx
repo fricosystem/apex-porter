@@ -412,8 +412,8 @@ export default function CorrespondenciasPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-1.5">
               <Label>Destinatário *</Label>
               <AutocompleteInput
                 value={formData.destinatario || ''}
@@ -425,7 +425,7 @@ export default function CorrespondenciasPage() {
                 placeholder="Nome de quem vai receber"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Remetente</Label>
               <AutocompleteInput
                 value={formData.remetente || ''}
@@ -437,7 +437,7 @@ export default function CorrespondenciasPage() {
                 placeholder="Quem enviou a correspondência"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Tipo</Label>
               <Select
                 value={formData.tipo || ''}
@@ -456,7 +456,7 @@ export default function CorrespondenciasPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Departamento</Label>
               <Select
                 value={formData.departamento || ''}
@@ -474,11 +474,11 @@ export default function CorrespondenciasPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Horário Entrada</Label>
               <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Porteiro</Label>
               <Input
                 value={formData.porteiro || user?.nome || ''}
@@ -486,13 +486,13 @@ export default function CorrespondenciasPage() {
                 className="bg-muted"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Data</Label>
               <Input value={formData.data || ''} readOnly className="bg-muted" />
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
@@ -571,7 +571,7 @@ export default function CorrespondenciasPage() {
               {/* Only show retirada form if not yet finalized */}
               {!selectedRegistro.horarioSaida && (
                 <>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="flex items-center gap-2">
                       <PackageCheck className="h-4 w-4 text-emerald-600" />
                       Quem Retirou
@@ -587,7 +587,7 @@ export default function CorrespondenciasPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       Detalhes
@@ -601,7 +601,7 @@ export default function CorrespondenciasPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       Ocorrência

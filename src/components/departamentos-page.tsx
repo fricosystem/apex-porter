@@ -271,7 +271,7 @@ export default function DepartamentosPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             {/* Campo Nome */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Nome do Departamento *</Label>
@@ -294,7 +294,7 @@ export default function DepartamentosPage() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>

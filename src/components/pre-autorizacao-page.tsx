@@ -573,7 +573,7 @@ export default function PreAutorizacaoPage() {
               <p className="text-sm text-muted-foreground">
                 Ao confirmar, será criado um registro de entrada em <strong>Fluxo &gt; Em aberto</strong>. A saída deverá ser registrada posteriormente pelo processo normal do Fluxo.
               </p>
-              <DialogFooter className="gap-2 sm:gap-0">
+              <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
                 <Button
                   variant="outline"
                   onClick={() => {

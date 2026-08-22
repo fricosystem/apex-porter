@@ -342,7 +342,7 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
           </div>
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>

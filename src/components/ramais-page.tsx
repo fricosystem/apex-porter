@@ -155,7 +155,7 @@ export default function RamaisPage() {
             <DialogTitle>Novo Ramal</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Departamento</Label>
               <Select value={depNome} onValueChange={setDepNome}>
                 <SelectTrigger>
@@ -170,7 +170,7 @@ export default function RamaisPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Nome</Label>
               <Input
                 placeholder="Nome da pessoa"
@@ -178,7 +178,7 @@ export default function RamaisPage() {
                 onChange={(e) => setPessoaNome(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Ramal</Label>
               <Input
                 placeholder="Ex: 100"
@@ -187,7 +187,7 @@ export default function RamaisPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>

@@ -697,8 +697,8 @@ export function AdminRondasTab() {
               Lançar Ronda Avulsa
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
               <Label>Selecione a Rota</Label>
               <Select value={selectedRotaId} onValueChange={setSelectedRotaId}>
                 <SelectTrigger>
@@ -720,7 +720,7 @@ export function AdminRondasTab() {
               </p>
             )}
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setModalAvulsaOpen(false)}>
               Cancelar
             </Button>

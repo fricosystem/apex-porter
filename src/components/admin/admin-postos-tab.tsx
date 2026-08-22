@@ -154,7 +154,7 @@ function ModalPosto({ open, onClose, posto, onSalvar }: ModalPostoProps) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 flex-1 h-full">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="nome">Nome do Posto</Label>
             <Input
               id="nome"
@@ -185,7 +185,7 @@ function ModalPosto({ open, onClose, posto, onSalvar }: ModalPostoProps) {
             )}
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancelar
             </Button>

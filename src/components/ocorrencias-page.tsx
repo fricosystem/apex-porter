@@ -434,7 +434,7 @@ export default function OcorrenciasPage() {
             <DialogTitle>Nova Ocorrência</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Título *</Label>
               <Input
                 placeholder="Título da ocorrência"
@@ -442,7 +442,7 @@ export default function OcorrenciasPage() {
                 onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Tipo *</Label>
               <Select value={tipo} onValueChange={(v) => setTipo(v as TipoOcorrencia)}>
                 <SelectTrigger>
@@ -457,7 +457,7 @@ export default function OcorrenciasPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Gravidade *</Label>
               <Select value={gravidade} onValueChange={(v) => setGravidade(v as GravidadeOcorrencia)}>
                 <SelectTrigger>
@@ -472,7 +472,7 @@ export default function OcorrenciasPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Local *</Label>
               <Input
                 placeholder="Local da ocorrência"
@@ -480,7 +480,7 @@ export default function OcorrenciasPage() {
                 onChange={(e) => setLocal(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Descrição *</Label>
               <Textarea
                 placeholder="Descreva a ocorrência em detalhes..."
@@ -489,7 +489,7 @@ export default function OcorrenciasPage() {
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Envolvidos</Label>
               <Input
                 placeholder="Pessoas envolvidas (opcional)"
@@ -497,7 +497,7 @@ export default function OcorrenciasPage() {
                 onChange={(e) => setEnvolvidos(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Ação Tomada *</Label>
               <Textarea
                 placeholder="Descreva as ações tomadas..."
@@ -506,7 +506,7 @@ export default function OcorrenciasPage() {
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Porteiro</Label>
               <Input
                 value={user?.nome || 'Porteiro'}
@@ -515,7 +515,7 @@ export default function OcorrenciasPage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Data</Label>
                 <Input
                   value={format(new Date(), 'dd/MM/yyyy')}
@@ -523,7 +523,7 @@ export default function OcorrenciasPage() {
                   className="bg-muted"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Horário</Label>
                 <Input
                   value={format(new Date(), 'HH:mm')}
@@ -533,7 +533,7 @@ export default function OcorrenciasPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setNewDialogOpen(false)}>
               Cancelar
             </Button>
@@ -604,7 +604,7 @@ export default function OcorrenciasPage() {
               {selectedOcorrencia.status !== 'resolvida' && (
                 <div className="border-t pt-4 space-y-3">
                   <h4 className="font-semibold text-sm">Atualizar Status</h4>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>Novo Status</Label>
                     <Select
                       value={newStatus}
@@ -622,7 +622,7 @@ export default function OcorrenciasPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>
                       Resolução {newStatus === 'resolvida' && '*'}
                     </Label>
@@ -642,7 +642,7 @@ export default function OcorrenciasPage() {
                 </div>
               )}
 
-              <DialogFooter className="gap-2 sm:gap-0">
+              <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setDetailDialogOpen(false)}

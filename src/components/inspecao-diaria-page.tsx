@@ -433,7 +433,7 @@ export default function InspecaoDiariaPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Turno *</Label>
               <Select value={newTurno} onValueChange={v => setNewTurno(v as 'diurno' | 'noturno')}>
                 <SelectTrigger>
@@ -445,7 +445,7 @@ export default function InspecaoDiariaPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Porteiro Responsável</Label>
               <Input
                 value={user?.nome || 'Porteiro'}
@@ -454,7 +454,7 @@ export default function InspecaoDiariaPage() {
               />
               <p className="text-xs text-muted-foreground">Preenchido automaticamente</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Supervisor *</Label>
               <Input
                 value={newSupervisor}
@@ -468,7 +468,7 @@ export default function InspecaoDiariaPage() {
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setNewDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white">Criar Inspeção</Button>
           </DialogFooter>
@@ -539,7 +539,7 @@ export default function InspecaoDiariaPage() {
               </div>
 
               {/* Interactive items list (em_andamento) or read-only */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <h3 className="text-sm font-semibold">Itens da Inspeção ({selected.itens.length} itens)</h3>
                 <div className="max-h-80 overflow-y-auto custom-scrollbar space-y-1.5 rounded-xl border border-border/50 p-2">
                   {(selected.status === 'em_andamento' ? editItens : selected.itens).map((item) => {

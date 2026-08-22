@@ -407,7 +407,7 @@ export default function LembretesPage() {
             <DialogTitle>{editingId ? 'Editar Lembrete' : 'Novo Lembrete'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
                 Título <span className="text-red-500">*</span>
               </Label>
@@ -417,7 +417,7 @@ export default function LembretesPage() {
                 onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Descrição</Label>
               <Textarea
                 placeholder="Descrição do lembrete..."
@@ -426,8 +426,8 @@ export default function LembretesPage() {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
                 <Label>Data</Label>
                 <Input
                   type="date"
@@ -435,7 +435,7 @@ export default function LembretesPage() {
                   onChange={(e) => setData(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Hora</Label>
                 <Input
                   type="time"
@@ -455,7 +455,7 @@ export default function LembretesPage() {
               </Label>
             </div>
             {recorrente && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Tipo de Recorrência</Label>
                 <Select
                   value={tipoRecorrencia}
@@ -474,7 +474,7 @@ export default function LembretesPage() {
                 </Select>
               </div>
             )}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Lembrar X minutos antes</Label>
               <Input
                 type="number"
@@ -485,7 +485,7 @@ export default function LembretesPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
@@ -516,7 +516,7 @@ export default function LembretesPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button onClick={() => setNotificacaoAberta(false)} className="bg-emerald-600 hover:bg-emerald-700">
               Entendido
             </Button>

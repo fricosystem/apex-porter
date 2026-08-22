@@ -203,7 +203,7 @@ export default function ListaNegraPage() {
             <DialogTitle>Nova Entrada na Lista Negra</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Nome *</Label>
               <AutocompleteInput
                 placeholder="Nome da pessoa ou empresa"
@@ -216,7 +216,7 @@ export default function ListaNegraPage() {
                 suggestions={nameSuggestions}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Empresa</Label>
               <AutocompleteInput
                 placeholder="Nome da empresa (opcional)"
@@ -225,7 +225,7 @@ export default function ListaNegraPage() {
                 suggestions={empresaSuggestions}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Motivo *</Label>
               <Textarea
                 placeholder="Descreva o motivo da restrição..."
@@ -234,7 +234,7 @@ export default function ListaNegraPage() {
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Status</Label>
               <div className="flex gap-2">
                 <Button
@@ -257,7 +257,7 @@ export default function ListaNegraPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>

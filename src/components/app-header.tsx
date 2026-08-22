@@ -243,17 +243,18 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
           >
-            <DialogTitle className="flex items-center gap-2 text-sm font-medium mb-3">
+            <DialogTitle className="flex items-center gap-2 text-sm font-medium mb-5">
               <Ticket className="h-5 w-5 text-emerald-600" />
               Usar Ticket
             </DialogTitle>
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="ticketInput">Código do Ticket</Label>
                 <Input
                   id="ticketInput"
+                  className="h-11"
                   placeholder="DDMNX (ex: 03101)"
                   value={ticketInput}
                   onChange={(e) => setTicketInput(e.target.value)}
@@ -264,7 +265,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
                   }}
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1"

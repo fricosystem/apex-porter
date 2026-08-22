@@ -1341,7 +1341,7 @@ export default function FluxoPage() {
                   })()}
 
                   {/* Detalhes field */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       Detalhes
@@ -1356,7 +1356,7 @@ export default function FluxoPage() {
                   </div>
 
                   {/* Ocorrência field */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       Ocorrência
@@ -1461,7 +1461,7 @@ export default function FluxoPage() {
             <p className="text-sm text-muted-foreground">
               Selecione quem deixou a empresa. Quem não for selecionado permanecerá com a entrada em aberto.
             </p>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {registroOrigemSelecionado && !registroOrigemSelecionado.horarioSaida && (
                 <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer hover:bg-muted/50">
                   <Checkbox
@@ -1497,7 +1497,7 @@ export default function FluxoPage() {
               })}
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => { setSaidaSelecaoOpen(false); setPessoasSaidaSelecionadas([]); }}>
               Cancelar
             </Button>
@@ -1522,7 +1522,7 @@ export default function FluxoPage() {
               Cadastrar Empresa
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Esta empresa não está cadastrada na coleção. Você pode editar o nome abaixo antes de cadastrar.
             </p>
@@ -1538,7 +1538,7 @@ export default function FluxoPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button
               variant="outline"
               onClick={() => { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); }}
@@ -1562,14 +1562,14 @@ export default function FluxoPage() {
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <DialogTitle className="text-sm font-medium mb-3">Mensagem de Liberação</DialogTitle>
-            <div className="bg-muted p-2 rounded text-xs text-foreground whitespace-pre-wrap select-all">
+            <DialogTitle className="text-sm font-medium mb-5">Mensagem de Liberação</DialogTitle>
+            <div className="bg-muted p-3 rounded-lg text-xs text-foreground whitespace-pre-wrap select-all">
               {mensagemLiberacao}
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <Button
                 size="sm"
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
@@ -1597,17 +1597,17 @@ export default function FluxoPage() {
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <DialogTitle className="flex items-center gap-2 mb-3">
+            <DialogTitle className="flex items-center gap-2 mb-5">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Confirmar Refazer Registro
             </DialogTitle>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-5">
               Tem certeza que deseja refazer este registro? O registro original será inativado e você poderá criar uma nova versão corrigida.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 className="flex-1"

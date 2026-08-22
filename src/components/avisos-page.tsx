@@ -540,7 +540,7 @@ export default function AvisosPage() {
             <DialogTitle>Novo Aviso</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
                 Título <span className="text-red-500">*</span>
               </Label>
@@ -550,7 +550,7 @@ export default function AvisosPage() {
                 onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>
                 Conteúdo <span className="text-red-500">*</span>
               </Label>
@@ -561,7 +561,7 @@ export default function AvisosPage() {
                 rows={4}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Prioridade</Label>
               <Select
                 value={prioridade}
@@ -577,7 +577,7 @@ export default function AvisosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Turno</Label>
               <Select
                 value={turno}
@@ -593,7 +593,7 @@ export default function AvisosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Categoria</Label>
               <Select
                 value={categoria}
@@ -610,7 +610,7 @@ export default function AvisosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Data de Expiração</Label>
               <Input
                 type="date"
@@ -628,7 +628,7 @@ export default function AvisosPage() {
                 Fixar no topo
               </Label>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Autor</Label>
               <Input
                 value={userName || 'Sistema'}
@@ -637,7 +637,7 @@ export default function AvisosPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>

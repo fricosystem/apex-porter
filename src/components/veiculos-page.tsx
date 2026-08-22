@@ -295,23 +295,23 @@ export default function VeiculosPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Car className="h-5 w-5 text-blue-600" />Novo Veículo</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2"><Label>Placa *</Label><AutocompleteInput value={formData.placa || ''} onChange={v => updateField('placa', v.toUpperCase())} onSelect={s => { if (s.data?.name) updateField('motoristaNome', s.data.name as string); }} suggestions={placaSuggestions} placeholder="ABC-1D23" /></div>
-            <div className="space-y-2"><Label>Modelo *</Label><Input value={formData.modelo || ''} onChange={e => updateField('modelo', e.target.value)} placeholder="Ex: Toyota Corolla" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>Cor</Label><Select value={formData.cor || ''} onValueChange={v => updateField('cor', v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{OPCOES_CORES_VEICULO.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label>Tipo</Label><Select value={formData.tipo || 'Visitante'} onValueChange={v => updateField('tipo', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(['Visitante','Prestador','Entregador','Colaborador'] as TipoVeiculo[]).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-1.5"><Label>Placa *</Label><AutocompleteInput value={formData.placa || ''} onChange={v => updateField('placa', v.toUpperCase())} onSelect={s => { if (s.data?.name) updateField('motoristaNome', s.data.name as string); }} suggestions={placaSuggestions} placeholder="ABC-1D23" /></div>
+            <div className="space-y-1.5"><Label>Modelo *</Label><Input value={formData.modelo || ''} onChange={e => updateField('modelo', e.target.value)} placeholder="Ex: Toyota Corolla" /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5"><Label>Cor</Label><Select value={formData.cor || ''} onValueChange={v => updateField('cor', v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{OPCOES_CORES_VEICULO.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1.5"><Label>Tipo</Label><Select value={formData.tipo || 'Visitante'} onValueChange={v => updateField('tipo', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{(['Visitante','Prestador','Entregador','Colaborador'] as TipoVeiculo[]).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div className="space-y-2"><Label>Motorista</Label><AutocompleteInput value={formData.motoristaNome || ''} onChange={v => updateField('motoristaNome', v)} onSelect={s => { if (s.data?.name) updateField('motoristaNome', s.data.name as string); }} suggestions={nameSuggestions} placeholder="Nome do motorista" /></div>
-            <div className="space-y-2"><Label>RG/CPF Motorista</Label><Input value={formData.motoristaDoc || ''} onChange={e => updateField('motoristaDoc', e.target.value)} placeholder="00.000.000-0" /></div>
-            <div className="space-y-2"><Label>Empresa</Label><AutocompleteInput value={formData.empresa || ''} onChange={v => updateField('empresa', v)} onSelect={s => { if (s.data?.company) updateField('empresa', s.data.company as string); }} suggestions={empresaSuggestions} placeholder="Empresa" /></div>
-            <div className="space-y-2"><Label>Vaga</Label><Select value={formData.vaga || ''} onValueChange={v => updateField('vaga', v)}><SelectTrigger><SelectValue placeholder="Selecione a vaga" /></SelectTrigger><SelectContent>{OPCOES_VAGAS.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Horário Entrada</Label><Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" /></div>
-            <div className="space-y-2"><Label>Porteiro</Label><Input value={formData.porteiro || user?.nome || ''} readOnly className="bg-muted" /></div>
-            <div className="space-y-2"><Label>Data</Label><Input value={formData.data || ''} readOnly className="bg-muted" /></div>
-            <div className="space-y-2"><Label>Observações</Label><Textarea value={formData.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} placeholder="Observações..." rows={2} /></div>
+            <div className="space-y-1.5"><Label>Motorista</Label><AutocompleteInput value={formData.motoristaNome || ''} onChange={v => updateField('motoristaNome', v)} onSelect={s => { if (s.data?.name) updateField('motoristaNome', s.data.name as string); }} suggestions={nameSuggestions} placeholder="Nome do motorista" /></div>
+            <div className="space-y-1.5"><Label>RG/CPF Motorista</Label><Input value={formData.motoristaDoc || ''} onChange={e => updateField('motoristaDoc', e.target.value)} placeholder="00.000.000-0" /></div>
+            <div className="space-y-1.5"><Label>Empresa</Label><AutocompleteInput value={formData.empresa || ''} onChange={v => updateField('empresa', v)} onSelect={s => { if (s.data?.company) updateField('empresa', s.data.company as string); }} suggestions={empresaSuggestions} placeholder="Empresa" /></div>
+            <div className="space-y-1.5"><Label>Vaga</Label><Select value={formData.vaga || ''} onValueChange={v => updateField('vaga', v)}><SelectTrigger><SelectValue placeholder="Selecione a vaga" /></SelectTrigger><SelectContent>{OPCOES_VAGAS.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label>Horário Entrada</Label><Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" /></div>
+            <div className="space-y-1.5"><Label>Porteiro</Label><Input value={formData.porteiro || user?.nome || ''} readOnly className="bg-muted" /></div>
+            <div className="space-y-1.5"><Label>Data</Label><Input value={formData.data || ''} readOnly className="bg-muted" /></div>
+            <div className="space-y-1.5"><Label>Observações</Label><Textarea value={formData.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} placeholder="Observações..." rows={2} /></div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           </DialogFooter>
@@ -330,7 +330,7 @@ export default function VeiculosPage() {
                 <div className="flex justify-between"><span className="text-sm font-medium text-muted-foreground">Motorista</span><span className="text-sm">{selectedVeiculo.motoristaNome}</span></div>
                 <div className="flex justify-between"><span className="text-sm font-medium text-muted-foreground">Vaga</span><span className="text-sm">{selectedVeiculo.vaga}</span></div>
               </div>
-              <div className="space-y-2"><Label>Observações da Saída</Label><Textarea value={obsSaida} onChange={e => setObsSaida(e.target.value)} placeholder="Informações adicionais..." rows={3} /></div>
+              <div className="space-y-1.5"><Label>Observações da Saída</Label><Textarea value={obsSaida} onChange={e => setObsSaida(e.target.value)} placeholder="Informações adicionais..." rows={3} /></div>
               <Button onClick={handleSaida} className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold"><LogOut className="h-5 w-5 mr-2" />Confirmar Saída</Button>
             </div>
           )}

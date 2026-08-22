@@ -531,12 +531,12 @@ export default function ProtocolosEmergenciaPage() {
 
                 {/* Tab content */}
                 {detailTab === 'etapas' && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <h3 className="text-sm font-semibold flex items-center gap-1.5">
                       <ListOrdered className="h-4 w-4 text-emerald-600" />
                       Passo a Passo ({selected.etapas.length} etapas)
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {selected.etapas.sort((a, b) => a.ordem - b.ordem).map((etapa, idx) => (
                         <div key={etapa.id} className="flex items-start gap-3">
                           <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
@@ -552,7 +552,7 @@ export default function ProtocolosEmergenciaPage() {
                 )}
 
                 {detailTab === 'contatos' && (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <h3 className="text-sm font-semibold flex items-center gap-1.5">
                       <Phone className="h-4 w-4 text-emerald-600" />
                       Contatos de Emergência ({selected.contatos.length})
@@ -560,7 +560,7 @@ export default function ProtocolosEmergenciaPage() {
                     {selected.contatos.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-4 text-center">Nenhum contato cadastrado</p>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {selected.contatos.map(contato => (
                           <div key={contato.id} className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
                             <div className={`p-2 rounded-lg ${contato.tipo === 'interno' ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
@@ -651,11 +651,11 @@ export default function ProtocolosEmergenciaPage() {
                 <p className="text-sm font-semibold text-red-700 dark:text-red-400">{selected.titulo}</p>
                 <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-1">{selected.descricao}</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Acionado por</Label>
                 <Input value={user?.nome || 'Porteiro'} disabled className="bg-muted" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label>Observação</Label>
                 <Textarea
                   value={activateObs}
@@ -664,7 +664,7 @@ export default function ProtocolosEmergenciaPage() {
                   rows={3}
                 />
               </div>
-              <DialogFooter className="gap-2 sm:gap-0">
+              <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
                 <Button variant="outline" onClick={() => setActivateDialogOpen(false)}>Cancelar</Button>
                 <Button onClick={handleActivate} className="bg-red-600 hover:bg-red-700 text-white font-semibold">
                   <Siren className="h-4 w-4 mr-1.5" />
@@ -686,7 +686,7 @@ export default function ProtocolosEmergenciaPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Tipo de Emergência *</Label>
               <Select value={newTipo} onValueChange={v => setNewTipo(v as TipoEmergencia)}>
                 <SelectTrigger>
@@ -699,7 +699,7 @@ export default function ProtocolosEmergenciaPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Título *</Label>
               <Input
                 value={newTitulo}
@@ -707,7 +707,7 @@ export default function ProtocolosEmergenciaPage() {
                 placeholder="Ex: Protocolo de Incêndio — Edifício Principal"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Descrição *</Label>
               <Textarea
                 value={newDescricao}
@@ -718,7 +718,7 @@ export default function ProtocolosEmergenciaPage() {
             </div>
 
             {/* Etapas */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">Etapas</Label>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleAddEtapa}>
@@ -751,7 +751,7 @@ export default function ProtocolosEmergenciaPage() {
             </div>
 
             {/* Contatos */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">Contatos de Emergência</Label>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleAddContato}>
@@ -810,7 +810,7 @@ export default function ProtocolosEmergenciaPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label>Observações</Label>
               <Textarea
                 value={newObs}
@@ -820,7 +820,7 @@ export default function ProtocolosEmergenciaPage() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setNewDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreateProtocol} className="bg-emerald-600 hover:bg-emerald-700 text-white">Criar Protocolo</Button>
           </DialogFooter>
