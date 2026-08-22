@@ -16,7 +16,7 @@ export default function ResponsiveShell({ children }: { children: ReactNode }) {
     return (
       <SidebarProvider defaultOpen className="min-h-full">
         <DesktopSidebar />
-        <SidebarInset className="desktop-shell min-h-full min-w-0 overflow-hidden rounded-none bg-background md:rounded-none">
+        <SidebarInset className="desktop-shell min-h-full min-w-0 overflow-hidden border-l border-sidebar-border rounded-none bg-background md:m-0 md:rounded-none">
           <AppHeader mode="desktop" />
           <main className="min-h-0 flex-1 overflow-hidden">
             {children}
