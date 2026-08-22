@@ -135,28 +135,32 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
     <>
       <header
         className={cn(
-          'sticky top-0 z-40 bg-primary text-primary-foreground shadow-md',
-          isDesktop && 'border-b border-primary-foreground/10 shadow-sm',
+          'sticky top-0 z-40 shadow-md',
+          isDesktop
+            ? 'border-b border-border/70 bg-background/95 text-foreground shadow-none backdrop-blur supports-[backdrop-filter]:bg-background/85'
+            : 'bg-primary text-primary-foreground',
         )}
         style={{ paddingTop: isDesktop ? undefined : 'env(safe-area-inset-top, 0px)' }}
       >
         <div className={cn(
           'relative flex items-center justify-between',
-          isDesktop ? 'h-16 px-6' : 'h-14 px-4',
+          isDesktop ? 'h-12 px-4' : 'h-14 px-4',
         )}>
           {/* Left: Logo and current section */}
           <div className="flex min-w-0 items-center gap-3">
-            <img
-              src="/icons/APEX_LOGO.png"
-              alt="APEX Portaria Logo"
-              className={cn('object-contain drop-shadow-sm', isDesktop ? 'h-10 w-10' : 'h-9 w-9 md:h-10 md:w-10')}
-            />
+            {!isDesktop && (
+              <img
+                src="/icons/APEX_LOGO.png"
+                alt="APEX Portaria Logo"
+                className="h-9 w-9 object-contain drop-shadow-sm md:h-10 md:w-10"
+              />
+            )}
             {isDesktop && (
-              <div className="min-w-0 border-l border-primary-foreground/20 pl-3">
+              <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">
                   {ALL_MAIN_NAV.find((item) => item.page === currentPage)?.label || 'APEX Portaria'}
                 </p>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-primary-foreground/65">Área operacional</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Área operacional</p>
               </div>
             )}
           </div>
@@ -164,7 +168,13 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
           {/* Offline Badge */}
           <div className={cn(isDesktop ? 'ml-auto mr-3' : 'absolute left-1/2 -translate-x-1/2')}>
             {isOffline && (
-              <Badge variant="destructive" className="flex items-center gap-1.5 px-3 py-1 text-xs">
+              <Badge
+                variant="destructive"
+                className={cn(
+                  'flex items-center gap-1.5 text-xs',
+                  isDesktop ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1',
+                )}
+              >
                 <WifiOff className="h-3.5 w-3.5" />
                 Você está offline. Reconectando...
               </Badge>
@@ -172,24 +182,37 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
           </div>
 
           {/* Right: Ações */}
-          <div className="flex items-center gap-1">
+          <div className={cn('flex items-center', isDesktop ? 'gap-0.5' : 'gap-1')}>
             {currentPage !== 'admin' && (
               <Button
                 variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                className={cn(
+                  'h-8 w-8',
+                  isDesktop
+                    ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    : 'text-primary-foreground hover:bg-white/10',
+                )}
                 onClick={() => setTicketModalOpen(true)}
               >
-                <Ticket className="h-5 w-5" />
+                <Ticket className={cn(isDesktop ? 'h-4 w-4' : 'h-5 w-5')} />
               </Button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                  className={cn(
+                  'h-8 w-8',
+                  isDesktop
+                    ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    : 'text-primary-foreground hover:bg-white/10',
+                )}
                 >
                   <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">
+                    <AvatarFallback className={cn(
+                      'text-xs',
+                      isDesktop ? 'bg-muted text-foreground' : 'bg-white/20 text-primary-foreground',
+                    )}>
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -217,10 +240,16 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
             {currentPage === 'admin' && (
               <Button
                 variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                className={cn(
+                  'h-8 w-8',
+                  isDesktop
+                    ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    : 'text-primary-foreground hover:bg-white/10',
+                )}
                 onClick={() => setCurrentPage('dashboard')}
               >
-                <LogOut className="h-4 w-4" />
+                                    <LogOut className={cn(isDesktop ? 'h-4 w-4' : 'h-4 w-4')} />
+
               </Button>
             )}
           </div>
