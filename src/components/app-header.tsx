@@ -225,7 +225,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            {currentPage === 'admin' && (
+            {!isDesktop && currentPage === 'admin' && (
               <Button
                 variant="ghost"
                 className="text-primary-foreground hover:bg-white/10 h-9 w-9"

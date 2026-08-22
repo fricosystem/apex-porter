@@ -164,9 +164,21 @@ export default function DesktopSidebar() {
       <SidebarContent className="px-2 py-3">
         {currentPage === 'admin' ? (
           <SidebarGroup className="p-0">
-            <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
-              Administração
-            </SidebarGroupLabel>
+            <div className="flex items-center justify-between gap-2 px-2">
+              <SidebarGroupLabel className="min-w-0 flex-1 px-0 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                Administração
+              </SidebarGroupLabel>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={() => setCurrentPage('dashboard')}
+                title="Sair da Administração"
+                aria-label="Sair da Administração"
+              >
+                <LogOut className="size-3.5" />
+              </Button>
+            </div>
             <SidebarGroupContent>{renderAdminItems()}</SidebarGroupContent>
           </SidebarGroup>
         ) : (
