@@ -431,22 +431,112 @@ export default function PreAutorizacaoPage() {
       {/* Modal Registro */}
       <Dialog open={modalOpen} onOpenChange={v => !v && setModalOpen(false)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-amber-600" />Nova Pré-Autorização</DialogTitle>
+          <DialogHeader className="pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-amber-600" />
+              Nova Pré-Autorização
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2"><Label>Nome do Visitante *</Label><AutocompleteInput value={formData.visitanteNome || ''} onChange={v => updateField('visitanteNome', v)} onSelect={s => handleAutoSelect(s.data || {})} suggestions={nameSuggestions} placeholder="Nome completo" /></div>
-            <div className="space-y-2"><Label>RG/CPF</Label><Input value={formData.visitanteDoc || ''} onChange={e => updateField('visitanteDoc', formatCpfRg(e.target.value))} placeholder="00.000.000-0" /></div>
-            <div className="space-y-2"><Label>Empresa</Label><AutocompleteInput value={formData.visitanteEmpresa || ''} onChange={v => updateField('visitanteEmpresa', v)} onSelect={s => handleEmpresaSelect(s.data || {})} suggestions={empresaSuggestions} placeholder="Empresa do visitante" /></div>
-            <div className="space-y-2"><Label>Departamento</Label><Select value={formData.departamento || ''} onValueChange={v => updateField('departamento', v)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{departamentos.map(d => <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Autorizado Por *</Label><AutocompleteInput value={formData.autorizadoPor || ''} onChange={v => updateField('autorizadoPor', v)} onSelect={s => handleAutorizadorSelect(s.data || {})} suggestions={autorizadores} placeholder="Nome de quem autorizou" /></div>
-            <div className="space-y-2"><Label>Motivo</Label><Textarea value={formData.motivo || ''} onChange={e => updateField('motivo', e.target.value)} placeholder="Motivo da visita" rows={2} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>Data Prevista *</Label><Input type="date" value={formData.dataPrevista || ''} onChange={e => updateField('dataPrevista', e.target.value)} /></div>
-              <div className="space-y-2"><Label>Horário Previsto</Label><Input type="time" value={formData.horarioPrevisto || ''} onChange={e => updateField('horarioPrevisto', e.target.value)} /></div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-1.5">
+                <Label>Nome do Visitante *</Label>
+                <AutocompleteInput
+                  value={formData.visitanteNome || ''}
+                  onChange={v => updateField('visitanteNome', v)}
+                  onSelect={s => handleAutoSelect(s.data || {})}
+                  suggestions={nameSuggestions}
+                  placeholder="Nome completo"
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>RG/CPF</Label>
+                <Input
+                  className="h-11"
+                  value={formData.visitanteDoc || ''}
+                  onChange={e => updateField('visitanteDoc', formatCpfRg(e.target.value))}
+                  placeholder="00.000.000-0"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Empresa</Label>
+                <AutocompleteInput
+                  value={formData.visitanteEmpresa || ''}
+                  onChange={v => updateField('visitanteEmpresa', v)}
+                  onSelect={s => handleEmpresaSelect(s.data || {})}
+                  suggestions={empresaSuggestions}
+                  placeholder="Empresa do visitante"
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Departamento</Label>
+                <Select
+                  value={formData.departamento || ''}
+                  onValueChange={v => updateField('departamento', v)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departamentos.map(d => (
+                      <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Autorizado Por *</Label>
+                <AutocompleteInput
+                  value={formData.autorizadoPor || ''}
+                  onChange={v => updateField('autorizadoPor', v)}
+                  onSelect={s => handleAutorizadorSelect(s.data || {})}
+                  suggestions={autorizadores}
+                  placeholder="Nome de quem autorizou"
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Motivo</Label>
+                <Textarea
+                  value={formData.motivo || ''}
+                  onChange={e => updateField('motivo', e.target.value)}
+                  placeholder="Motivo da visita"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Data Prevista *</Label>
+                <Input
+                  className="h-11"
+                  type="date"
+                  value={formData.dataPrevista || ''}
+                  onChange={e => updateField('dataPrevista', e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Horário Previsto</Label>
+                <Input
+                  className="h-11"
+                  type="time"
+                  value={formData.horarioPrevisto || ''}
+                  onChange={e => updateField('horarioPrevisto', e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+
+          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSubmit} className="bg-amber-600 hover:bg-amber-700">Salvar</Button>
           </DialogFooter>
