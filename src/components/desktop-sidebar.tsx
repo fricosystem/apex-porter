@@ -22,7 +22,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -119,7 +118,6 @@ export default function DesktopSidebar() {
             <p className="truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Controle de acesso</p>
           </div>
         </div>
-        <SidebarTrigger className="absolute right-2 top-4 size-7" />
       </SidebarHeader>
 
       <SidebarSeparator />
