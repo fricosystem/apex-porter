@@ -27,8 +27,9 @@ import {
   Briefcase,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import type { AdminTab } from '@/lib/store-types';
 
-export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos' | 'cargos';
+export type { AdminTab } from '@/lib/store-types';
 
 interface NavItem {
   page: any;

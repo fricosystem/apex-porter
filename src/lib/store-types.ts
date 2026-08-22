@@ -58,9 +58,13 @@ export type SystemConfig = {
 
 // ─── Tipos de cada slice ──────────────────────────────────────────────────────
 
+export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos' | 'cargos';
+
 export type NavigationSlice = {
   currentPage: PageType;
   setCurrentPage: (page: PageType) => void;
+  adminTab: AdminTab;
+  setAdminTab: (tab: AdminTab) => void;
 };
 
 export type AuthSlice = {

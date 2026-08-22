@@ -384,6 +384,8 @@ function startSubscriptions() {
 export const useAppStore = create<AppState>((set, get) => ({
   // Navigation
   currentPage: (typeof window !== 'undefined' ? localStorage.getItem('apex_porter_currentPage') as PageType : null) || 'login',
+  adminTab: 'painel',
+  setAdminTab: (tab) => set({ adminTab: tab }),
   setCurrentPage: (page) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('apex_porter_currentPage', page);

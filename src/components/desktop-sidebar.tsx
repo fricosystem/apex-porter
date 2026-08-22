@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Ticket } from 'lucide-react';
+import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Ticket, Users } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
   ALL_MAIN_NAV,
@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { AdminTab } from '@/lib/store-types';
 
 const OPERATION_NAV: NavItem[] = SECONDARY_NAV.filter((item) => [
   'correspondencias',
@@ -56,6 +57,14 @@ const SYSTEM_NAV: NavItem[] = SECONDARY_NAV.filter((item) => [
   'admin',
 ].includes(item.page));
 
+const ADMIN_NAV: Array<{ tab: AdminTab; label: string; icon: React.ElementType }> = [
+  { tab: 'painel', label: 'Painel', icon: LayoutDashboard },
+  { tab: 'rondas', label: 'Rondas', icon: Footprints },
+  { tab: 'usuarios', label: 'Colaboradores', icon: Users },
+  { tab: 'postos', label: 'Postos', icon: MapPin },
+  { tab: 'cargos', label: 'Cargos', icon: Briefcase },
+];
+
 function initials(name?: string) {
   return name
     ? name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2)
@@ -63,7 +72,15 @@ function initials(name?: string) {
 }
 
 export default function DesktopSidebar() {
-  const { user, setCurrentPage, logout, setTicketModalOpen, currentPage } = useAppStore();
+  const {
+    user,
+    setCurrentPage,
+    logout,
+    setTicketModalOpen,
+    currentPage,
+    adminTab,
+    setAdminTab,
+  } = useAppStore();
   const { state } = useSidebar();
   const userPermissions = user?.permissoes || [];
 
@@ -108,6 +125,28 @@ export default function DesktopSidebar() {
     </SidebarMenu>
   );
 
+  const renderAdminItems = () => (
+    <SidebarMenu>
+      {ADMIN_NAV.map((item) => {
+        const Icon = item.icon;
+        const active = adminTab === item.tab;
+        return (
+          <SidebarMenuItem key={item.tab}>
+            <SidebarMenuButton
+              isActive={active}
+              tooltip={state === 'collapsed' ? item.label : undefined}
+              onClick={() => setAdminTab(item.tab)}
+              className="h-10 rounded-lg text-sm transition-colors"
+            >
+              <Icon className="size-4" />
+              <span>{item.label}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+
   return (
     <Sidebar collapsible="icon" variant="inset" className="border-r border-sidebar-border">
       <SidebarHeader className="p-3">
@@ -123,34 +162,45 @@ export default function DesktopSidebar() {
       <SidebarSeparator />
 
       <SidebarContent className="px-2 py-3">
-        <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
-            Principal
-          </SidebarGroupLabel>
-          <SidebarGroupContent>{renderItems(allowedNav.primary)}</SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-4 p-0">
-          <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
-            Operação
-          </SidebarGroupLabel>
-          <SidebarGroupContent>{renderItems(allowedNav.operation)}</SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-4 p-0">
-          <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
-            Gestão
-          </SidebarGroupLabel>
-          <SidebarGroupContent>{renderItems(allowedNav.management)}</SidebarGroupContent>
-        </SidebarGroup>
-
-        {allowedNav.system.length > 0 && (
-          <SidebarGroup className="mt-4 p-0">
+        {currentPage === 'admin' ? (
+          <SidebarGroup className="p-0">
             <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
-              Sistema
+              Administração
             </SidebarGroupLabel>
-            <SidebarGroupContent>{renderItems(allowedNav.system)}</SidebarGroupContent>
+            <SidebarGroupContent>{renderAdminItems()}</SidebarGroupContent>
           </SidebarGroup>
+        ) : (
+          <>
+            <SidebarGroup className="p-0">
+              <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                Principal
+              </SidebarGroupLabel>
+              <SidebarGroupContent>{renderItems(allowedNav.primary)}</SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup className="mt-4 p-0">
+              <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                Operação
+              </SidebarGroupLabel>
+              <SidebarGroupContent>{renderItems(allowedNav.operation)}</SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup className="mt-4 p-0">
+              <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                Gestão
+              </SidebarGroupLabel>
+              <SidebarGroupContent>{renderItems(allowedNav.management)}</SidebarGroupContent>
+            </SidebarGroup>
+
+            {allowedNav.system.length > 0 && (
+              <SidebarGroup className="mt-4 p-0">
+                <SidebarGroupLabel className="px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  Sistema
+                </SidebarGroupLabel>
+                <SidebarGroupContent>{renderItems(allowedNav.system)}</SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </>
         )}
       </SidebarContent>
 
