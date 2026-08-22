@@ -26,6 +26,7 @@ import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-i
 import { formatCpfRg } from '@/lib/utils';
 import { toast } from 'sonner';
 import { extractUnifiedRecords } from './registro-modal';
+import { isPreAutorizacaoPendente } from '@/lib/pre-autorizacao-utils';
 
 // Reuse the same unified data structure and helpers from registro-modal.tsx
 interface UnifiedSuggestionData {
@@ -113,7 +114,7 @@ export default function PreAutorizacaoPage() {
   // Filtered
   const filtered = useMemo(() => {
     return preAutorizacoes.filter(pa => {
-      if (statusFilter === 'pendentes' && pa.status !== 'agendado') return false;
+      if (statusFilter === 'pendentes' && !isPreAutorizacaoPendente(pa)) return false;
       if (statusFilter === 'concluidos' && pa.status !== 'confirmado') return false;
       if (busca) {
         const s = busca.toLowerCase();

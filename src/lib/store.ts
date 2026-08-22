@@ -236,6 +236,7 @@ const PAGE_FEATURE_MAP: Record<string, readonly string[]> = {
   lembretes:  ['lembretes'],
   veiculos:   ['fluxo'],
   chaves:     ['chaves'],
+  preAutorizacao: ['pre-autorizacao'],
 };
 
 // Active feature unsubscribe handles (keyed by feature group)
@@ -303,6 +304,12 @@ function activateFeature(feature: string) {
       unsubs.push(
         subscribeVeiculos((data) => useAppStore.setState({ veiculos: data }))
       );
+      unsubs.push(
+        subscribePreAutorizacoes((data) => useAppStore.setState({ preAutorizacoes: data }))
+      );
+      break;
+
+    case 'preAutorizacao':
       unsubs.push(
         subscribePreAutorizacoes((data) => useAppStore.setState({ preAutorizacoes: data }))
       );

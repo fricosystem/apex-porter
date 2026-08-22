@@ -57,6 +57,7 @@ import { useAppStore } from '@/lib/store';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { CATEGORIAS_FLUXO, TIPOS_OCORRENCIA, GRAVIDADES_OCORRENCIA } from '@/lib/data';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isPreAutorizacaoPendente } from '@/lib/pre-autorizacao-utils';
 
 const container = {
   hidden: { opacity: 0 },
@@ -308,7 +309,7 @@ export default function DashboardPage() {
   const preAuthFiltered = useMemo(() => preAutorizacoes.filter((p) => isDateInRange(p.dataPrevista)), [preAutorizacoes, isDateInRange]);
   const preAuthPendentes = useMemo(
     () => preAuthFiltered
-      .filter((p) => p.status === 'agendado' && !p.registroFluxoId)
+      .filter(isPreAutorizacaoPendente)
       .sort((a, b) => {
         const getTime = (value: typeof a) => {
           const rawDate = String(value.dataPrevista || '');

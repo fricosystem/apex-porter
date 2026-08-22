@@ -6,28 +6,12 @@ import { Building2, CalendarClock, Clock3, UserRound, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { PreAutorizacao } from '@/lib/data';
+import { getPreAutorizacaoDateTime } from '@/lib/pre-autorizacao-utils';
 
 type Props = {
   items: PreAutorizacao[];
   onOpen: () => void;
 };
-
-function toIsoDate(value: string): string {
-  if (!value) return '';
-  if (value.includes('/')) {
-    const [day, month, year] = value.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return value.slice(0, 10);
-}
-
-function toDateTime(item: PreAutorizacao): Date | null {
-  const isoDate = toIsoDate(item.dataPrevista);
-  if (!isoDate) return null;
-  const time = item.horarioPrevisto || '00:00';
-  const date = new Date(`${isoDate}T${time}:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 function formatDocument(value: string): { label: string; value: string } {
   if (!value) return { label: 'RG/CPF', value: 'Documento não informado' };
@@ -71,8 +55,8 @@ export default function PreAutorizacaoBanner({ items, onOpen }: Props) {
 
   const orderedItems = useMemo(
     () => [...items].sort((a, b) => {
-      const aTime = toDateTime(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-      const bTime = toDateTime(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const aTime = getPreAutorizacaoDateTime(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const bTime = getPreAutorizacaoDateTime(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
       return aTime - bTime;
     }),
     [items],
@@ -97,7 +81,7 @@ export default function PreAutorizacaoBanner({ items, onOpen }: Props) {
   const safeIndex = Math.min(activeIndex, orderedItems.length - 1);
   const item = orderedItems[safeIndex];
   const document = formatDocument(item.visitanteDoc);
-  const countdown = formatCountdown(toDateTime(item), now);
+  const countdown = formatCountdown(getPreAutorizacaoDateTime(item), now);
   const horario = item.horarioPrevisto || 'Não informado';
 
   return (

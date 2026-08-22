@@ -34,6 +34,7 @@ import { useAppStore } from '@/lib/store';
 import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo, type PreAutorizacao } from '@/lib/data';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { buildReleaseMessage } from '@/lib/release-message';
+import { getPreAutorizacoesPendentesDoDia } from '@/lib/pre-autorizacao-utils';
 import RegistroModal from './registro-modal';
 import PreAutorizacaoBanner from './pre-autorizacao-banner';
 import { toast } from 'sonner';
@@ -66,19 +67,6 @@ const catIcons: Record<CategoriaFluxo, React.ElementType> = {
   pesagem_apara: Weight,
   pesagem_tinta: Fuel,
 };
-
-function isPreAutorizacaoToday(preAutorizacao: PreAutorizacao): boolean {
-  const rawDate = String(preAutorizacao.dataPrevista || '');
-  const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
-  if (parts.length !== 3) return false;
-  const [year, month, day] = rawDate.includes('/')
-    ? [parts[2], parts[1], parts[0]]
-    : [parts[0], parts[1], parts[2]];
-  const today = new Date();
-  return Number(year) === today.getFullYear()
-    && Number(month) === today.getMonth() + 1
-    && Number(day) === today.getDate();
-}
 
 function getMainField(r: RegistroFluxo): string {
   switch (r.categoria) {
@@ -437,11 +425,7 @@ export default function FluxoPage() {
   }, [departamentos, registrosFluxoExibiveis]);
 
   const preAutorizacoesHoje = useMemo(
-    () => preAutorizacoes.filter((preAutorizacao) => (
-      (preAutorizacao.status === 'agendado' || preAutorizacao.status === 'confirmado')
-      && !preAutorizacao.registroFluxoId
-      && isPreAutorizacaoToday(preAutorizacao)
-    )),
+    () => getPreAutorizacoesPendentesDoDia(preAutorizacoes),
     [preAutorizacoes, todayKey],
   );
 
