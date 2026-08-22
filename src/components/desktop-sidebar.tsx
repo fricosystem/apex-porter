@@ -22,6 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -148,10 +149,19 @@ export default function DesktopSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon" variant="inset" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader className="p-3">
-        <div className="flex items-center gap-2.5 rounded-xl px-1 py-1">
-          <img src="/icons/APEX_LOGO.png" alt="APEX Portaria" className="size-9 shrink-0 object-contain" />
+        <div className="group/logo relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1">
+          <img
+            src="/icons/APEX_LOGO.png"
+            alt="APEX Portaria"
+            className="size-9 shrink-0 object-contain transition-opacity duration-150 group-data-[collapsible=icon]:group-hover/logo:opacity-0"
+          />
+          <SidebarTrigger
+            aria-label="Recolher ou expandir menu lateral"
+            title="Recolher ou expandir menu lateral"
+            className="absolute left-1 top-1 size-9 opacity-0 transition-opacity duration-150 pointer-events-none group-data-[collapsible=icon]:group-hover/logo:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+          />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-sm font-bold tracking-wide">APEX PORTARIA</p>
             <p className="truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Controle de acesso</p>
