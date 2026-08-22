@@ -1,6 +1,6 @@
 'use client';
 
-import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Ticket, Users } from 'lucide-react';
+import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Users } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
   ALL_MAIN_NAV,
@@ -77,7 +77,6 @@ export default function DesktopSidebar() {
     user,
     setCurrentPage,
     logout,
-    setTicketModalOpen,
     currentPage,
     adminTab,
     setAdminTab,
@@ -227,15 +226,6 @@ export default function DesktopSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="gap-2 p-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start gap-2 rounded-lg bg-background group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2"
-          onClick={() => setTicketModalOpen(true)}
-        >
-          <Ticket className="size-4" />
-          <span className="group-data-[collapsible=icon]:hidden">Usar ticket</span>
-        </Button>
         <SidebarSeparator />
         <div className="flex items-center gap-2 rounded-lg px-1 py-1.5">
           <Avatar className="size-8 shrink-0">
