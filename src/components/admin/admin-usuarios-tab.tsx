@@ -98,7 +98,7 @@ export function AdminUsuariosTab() {
 
   const getPostoNome = (postoId?: string) => {
     if (!postoId) return 'Não atribuído';
-    return postos.find((p) => p.id === postoId)?.nome ?? 'Não atribuído';
+    return postos.find((p) => p.id.toLowerCase() === postoId.toLowerCase())?.nome ?? 'Não atribuído';
   };
 
   return (
@@ -214,8 +214,12 @@ function ModalUsuario({
   useEffect(() => {
     if (usuario) {
       const cargo = (usuario.cargo || '').toUpperCase();
+      const postoReal = usuario.postoId
+        ? postos.find((p) => p.id.toLowerCase() === usuario.postoId!.toLowerCase())
+        : undefined;
       setFormData({
         ...usuario,
+        postoId: postoReal?.id ?? usuario.postoId,
         ativo: usuario.ativo ?? true,
         permissoes: usuario.permissoes || (cargo === 'PORTEIRO' ? PERMISSOES_PORTEIRO : []),
       });
@@ -230,7 +234,7 @@ function ModalUsuario({
       });
       setSenha('');
     }
-  }, [usuario]);
+  }, [usuario, postos]);
 
   if (!formData) return null;
 

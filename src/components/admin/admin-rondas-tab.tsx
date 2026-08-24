@@ -55,7 +55,7 @@ export function AdminRondasTab() {
 
   const getPostoNome = (postoId?: string) => {
     if (!postoId) return 'Não atribuído';
-    return postos.find((p) => p.id === postoId)?.nome ?? 'Não atribuído';
+    return postos.find((p) => p.id.toLowerCase() === postoId.toLowerCase())?.nome ?? 'Não atribuído';
   };
 
   const rotasOpcoes = rotasGeoreferenciadas.filter((r) =>
