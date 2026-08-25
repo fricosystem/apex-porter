@@ -159,7 +159,7 @@ export default function DesktopSidebar() {
             alt="APEX Portaria"
             className={cn(
               'size-9 shrink-0 origin-center object-contain transition duration-150 group-data-[collapsible=icon]:group-hover/logo:opacity-0',
-              resolvedTheme === 'light' && 'scale-125',
+              'scale-125',
             )}
           />
           <SidebarTrigger
