@@ -168,7 +168,10 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
               <img
                 src={logoSrc}
                 alt="APEX Portaria Logo"
-                className="h-9 w-9 object-contain drop-shadow-sm md:h-10 md:w-10"
+                className={cn(
+                  'h-9 w-9 origin-center object-contain drop-shadow-sm transition-transform duration-150 md:h-10 md:w-10',
+                  resolvedTheme === 'light' && 'scale-125',
+                )}
               />
             )}
             {isDesktop && (
