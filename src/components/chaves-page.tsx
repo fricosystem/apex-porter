@@ -77,6 +77,26 @@ function getAllFields(r: RegistroChave): { label: string; value: string }[] {
   return fields;
 }
 
+function getMovementMessage(r: RegistroChave): { person: string; action: 'retirou' | 'devolveu'; time: string } | null {
+  if (r.horarioDevolucao) {
+    return {
+      person: r.nomeDevolucao || r.nome,
+      action: 'devolveu',
+      time: r.horarioDevolucao,
+    };
+  }
+
+  if (r.horarioRetirada) {
+    return {
+      person: r.nome,
+      action: 'retirou',
+      time: r.horarioRetirada,
+    };
+  }
+
+  return null;
+}
+
 interface ChavesModalProps {
   open: boolean;
   onClose: () => void;
@@ -698,6 +718,7 @@ export default function ChavesPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {rowItems.map((r) => {
                       const hasDevolucao = r.horarioDevolucao !== '';
+                      const movement = getMovementMessage(r);
                       return (
                         <Card
                           key={r.id}
@@ -749,6 +770,19 @@ export default function ChavesPage() {
                                   </span>
                                 )}
                               </div>
+
+                              {movement && (
+                                <div className="mt-3 pt-2 border-t border-border/30">
+                                  <p className="text-base leading-snug text-foreground">
+                                    <span className="font-medium text-muted-foreground">{movement.person}</span>{' '}
+                                    {movement.action} a chave do setor{' '}
+                                    <span className="font-medium text-muted-foreground">{r.chave}</span>{' '}
+                                    às{' '}
+                                    <span className="font-medium text-muted-foreground">{movement.time}</span>{' '}
+                                    na portaria.
+                                  </p>
+                                </div>
+                              )}
 
                               {!hasDevolucao && (
                                 <Button
