@@ -100,11 +100,12 @@ function getMovementMessage(r: RegistroChave): { person: string; action: 'retiro
 interface ChavesModalProps {
   open: boolean;
   onClose: () => void;
+  onSaved?: (modo: ChavesModalProps['modo']) => void;
   prefill?: { nome?: string; chave?: string };
   modo: 'retirada' | 'devolucao';
 }
 
-function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
+function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps) {
   const { registrosChaves, addRegistroChave, registrarDevolucaoChave, pessoas, ramais, user, addPessoa, departamentos } = useAppStore();
   const isRetirada = modo === 'retirada';
   const [formData, setFormData] = useState<Record<string, string>>({ nome: '', chave: '' });
@@ -276,6 +277,7 @@ function ChavesModal({ open, onClose, prefill, modo }: ChavesModalProps) {
         toast.warning('Aviso: nenhuma retirada em aberto encontrada para esta chave. Devolução registrada sem retirada.');
       }
     }
+    onSaved?.(modo);
     onClose();
   };
 
@@ -521,6 +523,15 @@ export default function ChavesPage() {
       setDevolucaoPrefill(undefined);
     }
     setDevolucaoOpen(true);
+  };
+
+  const handleRegistroSaved = (modo: ChavesModalProps['modo']) => {
+    setStatusFilter(modo === 'retirada' ? 'aberto' : 'finalizado');
+    setBusca('');
+    setFiltroDepartamento('todos');
+    setFiltroEmpresa('todos');
+    setFiltroData('');
+    setShowFilters(false);
   };
 
   return (
@@ -835,12 +846,14 @@ export default function ChavesPage() {
       <ChavesModal
         open={retiradaOpen}
         onClose={() => setRetiradaOpen(false)}
+        onSaved={handleRegistroSaved}
         modo="retirada"
       />
 
       <ChavesModal
         open={devolucaoOpen}
         onClose={() => { setDevolucaoOpen(false); setDevolucaoPrefill(undefined); }}
+        onSaved={handleRegistroSaved}
         prefill={devolucaoPrefill}
         modo="devolucao"
       />
