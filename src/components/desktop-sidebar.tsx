@@ -151,13 +151,13 @@ export default function DesktopSidebar() {
 
   return (
     <Sidebar collapsible="icon" variant="inset">
-      <SidebarHeader className="p-3 group-data-[collapsible=icon]:p-1">
-        <div className="relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0">
+      <SidebarHeader className="p-3 transition-[padding] duration-300 ease-in-out group-data-[collapsible=icon]:p-1">
+        <div className="relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1 transition-[gap,padding] duration-300 ease-in-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0">
           <img
             src={logoSrc}
             alt="APEX Portaria"
             className={cn(
-              'size-9 shrink-0 origin-center object-contain transition-transform duration-150',
+              'size-9 shrink-0 origin-center object-contain transition-transform duration-300 ease-in-out',
               'scale-125 group-data-[collapsible=icon]:scale-[1.5]',
             )}
           />
