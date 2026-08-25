@@ -147,13 +147,6 @@
   --sidebar-ring: hsl(217, 20%, 24%);
 }
 
-header {
-  --primary: #059669 !important; /* Verde do botão Fluxo (emerald-600) */
-  --primary-foreground: #ffffff !important;
-  background-color: var(--primary) !important;
-  color: var(--primary-foreground) !important;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;

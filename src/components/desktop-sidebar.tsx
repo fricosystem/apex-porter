@@ -2,6 +2,7 @@
 
 import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Users } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useTheme } from './theme-provider';
 import {
   ALL_MAIN_NAV,
   CENTER_NAV,
@@ -82,6 +83,8 @@ export default function DesktopSidebar() {
     setAdminTab,
   } = useAppStore();
   const { state } = useSidebar();
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'light' ? '/icons/APEX_LOGO_LIGHT.png' : '/icons/APEX_LOGO.png';
   const userPermissions = user?.permissoes || [];
 
   const isPageAllowed = (page: string) => {
@@ -152,7 +155,7 @@ export default function DesktopSidebar() {
       <SidebarHeader className="p-3">
         <div className="group/logo relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1">
           <img
-            src="/icons/APEX_LOGO.png"
+            src={logoSrc}
             alt="APEX Portaria"
             className="size-9 shrink-0 object-contain transition-opacity duration-150 group-data-[collapsible=icon]:group-hover/logo:opacity-0"
           />

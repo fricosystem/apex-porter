@@ -32,11 +32,20 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ALL_MAIN_NAV } from './navigation-config';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useTheme } from './theme-provider';
 
 // ── App Header ───────────────────────────────────────────────────────────────
 export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'desktop' }) {
   const isDesktop = mode === 'desktop';
+  const { resolvedTheme } = useTheme();
+  const logoSrc = resolvedTheme === 'light' ? '/icons/APEX_LOGO_LIGHT.png' : '/icons/APEX_LOGO.png';
   const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill, currentPage } = useAppStore();
+  const actionButtonClass = isDesktop
+    ? 'text-foreground hover:bg-muted'
+    : 'text-primary-foreground hover:bg-white/10';
+  const avatarFallbackClass = isDesktop
+    ? 'bg-primary/10 text-primary'
+    : 'bg-white/20 text-primary-foreground';
   const userPermissions = user?.permissoes || [];
   
   const isPageAllowed = (page: string) => {
@@ -157,7 +166,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
               />
             ) : (
               <img
-                src="/icons/APEX_LOGO.png"
+                src={logoSrc}
                 alt="APEX Portaria Logo"
                 className="h-9 w-9 object-contain drop-shadow-sm md:h-10 md:w-10"
               />
@@ -187,7 +196,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
             {currentPage !== 'admin' && (
               <Button
                 variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                className={cn(actionButtonClass, 'h-9 w-9')}
                 onClick={() => setTicketModalOpen(true)}
               >
                 <Ticket className="h-5 w-5" />
@@ -197,10 +206,10 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                  className={cn(actionButtonClass, 'h-9 w-9')}
                 >
                   <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-white/20 text-primary-foreground text-xs">
+                    <AvatarFallback className={cn(avatarFallbackClass, 'text-xs')}>
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -228,7 +237,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
             {!isDesktop && currentPage === 'admin' && (
               <Button
                 variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 h-9 w-9"
+                className={cn(actionButtonClass, 'h-9 w-9')}
                 onClick={() => setCurrentPage('dashboard')}
               >
                 <LogOut className="h-4 w-4" />

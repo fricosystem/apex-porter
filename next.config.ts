@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   distDir: '.next',
   cacheMaxMemorySize: 250,
-  allowedDevOrigins: ['*.monkeycode-ai.live', '3000-iqhfx18be7ijkh3oxne8n-e0f50562.us4.manus.computer'],
+  allowedDevOrigins: ['*.monkeycode-ai.live', '3000-iqhfx18be7ijkh3oxne8n-e0f50562.us4.manus.computer', '3000-i23jem27f3cpp3vwjqsdv-35d89519.us2.manus.computer'],
   async headers() {
     return [
       {
