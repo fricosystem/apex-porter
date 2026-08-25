@@ -23,7 +23,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -153,19 +152,14 @@ export default function DesktopSidebar() {
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader className="p-3">
-        <div className="group/logo relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1">
+        <div className="relative flex min-h-10 items-center gap-2.5 rounded-xl px-1 py-1">
           <img
             src={logoSrc}
             alt="APEX Portaria"
             className={cn(
-              'size-9 shrink-0 origin-center object-contain transition duration-150 group-data-[collapsible=icon]:group-hover/logo:opacity-0',
+              'size-9 shrink-0 origin-center object-contain transition-transform duration-150',
               'scale-125',
             )}
-          />
-          <SidebarTrigger
-            aria-label="Recolher ou expandir menu lateral"
-            title="Recolher ou expandir menu lateral"
-            className="absolute left-1 top-1 size-9 opacity-0 transition-opacity duration-150 pointer-events-none group-data-[collapsible=icon]:group-hover/logo:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
           />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-sm font-bold tracking-wide">APEX PORTARIA</p>
