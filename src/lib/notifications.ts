@@ -6,6 +6,7 @@ let lastNotificationTime = 0;
 
 const PUSH_PERMISSION_PROMPTED_KEY = 'apex_porter_push_permission_prompted_v1';
 const PUSH_PREFERENCE_SET_KEY = 'apex_porter_push_preference_set_v1';
+const NOTIFICATION_ICON = '/icons/APEX_LOGO.png';
 
 export type NotificationPermissionState = NotificationPermission | 'unsupported';
 
@@ -74,7 +75,7 @@ export type NativeNotificationResult = {
 function notificationOptions(body: string, link = '/') {
   return {
     body,
-    icon: '/icons/icon-192x192.png',
+    icon: NOTIFICATION_ICON,
     badge: '/icons/maskable-icon-512x512.png',
     tag: `apex-${Date.now()}`,
     renotify: true,
@@ -128,7 +129,7 @@ export function showSystemNotification(title: string, body: string): boolean {
 
     const notification = new window.Notification(title, {
       body,
-      icon: '/icons/icon-192x192.png',
+      icon: NOTIFICATION_ICON,
       badge: '/icons/maskable-icon-512x512.png',
       tag: `apex-${now}`,
     });
