@@ -41,6 +41,7 @@ import PreAutorizacaoBanner from './pre-autorizacao-banner';
 import { toast } from 'sonner';
 
 type StatusFilter = 'aberto' | 'finalizado';
+type FinalizadosDateMode = 'hoje' | 'personalizado';
 
 type FluxoListItem = {
   display: RegistroFluxo;
@@ -89,6 +90,21 @@ function getMainField(r: RegistroFluxo): string {
 function formatNumberField(value: unknown): string {
   const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? numberValue.toLocaleString('pt-BR') : '0';
+}
+
+function getTodayDateInputValue(): string {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+function toDateInputValue(value: unknown): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw.includes('/')) {
+    const [day, month, year] = raw.split('/');
+    if (day && month && year) return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  return raw.slice(0, 10);
 }
 
 function formatRgCpfField(doc?: string): { label: string; value: string } {
@@ -294,7 +310,9 @@ export default function FluxoPage() {
   // New Filters
   const [filtroDepartamento, setFiltroDepartamento] = useState<string>('todos');
   const [filtroEmpresa, setFiltroEmpresa] = useState<string>('todos');
-  const [filtroData, setFiltroData] = useState<string>('');
+  const [finalizadosDateMode, setFinalizadosDateMode] = useState<FinalizadosDateMode>('hoje');
+  const [finalizadosDataInicio, setFinalizadosDataInicio] = useState<string>(getTodayDateInputValue);
+  const [finalizadosDataFim, setFinalizadosDataFim] = useState<string>(getTodayDateInputValue);
 
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -322,8 +340,8 @@ export default function FluxoPage() {
     categoriaAtiva !== 'todos' || 
     ordenacao !== 'mais_recentes' || 
     filtroDepartamento !== 'todos' || 
-    filtroEmpresa !== 'todos' || 
-    filtroData !== '';
+    filtroEmpresa !== 'todos' ||
+    (statusFilter === 'finalizado' && finalizadosDateMode === 'personalizado');
 
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -406,13 +424,17 @@ export default function FluxoPage() {
 
   useEffect(() => {
     if (statusFilter === 'finalizado') {
-      const hoje = new Date();
-      const ano = hoje.getFullYear();
-      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-      const dia = String(hoje.getDate()).padStart(2, '0');
-      setFiltroData(`${ano}-${mes}-${dia}`);
+      setFinalizadosDateMode('hoje');
     }
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (statusFilter === 'finalizado' && finalizadosDateMode === 'hoje') {
+      const hoje = getTodayDateInputValue();
+      setFinalizadosDataInicio(hoje);
+      setFinalizadosDataFim(hoje);
+    }
+  }, [statusFilter, finalizadosDateMode, todayKey]);
 
   const registrosFluxoExibiveis = useMemo(
     () => registrosFluxo.filter((r) => !r.inativo).flatMap(expandRegistroIndividualmente),
@@ -475,9 +497,11 @@ export default function FluxoPage() {
         if (departamento !== filtroDepartamento) return false;
       }
       if (filtroEmpresa !== 'todos' && getEmpresaDoRegistro(r) !== filtroEmpresa) return false;
-      if (filtroData) {
-        const [ano, mes, dia] = filtroData.split('-');
-        if (r.data !== `${dia}/${mes}/${ano}`) return false;
+      if (statusFilter === 'finalizado') {
+        const registroDate = toDateInputValue(r.data);
+        const dataInicio = finalizadosDateMode === 'hoje' ? getTodayDateInputValue() : finalizadosDataInicio;
+        const dataFim = finalizadosDateMode === 'hoje' ? dataInicio : finalizadosDataFim;
+        if (!registroDate || registroDate < dataInicio || registroDate > dataFim) return false;
       }
 
       return true;
@@ -495,10 +519,10 @@ export default function FluxoPage() {
     });
 
     return result;
-  }, [registrosFluxo, rascunhosFluxo, categoriaAtiva, buscaFluxo, statusFilter, ordenacao, filtroDepartamento, filtroEmpresa, filtroData]);
+  }, [registrosFluxo, rascunhosFluxo, categoriaAtiva, buscaFluxo, statusFilter, ordenacao, filtroDepartamento, filtroEmpresa, finalizadosDateMode, finalizadosDataInicio, finalizadosDataFim]);
 
   // ── Paginação infinita ──
-  const filterKey = `${categoriaAtiva}|${buscaFluxo}|${statusFilter}|${ordenacao}|${filtroDepartamento}|${filtroEmpresa}|${filtroData}`;
+  const filterKey = `${categoriaAtiva}|${buscaFluxo}|${statusFilter}|${ordenacao}|${filtroDepartamento}|${filtroEmpresa}|${finalizadosDateMode}|${finalizadosDataInicio}|${finalizadosDataFim}`;
   const filterKeyRef = useRef(filterKey);
 
   // Reinicia a paginação quando os filtros, busca ou aba mudam
@@ -760,8 +784,20 @@ export default function FluxoPage() {
               placeholder="Buscar por nome, placa, empresa..."
               value={buscaFluxo}
               onChange={(e) => setBuscaFluxo(e.target.value)}
-              className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
+              className="pl-10 pr-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
             />
+            {buscaFluxo && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Limpar pesquisa"
+                className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={() => setBuscaFluxo('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <Button
             variant={showFilters || hasActiveFilters ? "secondary" : "outline"}
@@ -847,25 +883,42 @@ export default function FluxoPage() {
               </Select>
             </div>
 
-            {/* Filters Row 3: Data */}
-            <div className="relative flex items-center">
-              <Input 
-                type="date" 
-                value={filtroData} 
-                onChange={(e) => setFiltroData(e.target.value)} 
-                className="h-10 text-sm bg-muted/50 border-0 w-full pr-10"
-              />
-              {filtroData && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-0 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
-                  onClick={() => setFiltroData('')}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            {/* Filters Row 3: Data somente para Finalizados */}
+            {statusFilter === 'finalizado' && (
+              <div className="space-y-2">
+                <Select value={finalizadosDateMode} onValueChange={(value) => setFinalizadosDateMode(value as FinalizadosDateMode)}>
+                  <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 w-full truncate">
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Hoje</SelectItem>
+                    <SelectItem value="personalizado">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {finalizadosDateMode === 'personalizado' && (
+                  <div className="grid grid-cols-2 gap-2 rounded-md border bg-card p-2">
+                    <div className="min-w-0">
+                      <Label className="mb-1 block text-xs text-muted-foreground">De</Label>
+                      <Input
+                        type="date"
+                        value={finalizadosDataInicio}
+                        onChange={(event) => setFinalizadosDataInicio(event.target.value)}
+                        className="h-9 w-full text-xs px-2"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <Label className="mb-1 block text-xs text-muted-foreground">Até</Label>
+                      <Input
+                        type="date"
+                        value={finalizadosDataFim}
+                        onChange={(event) => setFinalizadosDataFim(event.target.value)}
+                        className="h-9 w-full text-xs px-2"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 
