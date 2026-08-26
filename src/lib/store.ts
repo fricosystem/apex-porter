@@ -704,7 +704,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao inativar registro de fluxo:', err);
     });
   },
-  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string, pessoasSaidaIds?: string[]) => {
+  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string, pesoApara?: { campo: 'pesoCarregado' | 'pesoVazio'; valor: number }, porteiroSaidaUid?: string, pessoasSaidaIds?: string[], quemRetirou?: string) => {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
@@ -737,6 +737,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (porteiroSaida) grupoAtual.porteiroSaida = porteiroSaida;
       if (porteiroSaidaUid) grupoAtual.porteiroSaidaUid = porteiroSaidaUid;
+      if (quemRetirou && registroAtual.categoria === 'correspondencias') grupoAtual.quemRetirou = quemRetirou;
 
       const individualizadoEm = format(new Date(), 'dd/MM/yyyy HH:mm');
       const pessoas = getRegistroPessoas(grupoAtual as RegistroFluxo);
@@ -807,6 +808,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           updated.resultadoDiferenca = pesoSaida - pesoEntrada;
         }
         if (porteiroSaida) updated.porteiroSaida = porteiroSaida;
+        if (quemRetirou && r.categoria === 'correspondencias') updated.quemRetirou = quemRetirou;
         if (Array.isArray(updated.pessoasExtras) && updated.pessoasExtras.length > 0) {
           updated.pessoasExtras = updated.pessoasExtras.map((extra: any) => (
             (!selecaoInformada || acompanhantesSelecionados.has(extra.id)) && !extra.horarioSaida
@@ -838,6 +840,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updatedRegistro = get().registrosFluxo.find((r) => r.id === id);
     if (updatedRegistro?.pessoasExtras?.length) {
       fsUpdate.pessoasExtras = updatedRegistro.pessoasExtras;
+    }
+    if (quemRetirou && updatedRegistro?.categoria === 'correspondencias') {
+      fsUpdate.quemRetirou = quemRetirou;
     }
     const persistRegistro = updateRegistroFluxoFS(id, fsUpdate);
     const persistPesagemApara = pesoApara && updatedRegistro?.categoria === 'pesagem_apara'

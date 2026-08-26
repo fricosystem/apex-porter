@@ -44,6 +44,7 @@ import {
   type RegistroCorrespondencias,
 } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
+import CorrespondenciaDetailModal from './correspondencia-detail-modal';
 import { toast } from 'sonner';
 
 type StatusFilter = 'pendente' | 'retirado' | 'todos';
@@ -206,7 +207,7 @@ export default function CorrespondenciasPage() {
 
   const handleRegistrarRetirada = () => {
     if (!selectedRegistro) return;
-    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida);
+    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, undefined, undefined, undefined, undefined, undefined, quemRetirou);
     toast.success('Retirada registrada com sucesso!');
     setDetailModalOpen(false);
     setSelectedRegistro(null);
@@ -503,141 +504,28 @@ export default function CorrespondenciasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Detail Modal */}
-      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); } }}>
-        <DialogContent
-          className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-emerald-600" />
-              Detalhes da Correspondência
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedRegistro && (
-            <div className="space-y-5">
-              {/* Entry Information */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4 text-emerald-600" />
-                  <span className="font-semibold text-sm">Informações da Correspondência</span>
-                </div>
-                <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
-                  {[
-                    { label: 'Destinatário', value: selectedRegistro.destinatario },
-                    { label: 'Remetente', value: selectedRegistro.remetente },
-                    { label: 'Tipo', value: selectedRegistro.tipo },
-                    { label: 'Departamento', value: selectedRegistro.departamento },
-                    { label: 'Data', value: selectedRegistro.data },
-                    { label: 'Horário de Entrada', value: selectedRegistro.horarioEntrada },
-                    { label: 'Porteiro', value: selectedRegistro.porteiro },
-                    ...(selectedRegistro.horarioSaida ? [{ label: 'Horário de Retirada', value: selectedRegistro.horarioSaida }] : []),
-                    ...(selectedRegistro.quemRetirou ? [{ label: 'Quem Retirou', value: selectedRegistro.quemRetirou }] : []),
-                  ].map((field) => (
-                    <div key={field.label} className="flex justify-between items-start gap-2">
-                      <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
-                      <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* If already finalized, show detalhes/ocorrencia read-only */}
-              {selectedRegistro.horarioSaida && (selectedRegistro.detalhes || selectedRegistro.ocorrencia) && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <span className="font-semibold text-sm">Registros Adicionais</span>
-                  </div>
-                  <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
-                    {selectedRegistro.detalhes && (
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Detalhes</span>
-                        <p className="text-sm text-foreground mt-0.5">{selectedRegistro.detalhes}</p>
-                      </div>
-                    )}
-                    {selectedRegistro.ocorrencia && (
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Ocorrência</span>
-                        <p className="text-sm text-foreground mt-0.5">{selectedRegistro.ocorrencia}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Only show retirada form if not yet finalized */}
-              {!selectedRegistro.horarioSaida && (
-                <>
-                  <div className="space-y-1.5">
-                    <Label className="flex items-center gap-2">
-                      <PackageCheck className="h-4 w-4 text-emerald-600" />
-                      Quem Retirou
-                    </Label>
-                    <AutocompleteInput
-                      value={quemRetirou}
-                      onChange={(v) => setQuemRetirou(v)}
-                      onSelect={(s) => {
-                        if (s.data?.name) setQuemRetirou(s.data.name as string);
-                      }}
-                      suggestions={nameSuggestions}
-                      placeholder="Nome de quem retirou"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      Detalhes
-                    </Label>
-                    <Textarea
-                      placeholder="Informações adicionais..."
-                      value={detalhesSaida}
-                      onChange={(e) => setDetalhesSaida(e.target.value)}
-                      rows={3}
-                      className="text-base"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      Ocorrência
-                    </Label>
-                    <Textarea
-                      placeholder="Registrar ocorrência ou incidente..."
-                      value={ocorrenciaSaida}
-                      onChange={(e) => setOcorrenciaSaida(e.target.value)}
-                      rows={3}
-                      className="text-base"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleRegistrarRetirada}
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold"
-                  >
-                    <PackageCheck className="h-5 w-5 mr-2" />
-                    Registrar Retirada
-                  </Button>
-                </>
-              )}
-
-              {/* Status badge if already finalized */}
-              {selectedRegistro.horarioSaida && (
-                <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
-                    Retirado em {selectedRegistro.horarioSaida}
-                    {selectedRegistro.quemRetirou ? ` por ${selectedRegistro.quemRetirou}` : ''}
-                  </Badge>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Shared detail modal — also used by Fluxo for Correspondências */}
+      <CorrespondenciaDetailModal
+        open={detailModalOpen}
+        onOpenChange={(open) => {
+          setDetailModalOpen(open);
+          if (!open) {
+            setSelectedRegistro(null);
+            setDetalhesSaida('');
+            setOcorrenciaSaida('');
+            setQuemRetirou('');
+          }
+        }}
+        registro={selectedRegistro}
+        nameSuggestions={nameSuggestions}
+        quemRetirou={quemRetirou}
+        onQuemRetirouChange={setQuemRetirou}
+        detalhesSaida={detalhesSaida}
+        onDetalhesSaidaChange={setDetalhesSaida}
+        ocorrenciaSaida={ocorrenciaSaida}
+        onOcorrenciaSaidaChange={setOcorrenciaSaida}
+        onRegistrarRetirada={handleRegistrarRetirada}
+      />
     </motion.div>
   );
 }

@@ -31,11 +31,12 @@ import {
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
-import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo, type PreAutorizacao } from '@/lib/data';
+import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroCorrespondencias, type RegistroFluxo, type PreAutorizacao } from '@/lib/data';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 import { buildReleaseMessage } from '@/lib/release-message';
 import { getPreAutorizacoesPendentesDoDia } from '@/lib/pre-autorizacao-utils';
 import RegistroModal from './registro-modal';
+import CorrespondenciaDetailModal from './correspondencia-detail-modal';
 import PreAutorizacaoBanner from './pre-autorizacao-banner';
 import { toast } from 'sonner';
 
@@ -273,6 +274,7 @@ export default function FluxoPage() {
     buscaFluxo,
     setBuscaFluxo,
     user,
+    pessoas,
     departamentos,
     empresas,
     addEmpresa,
@@ -325,10 +327,12 @@ export default function FluxoPage() {
 
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [correspondenciaDetailOpen, setCorrespondenciaDetailOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] = useState<RegistroFluxo | null>(null);
   const [selectedListItem, setSelectedListItem] = useState<FluxoListItem | null>(null);
   const [detalhesSaida, setDetalhesSaida] = useState('');
   const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
+  const [correspondenciaQuemRetirou, setCorrespondenciaQuemRetirou] = useState('');
   const [pesoSaidaInput, setPesoSaidaInput] = useState('');
   const [pesoComplementarInput, setPesoComplementarInput] = useState('');
   const [saidaSelecaoOpen, setSaidaSelecaoOpen] = useState(false);
@@ -574,12 +578,20 @@ export default function FluxoPage() {
       setModalOpen(true);
       return;
     }
+
     setSelectedListItem(item);
     setSelectedRegistro(display);
     setDetalhesSaida(display.detalhes || '');
     setOcorrenciaSaida(display.ocorrencia || '');
     setPesoSaidaInput('');
     setPesoComplementarInput('');
+
+    if (display.categoria === 'correspondencias') {
+      setCorrespondenciaQuemRetirou(display.quemRetirou || '');
+      setCorrespondenciaDetailOpen(true);
+      return;
+    }
+
     setDetailModalOpen(true);
   };
 
@@ -591,6 +603,30 @@ export default function FluxoPage() {
     if (carregado > 0 && vazio > 0) return null;
     if (carregado > 0) return 'pesoVazio';
     return 'pesoCarregado';
+  };
+
+  const handleRegistrarCorrespondencia = () => {
+    const registro = selectedListItem?.source || selectedRegistro;
+    if (!registro || registro.categoria !== 'correspondencias') return;
+
+    registrarSaida(
+      registro.id,
+      detalhesSaida,
+      ocorrenciaSaida,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      correspondenciaQuemRetirou.trim(),
+    );
+    toast.success('Retirada registrada com sucesso!');
+    setCorrespondenciaDetailOpen(false);
+    setSelectedRegistro(null);
+    setSelectedListItem(null);
+    setCorrespondenciaQuemRetirou('');
+    setDetalhesSaida('');
+    setOcorrenciaSaida('');
   };
 
   const concluirSaida = (pessoasSaidaIds?: string[]) => {
@@ -650,16 +686,39 @@ export default function FluxoPage() {
   const closeModals = () => {
     setModalOpen(false);
     setDetailModalOpen(false);
+    setCorrespondenciaDetailOpen(false);
     setSelectedRegistro(null);
     setSelectedListItem(null);
     setPesoSaidaInput('');
     setPesoComplementarInput('');
+    setCorrespondenciaQuemRetirou('');
+    setDetalhesSaida('');
+    setOcorrenciaSaida('');
     setSaidaSelecaoOpen(false);
     setPessoasSaidaSelecionadas([]);
     setMensagemLiberacao(null);
   };
 
   const registroOrigemSelecionado = selectedListItem?.source || selectedRegistro;
+
+  const correspondenciaNameSuggestions = useMemo(() => {
+    const map = new Map<string, string>();
+    pessoas.filter((pessoa) => !pessoa.inativo).forEach((pessoa) => {
+      if (!map.has(pessoa.nome)) map.set(pessoa.nome, `${pessoa.cargo} — ${pessoa.departamento}`);
+    });
+    registrosFluxo
+      .filter((registro): registro is RegistroCorrespondencias => registro.categoria === 'correspondencias')
+      .forEach((registro) => {
+        if (registro.destinatario && !map.has(registro.destinatario)) {
+          map.set(registro.destinatario, registro.departamento || '');
+        }
+      });
+    return Array.from(map.entries()).map(([label, sublabel]) => ({
+      label,
+      sublabel: sublabel || undefined,
+      data: { name: label },
+    }));
+  }, [pessoas, registrosFluxo]);
 
   const gerarMensagemLiberacao = (r: RegistroFluxo) => buildReleaseMessage(r);
 
@@ -1128,6 +1187,30 @@ export default function FluxoPage() {
         isRefacao={isRefacao}
         isRascunho={isRascunhoEditing}
         prefilledFormData={prefilledFormData || undefined}
+      />
+
+      {/* Correspondência detail modal — same process as the Correspondências screen */}
+      <CorrespondenciaDetailModal
+        open={correspondenciaDetailOpen}
+        onOpenChange={(open) => {
+          setCorrespondenciaDetailOpen(open);
+          if (!open) {
+            setSelectedRegistro(null);
+            setSelectedListItem(null);
+            setCorrespondenciaQuemRetirou('');
+            setDetalhesSaida('');
+            setOcorrenciaSaida('');
+          }
+        }}
+        registro={selectedRegistro?.categoria === 'correspondencias' ? selectedRegistro : null}
+        nameSuggestions={correspondenciaNameSuggestions}
+        quemRetirou={correspondenciaQuemRetirou}
+        onQuemRetirouChange={setCorrespondenciaQuemRetirou}
+        detalhesSaida={detalhesSaida}
+        onDetalhesSaidaChange={setDetalhesSaida}
+        ocorrenciaSaida={ocorrenciaSaida}
+        onOcorrenciaSaidaChange={setOcorrenciaSaida}
+        onRegistrarRetirada={handleRegistrarCorrespondencia}
       />
 
       {/* Detail Modal */}
