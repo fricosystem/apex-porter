@@ -368,9 +368,9 @@ export default function DashboardPage() {
       { title: 'Checklists Concluídos', value: checklistsConcluidos, icon: ClipboardCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Checklists Pendentes', value: checklistsPendentes, icon: ClipboardList, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
       { title: 'Pesagens de Apara', value: pesagensApara.length, icon: ShoppingBag, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/30' },
-      { title: 'Peso Total Apara (kg)', value: pesoTotalApara, icon: ShoppingBasket, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/30' },
+      { title: 'Peso Total Apara (kg)', value: pesoTotalApara, icon: ShoppingBag, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Pesagens de Tinta/Solv.', value: pesagensTinta.length, icon: FlaskConical, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/30' },
-      { title: 'Peso Total Tinta/Solv. (kg)', value: pesoTotalTinta, icon: TestTube, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-950/30' },
+      { title: 'Peso Total Tinta/Solv. (kg)', value: pesoTotalTinta, icon: FlaskConical, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
       { title: 'Inspeções Diárias', value: inspecoesRealizadas, icon: ClipboardCheck, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/30' },
       { title: 'Avisos Publicados', value: avisosAtivos, icon: Bell, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/30' },
     ];
