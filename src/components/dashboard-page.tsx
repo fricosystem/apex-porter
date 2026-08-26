@@ -104,6 +104,22 @@ const PESAGEM_CHART_COLORS = [
   '#818cf8',
 ];
 
+type DashboardLineSeries = {
+  key: string;
+  name: string;
+  color: string;
+};
+
+function parseDashboardTimestamp(dateValue: unknown, timeValue: unknown): number {
+  const rawDate = String(dateValue || '');
+  const dateParts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
+  const isoDate = rawDate.includes('/')
+    ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`
+    : rawDate;
+  const timestamp = new Date(`${isoDate}T${String(timeValue || '00:00')}:00`).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
 // ── Custom Tooltip Component ──
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
@@ -696,36 +712,54 @@ export default function DashboardPage() {
       }));
   }, [pesagensApara]);
 
-  // ── PESAGEM DE APARA — Peso total por tipo de reboque ──
+  // ── PESAGEM DE APARA — uma linha para cada tipo de reboque ──
   const aparaPesoTotalPorReboque = useMemo(() => {
-    const totals: Record<string, number> = {};
-    pesagensApara.forEach((r) => {
+    const ordered = [...pesagensApara].sort(
+      (a, b) => parseDashboardTimestamp((a as any).data, (a as any).horarioEntrada)
+        - parseDashboardTimestamp((b as any).data, (b as any).horarioEntrada)
+    );
+    const tipoReboques = Array.from(new Set(
+      ordered.map((r) => String((r as any).tipoReboque || 'NÃO INFORMADO'))
+    ));
+    const series: DashboardLineSeries[] = tipoReboques.map((tipoReboque, index) => ({
+      key: `reboque_${index}`,
+      name: tipoReboque,
+      color: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+    }));
+    const data = ordered.map((r, index) => {
       const tipoReboque = String((r as any).tipoReboque || 'NÃO INFORMADO');
-      totals[tipoReboque] = (totals[tipoReboque] || 0) + Number((r as any).pesoCarregado ?? 0);
+      const point: Record<string, string | number | null> = { registro: `#${String(index + 1).padStart(2, '0')}` };
+      series.forEach((line) => {
+        point[line.key] = line.name === tipoReboque ? Number((r as any).pesoCarregado ?? 0) : 0;
+      });
+      return point;
     });
-    return Object.entries(totals)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tipoReboque, peso], index) => ({
-        tipoReboque: tipoReboque.length > 22 ? tipoReboque.slice(0, 22) + '…' : tipoReboque,
-        peso,
-        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
-      }));
+    return { data, series };
   }, [pesagensApara]);
 
-  // ── PESAGEM DE TINTA/SOLVENTE — Peso total por material ──
+  // ── PESAGEM DE TINTA/SOLVENTE — uma linha para cada material ──
   const tintaPesoPorMaterial = useMemo(() => {
-    const totals: Record<string, number> = {};
-    pesagensTinta.forEach((r) => {
+    const ordered = [...pesagensTinta].sort(
+      (a, b) => parseDashboardTimestamp((a as any).data, (a as any).horarioEntrada)
+        - parseDashboardTimestamp((b as any).data, (b as any).horarioEntrada)
+    );
+    const materials = Array.from(new Set(
+      ordered.map((r) => String((r as any).material || 'NÃO INFORMADO'))
+    ));
+    const series: DashboardLineSeries[] = materials.map((material, index) => ({
+      key: `material_${index}`,
+      name: material,
+      color: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+    }));
+    const data = ordered.map((r, index) => {
       const material = String((r as any).material || 'NÃO INFORMADO');
-      totals[material] = (totals[material] || 0) + Number((r as any).peso ?? 0);
+      const point: Record<string, string | number | null> = { registro: `#${String(index + 1).padStart(2, '0')}` };
+      series.forEach((line) => {
+        point[line.key] = line.name === material ? Number((r as any).peso ?? 0) : 0;
+      });
+      return point;
     });
-    return Object.entries(totals)
-      .sort((a, b) => b[1] - a[1])
-      .map(([material, peso], index) => ({
-        material: material.length > 22 ? material.slice(0, 22) + '…' : material,
-        peso,
-        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
-      }));
+    return { data, series };
   }, [pesagensTinta]);
 
   // ── Evolução diária das pesagens (Apara + Tinta/Solvente) ──
@@ -1208,7 +1242,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {aparaPesoTotalPorReboque.length > 0 && (
+        {aparaPesoTotalPorReboque.data.length > 0 && (
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
@@ -1217,18 +1251,26 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={aparaPesoTotalPorReboque} layout="vertical" margin={{ left: 8, right: 12 }}>
+                    <LineChart data={aparaPesoTotalPorReboque.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      <YAxis dataKey="tipoReboque" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      <XAxis dataKey="registro" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="peso" radius={[0, 4, 4, 0]} name="Peso Total (kg)" className="cursor-pointer">
-                        {aparaPesoTotalPorReboque.map((entry) => (
-                          <Cell key={`apara-reboque-${entry.tipoReboque}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      {aparaPesoTotalPorReboque.series.map((line) => (
+                        <Line
+                          key={line.key}
+                          type="monotone"
+                          dataKey={line.key}
+                          stroke={line.color}
+                          strokeWidth={2}
+                          dot={{ fill: line.color, r: 3 }}
+                          activeDot={{ r: 5 }}
+                          name={line.name}
+                          className="cursor-pointer"
+                        />
+                      ))}
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1261,7 +1303,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {tintaPesoPorMaterial.length > 0 && (
+        {tintaPesoPorMaterial.data.length > 0 && (
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
@@ -1270,18 +1312,26 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={tintaPesoPorMaterial} layout="vertical">
+                    <LineChart data={tintaPesoPorMaterial.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      <YAxis dataKey="material" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                      {renderTooltip('244,63,94')}
+                      <XAxis dataKey="registro" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="peso" radius={[0, 4, 4, 0]} name="Peso (kg)" className="cursor-pointer">
-                        {tintaPesoPorMaterial.map((entry) => (
-                          <Cell key={`tinta-material-${entry.material}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      {tintaPesoPorMaterial.series.map((line) => (
+                        <Line
+                          key={line.key}
+                          type="monotone"
+                          dataKey={line.key}
+                          stroke={line.color}
+                          strokeWidth={2}
+                          dot={{ fill: line.color, r: 3 }}
+                          activeDot={{ r: 5 }}
+                          name={line.name}
+                          className="cursor-pointer"
+                        />
+                      ))}
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
