@@ -77,30 +77,54 @@ function getAllFields(r: RegistroChave): { label: string; value: string }[] {
   return fields;
 }
 
-function getMovementMessage(r: RegistroChave): { person: string; action: 'retirou' | 'devolveu'; time: string } | null {
-  if (r.horarioDevolucao) {
-    return {
-      person: r.nomeDevolucao || r.nome,
-      action: 'devolveu',
-      time: r.horarioDevolucao,
-    };
-  }
+interface ChaveMessageModalProps {
+  message: string | null;
+  onClose: () => void;
+}
 
-  if (r.horarioRetirada) {
-    return {
-      person: r.nome,
-      action: 'retirou',
-      time: r.horarioRetirada,
-    };
-  }
+function ChaveMessageModal({ message, onClose }: ChaveMessageModalProps) {
+  const handleCopy = () => {
+    if (!message) return;
 
-  return null;
+    navigator.clipboard.writeText(message)
+      .then(() => toast.success('Mensagem copiada!'))
+      .catch(() => toast.error('Erro ao copiar. Selecione o texto e copie manualmente.'));
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!message} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-full max-w-sm p-6">
+        <DialogTitle className="text-base font-medium mb-5">Mensagem de Movimentação</DialogTitle>
+        <div className="bg-muted p-3 rounded-lg text-base text-foreground select-all">
+          {message}
+        </div>
+        <div className="mt-4 flex gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-base flex-1"
+            onClick={onClose}
+          >
+            Fechar
+          </Button>
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-base flex-1"
+            onClick={handleCopy}
+          >
+            Copiar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface ChavesModalProps {
   open: boolean;
   onClose: () => void;
-  onSaved?: (modo: ChavesModalProps['modo']) => void;
+  onSaved?: (message: string, modo: ChavesModalProps['modo']) => void;
   prefill?: { nome?: string; chave?: string };
   modo: 'retirada' | 'devolucao';
 }
@@ -229,19 +253,24 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
       return;
     }
 
+    let message: string;
+
     if (isRetirada) {
+      const horarioRetirada = format(new Date(), 'HH:mm');
       const registro: RegistroChave = {
         id: `chave_${Date.now()}`,
         nome,
         chave,
         data: format(new Date(), 'dd/MM/yyyy'),
-        horarioRetirada: format(new Date(), 'HH:mm'),
+        horarioRetirada,
         horarioDevolucao: '',
         porteiroRetirada: user?.nome || '',
       };
       addRegistroChave(registro);
+      message = `${nome} retirou a chave do setor ${chave} às ${horarioRetirada} na portaria.`;
       toast.success('Retirada registrada com sucesso!');
     } else {
+      const horarioDevolucao = format(new Date(), 'HH:mm');
       const aberto = registrosChaves.find(
         (r) => !r.horarioDevolucao && r.chave.trim().toLowerCase() === chave.toLowerCase()
       );
@@ -261,6 +290,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
       }
       if (aberto) {
         registrarDevolucaoChave(aberto.id, nome);
+        message = `${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
         toast.success('Devolução registrada com sucesso!');
       } else {
         addRegistroChave({
@@ -269,15 +299,16 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
           chave,
           data: format(new Date(), 'dd/MM/yyyy'),
           horarioRetirada: '',
-          horarioDevolucao: format(new Date(), 'HH:mm'),
+          horarioDevolucao,
           porteiroRetirada: user?.nome || '',
           porteiroDevolucao: user?.nome || '',
           nomeDevolucao: nome,
         });
+        message = `${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
         toast.warning('Aviso: nenhuma retirada em aberto encontrada para esta chave. Devolução registrada sem retirada.');
       }
     }
-    onSaved?.(modo);
+    onSaved?.(message, modo);
     onClose();
   };
 
@@ -397,6 +428,7 @@ export default function ChavesPage() {
   const [devolucaoPrefill, setDevolucaoPrefill] = useState<{ nome?: string; chave?: string } | undefined>(undefined);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] = useState<RegistroChave | null>(null);
+  const [chaveMessage, setChaveMessage] = useState<string | null>(null);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -525,13 +557,14 @@ export default function ChavesPage() {
     setDevolucaoOpen(true);
   };
 
-  const handleRegistroSaved = (modo: ChavesModalProps['modo']) => {
+  const handleRegistroSaved = (message: string, modo: ChavesModalProps['modo']) => {
     setStatusFilter(modo === 'retirada' ? 'aberto' : 'finalizado');
     setBusca('');
     setFiltroDepartamento('todos');
     setFiltroEmpresa('todos');
     setFiltroData('');
     setShowFilters(false);
+    setChaveMessage(message);
   };
 
   return (
@@ -729,7 +762,6 @@ export default function ChavesPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {rowItems.map((r) => {
                       const hasDevolucao = r.horarioDevolucao !== '';
-                      const movement = getMovementMessage(r);
                       return (
                         <Card
                           key={r.id}
@@ -782,18 +814,6 @@ export default function ChavesPage() {
                                 )}
                               </div>
 
-                              {movement && (
-                                <div className="mt-3 pt-2 border-t border-border/30">
-                                  <p className="text-base leading-snug text-foreground">
-                                    <span className="font-medium text-muted-foreground">{movement.person}</span>{' '}
-                                    {movement.action} a chave do setor{' '}
-                                    <span className="font-medium text-muted-foreground">{r.chave}</span>{' '}
-                                    às{' '}
-                                    <span className="font-medium text-muted-foreground">{movement.time}</span>{' '}
-                                    na portaria.
-                                  </p>
-                                </div>
-                              )}
 
                               {!hasDevolucao && (
                                 <Button
@@ -857,6 +877,8 @@ export default function ChavesPage() {
         prefill={devolucaoPrefill}
         modo="devolucao"
       />
+
+      <ChaveMessageModal message={chaveMessage} onClose={() => setChaveMessage(null)} />
 
       {/* Detail Modal */}
       <Dialog open={detailOpen} onOpenChange={(v) => { if (!v) { setDetailOpen(false); setSelectedRegistro(null); } }}>
