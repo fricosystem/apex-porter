@@ -1354,7 +1354,19 @@ export default function DashboardPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 border-t border-border/50 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="relative mt-2 grid grid-cols-1 gap-x-4 gap-y-2 border-t border-border/50 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-3 left-1/2 hidden -translate-x-1/2 border-l border-border/60 sm:block xl:hidden"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-3 left-1/3 hidden -translate-x-1/2 border-l border-border/60 xl:block"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-3 left-2/3 hidden -translate-x-1/2 border-l border-border/60 xl:block"
+                  />
                   {registrosPorDepartamento.map((entry, index) => (
                     <div
                       key={`departamento-legenda-${index}`}
