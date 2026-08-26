@@ -798,7 +798,7 @@ export default function DashboardPage() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="h-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-56"
+      className="h-full min-h-0 w-full overflow-y-auto overflow-x-hidden scrollable-list space-y-4 p-4 md:p-6 pb-56"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -855,7 +855,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Chaves pendentes de devolução ── */}
-      <motion.div variants={item}>
+      <motion.div variants={item} className="min-w-0">
         <Card className="overflow-hidden border-orange-200/70 dark:border-orange-900/60">
           <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/50 pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -897,7 +897,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── KPI Cards (2 rows of 4) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 2xl:grid-cols-5">
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => (
             <motion.div key={i} variants={item}>
@@ -940,7 +940,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Pré-autorizações pendentes de entrada ── */}
-      <motion.div variants={item}>
+      <motion.div variants={item} className="min-w-0">
         <Card className="overflow-hidden border-cyan-200/70 dark:border-cyan-900/60">
           <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/50 pb-3">
             <div>
@@ -1007,15 +1007,15 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── Todos os gráficos em um único grid contínuo (auto-flow 2x2) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {entradasSaidasPorHora.some((d) => d.entradas > 0 || d.saidas > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Entradas vs Saídas por Hora</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={entradasSaidasPorHora}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1034,13 +1034,13 @@ export default function DashboardPage() {
         )}
 
         {tendenciaSemanal.some((d) => d.movimentacoes > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Tendência Semanal</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={tendenciaSemanal}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1067,13 +1067,13 @@ export default function DashboardPage() {
         )}
 
         {checklistsPorStatus.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Checklists por Status</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1101,13 +1101,13 @@ export default function DashboardPage() {
         )}
 
         {fluxoPorPeriodo.some((d) => d.fluxo > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Fluxo por Período do Dia</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={fluxoPorPeriodo}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1130,13 +1130,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {movimentacaoAcumulada.some((d) => d.entradas > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Movimentação Acumulada por Hora</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={movimentacaoAcumulada}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1155,13 +1155,13 @@ export default function DashboardPage() {
         )}
 
         {atividadePorModulo.some((d) => d.valor > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Atividade por Módulo</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={atividadePorModulo} outerRadius="70%">
                       <PolarGrid className="stroke-border" />
@@ -1177,13 +1177,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {fluxoPorCategoria.some((d) => d.Abertos > 0 || d.Finalizados > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Registros por Categoria</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={fluxoPorCategoria} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1202,13 +1202,13 @@ export default function DashboardPage() {
         )}
 
         {pesagensPorDia.some((d) => d.Apara > 0 || d['Tinta/Solv.'] > 0) && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Evolução das Pesagens</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={pesagensPorDia}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1227,13 +1227,13 @@ export default function DashboardPage() {
         )}
 
         {aparaPesoTotalPorReboque.data.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Peso Total por Tipo de Reboque</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={aparaPesoTotalPorReboque.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1265,13 +1265,13 @@ export default function DashboardPage() {
         )}
 
         {tintaPesoPorMaterial.data.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Peso (kg) por Material</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={tintaPesoPorMaterial.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1303,13 +1303,13 @@ export default function DashboardPage() {
         )}
 
         {empresasMaisFrequentes.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Empresas Mais Frequentes</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={empresasMaisFrequentes} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1326,13 +1326,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {registrosPorDepartamento.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Registros por Departamento</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-56 sm:h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-56 min-w-0 sm:h-64 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1379,13 +1379,13 @@ export default function DashboardPage() {
         )}
 
         {ocorrenciasPorTipo.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Ocorrências por Tipo</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={ocorrenciasPorTipo}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -1402,13 +1402,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {ocorrenciasPorGravidade.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Ocorrências por Gravidade</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={ocorrenciasPorGravidade} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1427,13 +1427,13 @@ export default function DashboardPage() {
         )}
 
         {ocorrenciasPorStatus.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Ocorrências por Status</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={ocorrenciasPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1451,13 +1451,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {veiculosPorTipo.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Veículos por Tipo</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={veiculosPorTipo} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1476,13 +1476,13 @@ export default function DashboardPage() {
         )}
 
         {pessoasPorTipo.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Pessoas Cadastradas por Tipo</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={pessoasPorTipo} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1500,13 +1500,13 @@ export default function DashboardPage() {
           </motion.div>
         )}
         {preAuthPorStatus.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Pré-Autorizações por Status</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={preAuthPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1525,13 +1525,13 @@ export default function DashboardPage() {
         )}
 
         {achadosPorStatus.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Achados e Perdidos por Status</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={achadosPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1550,13 +1550,13 @@ export default function DashboardPage() {
         )}
 
         {inspecoesPorStatus.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Inspeções Diárias por Status</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
+              <CardContent className="min-w-0 flex-1 pt-0">
+                <div className="h-64 min-w-0 lg:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={inspecoesPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
@@ -1576,18 +1576,18 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Summary Cards Row ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {/* Lista Negra */}
         {listaNegraFiltered.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <ShieldBan className="h-4 w-4 text-orange-500" />
                   Entradas na Lista Negra
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="min-w-0 flex-1 pt-0">
                 <div className="space-y-2">
                   {listaNegraFiltered.slice(0, 3).map((ln) => (
                     <div key={ln.id} className="flex items-center justify-between text-sm">
@@ -1614,15 +1614,15 @@ export default function DashboardPage() {
 
         {/* Avisos Fixados */}
         {avisosFiltered.filter((a) => a.fixado).length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   Avisos Importantes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="min-w-0 flex-1 pt-0">
                 <div className="space-y-2">
                   {avisosFiltered
                     .filter((a) => a.fixado)
@@ -1654,15 +1654,15 @@ export default function DashboardPage() {
 
         {/* Últimas Pré-Autorizações */}
         {preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0 && (
-          <motion.div variants={item}>
-            <Card>
+          <motion.div variants={item} className="min-w-0">
+            <Card className="flex h-full min-w-0 flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <CalendarCheck className="h-4 w-4 text-cyan-500" />
                   Pré-Autorizações Pendentes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="min-w-0 flex-1 pt-0">
                 <div className="space-y-2">
                   {preAuthFiltered
                     .filter((p) => p.status === 'agendado' || p.status === 'confirmado')
