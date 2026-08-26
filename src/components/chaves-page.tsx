@@ -124,7 +124,7 @@ function ChaveMessageModal({ message, onClose }: ChaveMessageModalProps) {
 interface ChavesModalProps {
   open: boolean;
   onClose: () => void;
-  onSaved?: (message: string, modo: ChavesModalProps['modo']) => void;
+  onSaved?: (message: string) => void;
   prefill?: { nome?: string; chave?: string };
   modo: 'retirada' | 'devolucao';
 }
@@ -308,7 +308,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
         toast.warning('Aviso: nenhuma retirada em aberto encontrada para esta chave. Devolução registrada sem retirada.');
       }
     }
-    onSaved?.(message, modo);
+    onSaved?.(message);
     onClose();
   };
 
@@ -557,8 +557,7 @@ export default function ChavesPage() {
     setDevolucaoOpen(true);
   };
 
-  const handleRegistroSaved = (message: string, modo: ChavesModalProps['modo']) => {
-    setStatusFilter(modo === 'retirada' ? 'aberto' : 'finalizado');
+  const handleRegistroSaved = (message: string) => {
     setBusca('');
     setFiltroDepartamento('todos');
     setFiltroEmpresa('todos');
