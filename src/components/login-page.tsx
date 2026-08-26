@@ -224,7 +224,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md lg:max-h-[calc(100vh-4rem)] lg:w-full lg:pl-12 lg:overflow-y-auto lg:scrollbar-none"
+        className="relative z-10 w-full max-w-md lg:flex lg:w-full lg:flex-col lg:justify-center lg:max-h-[calc(100vh-4rem)] lg:pl-12 lg:pr-8 lg:py-8 lg:overflow-y-auto lg:scrollbar-none"
       >
         {/* Logo */}
         <div className="text-center mb-8 lg:hidden">
@@ -252,7 +252,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-4 hidden grid-cols-2 gap-1 rounded-xl border border-emerald-400/15 bg-black/20 p-1 lg:grid">
+        <div className="mb-5 hidden grid-cols-2 gap-1 rounded-xl border border-emerald-400/20 bg-black/20 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.16)] lg:grid">
           <button
             type="button"
             onClick={() => switchMode('login')}
@@ -271,7 +271,7 @@ export default function LoginPage() {
 
         {/* Card — FIXED theme (always dark tactical, independent of system theme) */}
         <div
-          className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
+          className="relative overflow-hidden rounded-2xl p-6 md:p-8 lg:rounded-[1.5rem] lg:p-8"
           style={{
             background: 'linear-gradient(135deg, rgba(10,30,22,0.95) 0%, rgba(6,20,14,0.98) 100%)',
             border: '1px solid rgba(52,211,153,0.15)',
@@ -289,12 +289,12 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1">Bem-vindo de volta</h2>
-                  <p className="text-emerald-200/40 text-sm mb-6">Faça login para acessar o sistema</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-emerald-50 mb-1 lg:text-2xl">Bem-vindo!</h2>
+                  <p className="text-emerald-100/55 text-sm mb-7 lg:mb-8">Entre na sua conta para continuar acompanhando a operação.</p>
 
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Email</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -311,7 +311,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Senha</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Senha</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -347,7 +347,7 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       disabled={authLoading}
-                      className="w-full h-11 font-semibold tracking-wider uppercase text-sm relative overflow-hidden"
+                      className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm relative overflow-hidden"
                       style={{
                         background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                         border: '1px solid rgba(52,211,153,0.3)',
@@ -399,9 +399,9 @@ export default function LoginPage() {
                   <h2 className="text-lg font-semibold text-emerald-50 mb-1">Criar Conta</h2>
                   <p className="text-emerald-200/40 text-sm mb-6">Registre-se para acessar o sistema</p>
 
-                  <form onSubmit={handleRegister} className="space-y-4">
+                  <form onSubmit={handleRegister} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">
                         Nome completo *
                       </Label>
                       <Input
@@ -416,7 +416,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">CPF</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">CPF</Label>
                       <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -433,7 +433,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Email *</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email *</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -449,7 +449,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Senha *</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Senha *</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -472,7 +472,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Cargo</Label>
+                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Cargo</Label>
                       <select
                         value={cargo}
                         onChange={(e) => setCargo(e.target.value)}
@@ -499,7 +499,7 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       disabled={authLoading}
-                      className="w-full h-11 font-semibold tracking-wider uppercase text-sm"
+                      className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm"
                       style={{
                         background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                         border: '1px solid rgba(52,211,153,0.3)',
@@ -576,9 +576,9 @@ export default function LoginPage() {
                       </Button>
                     </motion.div>
                   ) : (
-                    <form onSubmit={handleReset} className="space-y-4">
+                    <form onSubmit={handleReset} className="space-y-4 lg:space-y-5">
                       <div className="space-y-2">
-                        <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Email</Label>
+                        <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                           <Input
@@ -606,7 +606,7 @@ export default function LoginPage() {
                       <Button
                         type="submit"
                         disabled={authLoading}
-                        className="w-full h-11 font-semibold tracking-wider uppercase text-sm"
+                        className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm"
                         style={{
                           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                           border: '1px solid rgba(52,211,153,0.3)',
@@ -630,6 +630,10 @@ export default function LoginPage() {
           </div>
         </div>
 
+        <div className="hidden items-center justify-center gap-2 text-[11px] tracking-wide text-emerald-200/30 lg:flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/70 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+          Ambiente seguro · Controle de acesso APEX Portaria
+        </div>
         <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase lg:hidden">
           APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
