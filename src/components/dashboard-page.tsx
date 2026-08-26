@@ -662,53 +662,23 @@ export default function DashboardPage() {
       .map(([empresa, qtd]) => ({ empresa: empresa.length > 20 ? empresa.slice(0, 20) + '…' : empresa, registros: qtd }));
   }, [registrosFluxoFiltered]);
 
-  // ── Registros por departamento — uma linha por departamento ──
+  // ── Registros por departamento — uma fatia para cada departamento ──
   const registrosPorDepartamento = useMemo(() => {
-    const datePoints: Array<{ key: string; label: string }> = [];
-    const cursor = new Date(inicio);
-    while (cursor.getTime() <= fim.getTime()) {
-      const year = cursor.getFullYear();
-      const month = String(cursor.getMonth() + 1).padStart(2, '0');
-      const day = String(cursor.getDate()).padStart(2, '0');
-      datePoints.push({
-        key: `${year}-${month}-${day}`,
-        label: cursor.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      });
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    const countsByDate: Record<string, Record<string, number>> = {};
-    const totalsByDepartment: Record<string, number> = {};
+    const totals: Record<string, number> = {};
     registrosFluxoFiltered.forEach((r) => {
       const departamento = String('departamento' in r ? (r as any).departamento || '' : '').trim();
       if (!departamento) return;
-      const rawDate = String((r as any).data || '');
-      const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
-      const dateKey = rawDate.includes('/')
-        ? `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`
-        : rawDate.slice(0, 10);
-      if (!countsByDate[dateKey]) countsByDate[dateKey] = {};
-      countsByDate[dateKey][departamento] = (countsByDate[dateKey][departamento] || 0) + 1;
-      totalsByDepartment[departamento] = (totalsByDepartment[departamento] || 0) + 1;
+      totals[departamento] = (totals[departamento] || 0) + 1;
     });
 
-    const series: DashboardLineSeries[] = Object.entries(totalsByDepartment)
+    return Object.entries(totals)
       .sort((a, b) => b[1] - a[1])
-      .map(([departamento], index) => ({
-        key: `departamento_${index}`,
+      .map(([departamento, value], index) => ({
         name: departamento,
-        color: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+        value,
+        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
       }));
-    const data = datePoints.map(({ key, label }) => {
-      const point: Record<string, string | number> = { dia: label };
-      series.forEach((line) => {
-        point[line.key] = countsByDate[key]?.[line.name] || 0;
-      });
-      return point;
-    });
-
-    return { data, series };
-  }, [registrosFluxoFiltered, inicio, fim]);
+  }, [registrosFluxoFiltered]);
 
   // ── Atividade por módulo (novo gráfico - radar) ──
   const atividadePorModulo = useMemo(() => {
@@ -1347,38 +1317,51 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-        {registrosPorDepartamento.data.length > 0 && (
+        {registrosPorDepartamento.length > 0 && (
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Registros por Departamento</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="h-64">
+                <div className="h-56 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={registrosPorDepartamento.data}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="dia" tick={AXIS_TICK_STYLE_SMALL} />
-                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      {renderTooltip()}
-                      <Legend wrapperStyle={LEGEND_STYLE} />
-                      {registrosPorDepartamento.series.map((line) => (
-                        <Area
-                          key={line.key}
-                          type="monotone"
-                          dataKey={line.key}
-                          stroke={line.color}
-                          fill={line.color}
-                          fillOpacity={0.16}
-                          strokeWidth={2}
-                          dot={{ fill: line.color, r: 3 }}
-                          activeDot={{ r: 5 }}
-                          name={line.name}
-                          className="cursor-pointer"
-                        />
-                      ))}
-                    </AreaChart>
+                    <PieChart>
+                      <Pie
+                        data={registrosPorDepartamento}
+                        cx="50%"
+                        cy="46%"
+                        innerRadius={46}
+                        outerRadius={82}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                        className="cursor-pointer"
+                      >
+                        {registrosPorDepartamento.map((entry, index) => (
+                          <Cell key={`departamento-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      {renderPieTooltip()}
+                    </PieChart>
                   </ResponsiveContainer>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border/50 pt-3 sm:grid-cols-3">
+                  {registrosPorDepartamento.map((entry, index) => (
+                    <div
+                      key={`departamento-legenda-${index}`}
+                      className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+                      title={`${entry.name}: ${entry.value}`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: entry.fill }}
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0 truncate">{entry.name}</span>
+                      <span className="shrink-0 font-semibold text-foreground">{entry.value}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
