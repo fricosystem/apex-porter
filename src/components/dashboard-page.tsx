@@ -1198,15 +1198,15 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={pesagensPorDia}>
+                    <AreaChart data={pesagensPorDia}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="dia" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Line type="monotone" dataKey="Apara" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5 }} name="Apara" className="cursor-pointer" />
-                      <Line type="monotone" dataKey="Tinta/Solv." stroke="#f43f5e" strokeWidth={2} dot={{ fill: '#f43f5e', r: 3 }} activeDot={{ r: 5 }} name="Tinta/Solv." className="cursor-pointer" />
-                    </LineChart>
+                      <Area type="monotone" dataKey="Apara" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.16} strokeWidth={2} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5 }} name="Apara" className="cursor-pointer" />
+                      <Area type="monotone" dataKey="Tinta/Solv." stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.16} strokeWidth={2} dot={{ fill: '#f43f5e', r: 3 }} activeDot={{ r: 5 }} name="Tinta/Solv." className="cursor-pointer" />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1223,18 +1223,20 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={aparaPesoTotalPorReboque.data}>
+                    <AreaChart data={aparaPesoTotalPorReboque.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="registro" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
                       {aparaPesoTotalPorReboque.series.map((line) => (
-                        <Line
+                        <Area
                           key={line.key}
                           type="monotone"
                           dataKey={line.key}
                           stroke={line.color}
+                          fill={line.color}
+                          fillOpacity={0.16}
                           strokeWidth={2}
                           dot={{ fill: line.color, r: 3 }}
                           activeDot={{ r: 5 }}
@@ -1242,7 +1244,7 @@ export default function DashboardPage() {
                           className="cursor-pointer"
                         />
                       ))}
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1259,18 +1261,20 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={tintaPesoPorMaterial.data}>
+                    <AreaChart data={tintaPesoPorMaterial.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="registro" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
                       {tintaPesoPorMaterial.series.map((line) => (
-                        <Line
+                        <Area
                           key={line.key}
                           type="monotone"
                           dataKey={line.key}
                           stroke={line.color}
+                          fill={line.color}
+                          fillOpacity={0.16}
                           strokeWidth={2}
                           dot={{ fill: line.color, r: 3 }}
                           activeDot={{ r: 5 }}
@@ -1278,7 +1282,7 @@ export default function DashboardPage() {
                           className="cursor-pointer"
                         />
                       ))}
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1318,14 +1322,14 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={registrosPorDepartamento}>
+                    <AreaChart data={registrosPorDepartamento}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="departamento" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Line type="monotone" dataKey="registros" stroke="#818cf8" strokeWidth={2} dot={{ fill: '#818cf8', r: 3 }} activeDot={{ r: 5 }} name="Registros" className="cursor-pointer" />
-                    </LineChart>
+                      <Area type="monotone" dataKey="registros" stroke="#818cf8" fill="#818cf8" fillOpacity={0.16} strokeWidth={2} dot={{ fill: '#818cf8', r: 3 }} activeDot={{ r: 5 }} name="Registros" className="cursor-pointer" />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
