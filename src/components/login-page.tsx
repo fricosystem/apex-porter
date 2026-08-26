@@ -178,7 +178,7 @@ export default function LoginPage() {
         className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-400/15 lg:pr-12 xl:py-8"
       >
         <div>
-          <div className="mb-12 flex items-center gap-3 xl:mb-16">
+          <div className="mb-14 flex items-center gap-3 xl:mb-20">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.12)]">
               <img src="/icons/APEX_LOGO.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
             </div>
@@ -188,16 +188,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-emerald-400/20 bg-emerald-950/30 p-7 shadow-[0_25px_70px_rgba(0,0,0,0.35),0_0_45px_rgba(16,185,129,0.06)] backdrop-blur-sm xl:p-9">
+          <div className="max-w-xl">
             <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/70">
               <span className="h-px w-8 bg-emerald-400/70" />
               Gestão que acompanha o seu ritmo
             </p>
-            <h1 className="max-w-lg text-4xl font-bold leading-[1.05] tracking-tight text-white xl:text-5xl">
+            <h1 className="max-w-xl text-4xl font-bold leading-[1.04] tracking-tight text-white xl:text-6xl">
               Mais controle para uma operação{' '}
               <span className="text-emerald-400">mais inteligente.</span>
             </h1>
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-emerald-100/60">
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-emerald-100/60 xl:text-lg">
               Centralize acessos, registros e rotinas da portaria em uma experiência criada para tornar a operação mais segura, ágil e organizada todos os dias.
             </p>
           </div>
@@ -224,7 +224,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md lg:flex lg:w-full lg:flex-col lg:justify-center lg:max-h-[calc(100vh-4rem)] lg:pl-12 lg:pr-8 lg:py-8 lg:overflow-y-auto lg:scrollbar-none"
+        className="relative z-10 w-full max-w-md lg:flex lg:w-full lg:max-w-xl lg:flex-col lg:justify-center lg:justify-self-center lg:max-h-[calc(100vh-4rem)] lg:pl-16 lg:pr-8 lg:py-8 lg:overflow-y-auto lg:scrollbar-none"
       >
         {/* Logo */}
         <div className="text-center mb-8 lg:hidden">
@@ -249,6 +249,22 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-white tracking-widest">APEX PORTARIA</h1>
           <p className="text-emerald-300/60 mt-1 text-xs tracking-[0.25em] uppercase">
             Sistema de Controle de Acesso
+          </p>
+        </div>
+
+        <div className="mb-6 hidden lg:block">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300/70">
+            {mode === 'register' ? 'Novo acesso' : mode === 'reset' ? 'Recuperação de acesso' : 'Acesso ao sistema'}
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white xl:text-4xl">
+            {mode === 'register' ? 'Crie sua conta' : mode === 'reset' ? 'Recupere sua senha' : 'Bem-vindo!'}
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-100/55">
+            {mode === 'register'
+              ? 'Cadastre seus dados para começar a usar o sistema.'
+              : mode === 'reset'
+                ? 'Informe seu email para receber o link de redefinição.'
+                : 'Entre na sua conta para continuar acompanhando a operação.'}
           </p>
         </div>
 
@@ -289,8 +305,8 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <h2 className="text-xl font-semibold tracking-tight text-emerald-50 mb-1 lg:text-2xl">Bem-vindo!</h2>
-                  <p className="text-emerald-100/55 text-sm mb-7 lg:mb-8">Entre na sua conta para continuar acompanhando a operação.</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-emerald-50 mb-1 lg:hidden">Bem-vindo!</h2>
+                  <p className="text-emerald-100/55 text-sm mb-7 lg:hidden">Entre na sua conta para continuar acompanhando a operação.</p>
 
                   <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
@@ -396,8 +412,8 @@ export default function LoginPage() {
                     Voltar ao login
                   </button>
 
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1">Criar Conta</h2>
-                  <p className="text-emerald-200/40 text-sm mb-6">Registre-se para acessar o sistema</p>
+                  <h2 className="text-lg font-semibold text-emerald-50 mb-1 lg:hidden">Criar Conta</h2>
+                  <p className="text-emerald-200/40 text-sm mb-6 lg:hidden">Registre-se para acessar o sistema</p>
 
                   <form onSubmit={handleRegister} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
@@ -537,8 +553,8 @@ export default function LoginPage() {
                     Voltar ao login
                   </button>
 
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1">Recuperar Senha</h2>
-                  <p className="text-emerald-200/40 text-sm mb-6">
+                  <h2 className="text-lg font-semibold text-emerald-50 mb-1 lg:hidden">Recuperar Senha</h2>
+                  <p className="text-emerald-200/40 text-sm mb-6 lg:hidden">
                     Informe seu email para receber o link de redefinição
                   </p>
 
