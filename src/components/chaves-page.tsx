@@ -513,7 +513,8 @@ export default function ChavesPage() {
       return true;
     });
 
-    const sign = ordenacao === 'mais_antigos' ? 1 : -1;
+    // Mais recentes: maior timestamp primeiro. Mais antigos: menor timestamp primeiro.
+    const sign = ordenacao === 'mais_antigos' ? -1 : 1;
     result.sort((a, b) => {
       try {
         const [diaA, mesA, anoA] = a.data.split('/');
