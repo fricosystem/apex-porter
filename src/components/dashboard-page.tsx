@@ -120,6 +120,14 @@ function parseDashboardTimestamp(dateValue: unknown, timeValue: unknown): number
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function abbreviateDashboardLabel(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => (word.length > 5 ? `${word.slice(0, 5)}..` : word))
+    .join(' ');
+}
+
 // ── Custom Tooltip Component ──
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
@@ -532,7 +540,7 @@ export default function DashboardPage() {
       else counts[cat].abertos++;
     });
     return CATEGORIAS_FLUXO.map((c) => ({
-      categoria: c.label.length > 12 ? c.label.slice(0, 12) + '…' : c.label,
+      categoria: abbreviateDashboardLabel(c.label),
       Abertos: counts[c.value]?.abertos || 0,
       Finalizados: counts[c.value]?.fechados || 0,
     }));
@@ -1358,7 +1366,7 @@ export default function DashboardPage() {
                         style={{ backgroundColor: entry.fill }}
                         aria-hidden="true"
                       />
-                      <span className="min-w-0 truncate">{entry.name}</span>
+                      <span className="min-w-0 truncate">{abbreviateDashboardLabel(entry.name)}</span>
                       <span className="shrink-0 font-semibold text-foreground">{entry.value}</span>
                     </div>
                   ))}
