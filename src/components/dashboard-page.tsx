@@ -1367,7 +1367,7 @@ export default function DashboardPage() {
                         aria-hidden="true"
                       />
                       <span className="min-w-0 flex-1 break-words whitespace-normal leading-tight">
-                        {abbreviateDashboardLabel(entry.name)}
+                        {entry.name}
                       </span>
                       <span className="shrink-0 font-semibold text-foreground">{entry.value}</span>
                     </div>
