@@ -630,6 +630,23 @@ export default function DashboardPage() {
     return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [preAuthFiltered]);
 
+  // ── Pré-autorizações por categoria (departamento) ──
+  const preAuthPorCategoria = useMemo(() => {
+    const counts: Record<string, number> = {};
+    preAuthFiltered.forEach((preAutorizacao) => {
+      const departamento = String(preAutorizacao.departamento || '').trim() || 'Não informado';
+      counts[departamento] = (counts[departamento] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, value], index) => ({
+        name,
+        value,
+        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+      }));
+  }, [preAuthFiltered]);
+
   // ── Achados e perdidos por status ──
   const achadosPorStatus = useMemo(() => {
     const colors: Record<string, string> = { achado: '#10b981', perdido: '#f59e0b', devolvido: '#3b82f6' };
@@ -1511,29 +1528,68 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-        {preAuthPorStatus.length > 0 && (
-          <motion.div variants={item} className="min-w-0">
-            <Card className="flex h-full min-w-0 flex-col">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pré-Autorizações por Status</CardTitle>
-              </CardHeader>
-              <CardContent className="min-w-0 flex-1 pt-0">
-                <div className="h-64 min-w-0 lg:h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={preAuthPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
-                        {preAuthPorStatus.map((entry, index) => (
-                          <Cell key={`pa-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      {renderPieTooltip()}
-                      <Legend wrapperStyle={LEGEND_STYLE} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+        {(preAuthPorStatus.length > 0 || preAuthPorCategoria.length > 0) && (
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2 2xl:col-span-2">
+            {preAuthPorStatus.length > 0 && (
+              <motion.div variants={item} className="min-w-0">
+                <Card className="flex h-full min-w-0 flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Pré-Autorizações por Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="min-w-0 flex-1 pt-0">
+                    <div className="h-64 min-w-0 lg:h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={preAuthPorStatus} cx="50%" cy="50%" innerRadius={45} outerRadius={85} paddingAngle={3} dataKey="value" className="cursor-pointer">
+                            {preAuthPorStatus.map((entry, index) => (
+                              <Cell key={`pa-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          {renderPieTooltip()}
+                          <Legend wrapperStyle={LEGEND_STYLE} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {preAuthPorCategoria.length > 0 && (
+              <motion.div variants={item} className="min-w-0">
+                <Card className="flex h-full min-w-0 flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Pré-Autorizações por Categoria</CardTitle>
+                  </CardHeader>
+                  <CardContent className="min-w-0 flex-1 pt-0">
+                    <div className="h-64 min-w-0 lg:h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={preAuthPorCategoria}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={85}
+                            paddingAngle={3}
+                            dataKey="value"
+                            nameKey="name"
+                            className="cursor-pointer"
+                          >
+                            {preAuthPorCategoria.map((entry, index) => (
+                              <Cell key={`pa-categoria-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          {renderPieTooltip()}
+                          <Legend wrapperStyle={LEGEND_STYLE} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </div>
         )}
 
         {achadosPorStatus.length > 0 && (
