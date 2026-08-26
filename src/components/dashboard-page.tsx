@@ -91,6 +91,19 @@ const LEGEND_STYLE = {
   fontFamily: 'inherit',
 };
 
+const PESAGEM_CHART_COLORS = [
+  '#60a5fa',
+  '#fb7185',
+  '#34d399',
+  '#fbbf24',
+  '#a78bfa',
+  '#22d3ee',
+  '#f472b6',
+  '#a3e635',
+  '#fb923c',
+  '#818cf8',
+];
+
 // ── Custom Tooltip Component ──
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || payload.length === 0) return null;
@@ -683,19 +696,35 @@ export default function DashboardPage() {
       }));
   }, [pesagensApara]);
 
-  // ── PESAGEM DE TINTA/SOLVENTE — Peso total por material (top 5) ──
-  const tintaPesoPorMaterial = useMemo(() => {
-    const counts: Record<string, number> = {};
-    pesagensTinta.forEach((r) => {
-      const m = String((r as any).material || 'NÃO INFORMADO');
-      counts[m] = (counts[m] || 0) + Number((r as any).peso ?? 0);
+  // ── PESAGEM DE APARA — Peso total por tipo de reboque ──
+  const aparaPesoTotalPorReboque = useMemo(() => {
+    const totals: Record<string, number> = {};
+    pesagensApara.forEach((r) => {
+      const tipoReboque = String((r as any).tipoReboque || 'NÃO INFORMADO');
+      totals[tipoReboque] = (totals[tipoReboque] || 0) + Number((r as any).pesoCarregado ?? 0);
     });
-    return Object.entries(counts)
+    return Object.entries(totals)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([material, peso]) => ({
-        material: material.length > 18 ? material.slice(0, 18) + '…' : material,
+      .map(([tipoReboque, peso], index) => ({
+        tipoReboque: tipoReboque.length > 22 ? tipoReboque.slice(0, 22) + '…' : tipoReboque,
         peso,
+        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+      }));
+  }, [pesagensApara]);
+
+  // ── PESAGEM DE TINTA/SOLVENTE — Peso total por material ──
+  const tintaPesoPorMaterial = useMemo(() => {
+    const totals: Record<string, number> = {};
+    pesagensTinta.forEach((r) => {
+      const material = String((r as any).material || 'NÃO INFORMADO');
+      totals[material] = (totals[material] || 0) + Number((r as any).peso ?? 0);
+    });
+    return Object.entries(totals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([material, peso], index) => ({
+        material: material.length > 22 ? material.slice(0, 22) + '…' : material,
+        peso,
+        fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
       }));
   }, [pesagensTinta]);
 
@@ -1179,6 +1208,34 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
+        {aparaPesoTotalPorReboque.length > 0 && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Peso Total por Tipo de Reboque</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={aparaPesoTotalPorReboque} layout="vertical" margin={{ left: 8, right: 12 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <YAxis dataKey="tipoReboque" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
+                      {renderTooltip()}
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                      <Bar dataKey="peso" radius={[0, 4, 4, 0]} name="Peso Total (kg)" className="cursor-pointer">
+                        {aparaPesoTotalPorReboque.map((entry) => (
+                          <Cell key={`apara-reboque-${entry.tipoReboque}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {aparaPesoCarregadoVazio.length > 0 && (
           <motion.div variants={item}>
             <Card>
@@ -1208,7 +1265,7 @@ export default function DashboardPage() {
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Tinta/Solvente — Peso por Material</CardTitle>
+                <CardTitle className="text-sm font-medium">Peso (kg) por Material</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="h-64">
@@ -1219,7 +1276,11 @@ export default function DashboardPage() {
                       <YAxis dataKey="material" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
                       {renderTooltip('244,63,94')}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="peso" fill="#f43f5e" radius={[0, 4, 4, 0]} name="Peso (kg)" className="cursor-pointer" />
+                      <Bar dataKey="peso" radius={[0, 4, 4, 0]} name="Peso (kg)" className="cursor-pointer">
+                        {tintaPesoPorMaterial.map((entry) => (
+                          <Cell key={`tinta-material-${entry.material}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
