@@ -662,19 +662,53 @@ export default function DashboardPage() {
       .map(([empresa, qtd]) => ({ empresa: empresa.length > 20 ? empresa.slice(0, 20) + '…' : empresa, registros: qtd }));
   }, [registrosFluxoFiltered]);
 
-  // ── Registros por departamento (top 5) - novo gráfico ──
+  // ── Registros por departamento — uma linha por departamento ──
   const registrosPorDepartamento = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const datePoints: Array<{ key: string; label: string }> = [];
+    const cursor = new Date(inicio);
+    while (cursor.getTime() <= fim.getTime()) {
+      const year = cursor.getFullYear();
+      const month = String(cursor.getMonth() + 1).padStart(2, '0');
+      const day = String(cursor.getDate()).padStart(2, '0');
+      datePoints.push({
+        key: `${year}-${month}-${day}`,
+        label: cursor.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const countsByDate: Record<string, Record<string, number>> = {};
+    const totalsByDepartment: Record<string, number> = {};
     registrosFluxoFiltered.forEach((r) => {
-      const dep = 'departamento' in r ? (r as any).departamento : '';
-      if (!dep) return;
-      counts[dep] = (counts[dep] || 0) + 1;
+      const departamento = String('departamento' in r ? (r as any).departamento || '' : '').trim();
+      if (!departamento) return;
+      const rawDate = String((r as any).data || '');
+      const parts = rawDate.includes('/') ? rawDate.split('/') : rawDate.split('-');
+      const dateKey = rawDate.includes('/')
+        ? `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`
+        : rawDate.slice(0, 10);
+      if (!countsByDate[dateKey]) countsByDate[dateKey] = {};
+      countsByDate[dateKey][departamento] = (countsByDate[dateKey][departamento] || 0) + 1;
+      totalsByDepartment[departamento] = (totalsByDepartment[departamento] || 0) + 1;
     });
-    return Object.entries(counts)
+
+    const series: DashboardLineSeries[] = Object.entries(totalsByDepartment)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([departamento, qtd]) => ({ departamento: departamento.length > 20 ? departamento.slice(0, 20) + '…' : departamento, registros: qtd }));
-  }, [registrosFluxoFiltered]);
+      .map(([departamento], index) => ({
+        key: `departamento_${index}`,
+        name: departamento,
+        color: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
+      }));
+    const data = datePoints.map(({ key, label }) => {
+      const point: Record<string, string | number> = { dia: label };
+      series.forEach((line) => {
+        point[line.key] = countsByDate[key]?.[line.name] || 0;
+      });
+      return point;
+    });
+
+    return { data, series };
+  }, [registrosFluxoFiltered, inicio, fim]);
 
   // ── Atividade por módulo (novo gráfico - radar) ──
   const atividadePorModulo = useMemo(() => {
@@ -1313,7 +1347,7 @@ export default function DashboardPage() {
             </Card>
           </motion.div>
         )}
-        {registrosPorDepartamento.length > 0 && (
+        {registrosPorDepartamento.data.length > 0 && (
           <motion.div variants={item}>
             <Card>
               <CardHeader className="pb-2">
@@ -1322,13 +1356,27 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={registrosPorDepartamento}>
+                    <AreaChart data={registrosPorDepartamento.data}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="departamento" tick={AXIS_TICK_STYLE_SMALL} />
+                      <XAxis dataKey="dia" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Area type="monotone" dataKey="registros" stroke="#818cf8" fill="#818cf8" fillOpacity={0.16} strokeWidth={2} dot={{ fill: '#818cf8', r: 3 }} activeDot={{ r: 5 }} name="Registros" className="cursor-pointer" />
+                      {registrosPorDepartamento.series.map((line) => (
+                        <Area
+                          key={line.key}
+                          type="monotone"
+                          dataKey={line.key}
+                          stroke={line.color}
+                          fill={line.color}
+                          fillOpacity={0.16}
+                          strokeWidth={2}
+                          dot={{ fill: line.color, r: 3 }}
+                          activeDot={{ r: 5 }}
+                          name={line.name}
+                          className="cursor-pointer"
+                        />
+                      ))}
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
