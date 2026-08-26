@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, CreditCard } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppStore } from '@/lib/store';
 import { requestNotificationPermissionOnAuth } from '@/lib/notifications';
-
-type AuthMode = 'login' | 'register' | 'reset';
+import { formatLoginCooldown, getLoginRateLimitStatus } from '@/lib/auth-rate-limit';
 
 // Particles for background animation
 function TacticalParticles() {
@@ -50,37 +49,21 @@ function TacticalParticles() {
 }
 
 export default function LoginPage() {
-  const { login, register, sendPasswordReset, authLoading, authError, resetAuthError } = useAppStore();
-  const [mode, setMode] = useState<AuthMode>('login');
+  const { login, authLoading, authError } = useAppStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nome, setNome] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [cargo, setCargo] = useState('Porteiro');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
-  const [resetSent, setResetSent] = useState(false);
+  const [cooldownMs, setCooldownMs] = useState(0);
+
+  useEffect(() => {
+    const updateCooldown = () => setCooldownMs(getLoginRateLimitStatus().retryAfterMs);
+    updateCooldown();
+    const timer = window.setInterval(updateCooldown, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const displayError = localError || authError;
-
-  const switchMode = (newMode: AuthMode) => {
-    setMode(newMode);
-    setLocalError('');
-    resetAuthError();
-    setResetSent(false);
-    setPassword('');
-    setNome('');
-    setCpf('');
-    setCargo('Porteiro');
-  };
-
-  function formatCpf(value: string): string {
-    const digits = value.replace(/\D/g, '').slice(0, 11);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-  }
 
   // ── Login Handler ──
   const handleLogin = async (e: React.FormEvent) => {
@@ -94,36 +77,7 @@ export default function LoginPage() {
     // pelo store somente depois que a autenticação for confirmada.
     await requestNotificationPermissionOnAuth().catch(() => 'denied');
     await login(email, password);
-  };
-
-  // O cadastro público está desativado. Novas contas são criadas pela área administrativa.
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError('');
-    if (!nome || !email || !password) {
-      setLocalError('Preencha todos os campos obrigatórios');
-      return;
-    }
-    if (password.length < 6) {
-      setLocalError('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-    await requestNotificationPermissionOnAuth().catch(() => 'denied');
-    await register(nome, email, password, cargo, cpf || undefined);
-  };
-
-  // ── Reset Password Handler ──
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError('');
-    if (!email) {
-      setLocalError('Informe seu email');
-      return;
-    }
-    const success = await sendPasswordReset(email);
-    if (success) {
-      setResetSent(true);
-    }
+    setCooldownMs(getLoginRateLimitStatus().retryAfterMs);
   };
 
   return (
@@ -273,9 +227,7 @@ export default function LoginPage() {
           }}
         >
           <div className="relative z-10">
-            <AnimatePresence mode="wait">
-              {/* ── LOGIN MODE ── */}
-              {mode === 'login' && (
+            {/* ── LOGIN FORM ── */}
                 <motion.div
                   key="login"
                   initial={{ opacity: 0, x: -20 }}
@@ -340,7 +292,7 @@ export default function LoginPage() {
 
                     <Button
                       type="submit"
-                      disabled={authLoading}
+                      disabled={authLoading || cooldownMs > 0}
                       className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm relative overflow-hidden"
                       style={{
                         background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -353,6 +305,8 @@ export default function LoginPage() {
                           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           Entrando...
                         </span>
+                      ) : cooldownMs > 0 ? (
+                        `Aguarde ${formatLoginCooldown(cooldownMs)}`
                       ) : (
                         'Entrar'
                       )}
@@ -360,257 +314,6 @@ export default function LoginPage() {
                   </form>
 
                 </motion.div>
-              )}
-
-              {/* ── PUBLIC REGISTER DISABLED ── */}
-              {false && mode === 'register' && (
-                <motion.div
-                  key="register"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    className="flex items-center gap-1 text-emerald-400/70 hover:text-emerald-300 text-xs mb-4 transition-colors"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                    Voltar ao login
-                  </button>
-
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1 lg:hidden">Criar Conta</h2>
-                  <p className="text-emerald-200/40 text-sm mb-6 lg:hidden">Registre-se para acessar o sistema</p>
-
-                  <form onSubmit={handleRegister} className="space-y-4 lg:space-y-5">
-                    <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">
-                        Nome completo *
-                      </Label>
-                      <Input
-                        type="text"
-                        placeholder="Seu nome"
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        className="bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                        style={{ colorScheme: 'dark' }}
-                        disabled={authLoading}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">CPF</Label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="000.000.000-00"
-                          value={cpf}
-                          onChange={(e) => setCpf(formatCpf(e.target.value))}
-                          className="pl-9 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                          style={{ colorScheme: 'dark' }}
-                          disabled={authLoading}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
-                        <Input
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-9 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                          style={{ colorScheme: 'dark' }}
-                          disabled={authLoading}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Mínimo 6 caracteres"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-9 pr-10 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                          style={{ colorScheme: 'dark' }}
-                          disabled={authLoading}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500/50 hover:text-emerald-400 transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Cargo</Label>
-                      <select
-                        value={cargo}
-                        onChange={(e) => setCargo(e.target.value)}
-                        className="h-10 w-full rounded-md bg-emerald-950/40 border border-emerald-800/30 text-emerald-50 focus:border-emerald-500/50 focus:ring-emerald-500/20 focus:outline-none px-3 py-2 text-sm cursor-pointer"
-                        style={{ colorScheme: 'dark' }}
-                        disabled={authLoading}
-                      >
-                        <option value="Porteiro" className="bg-emerald-950 text-emerald-50">PORTEIRO</option>
-                        <option value="Supervisor" className="bg-emerald-950 text-emerald-50">SUPERVISOR</option>
-                        <option value="RH" className="bg-emerald-950 text-emerald-50">RH</option>
-                      </select>
-                    </div>
-
-                    {displayError && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-red-400 text-sm text-center bg-red-950/30 border border-red-800/30 rounded-lg p-2"
-                      >
-                        {displayError}
-                      </motion.p>
-                    )}
-
-                    <Button
-                      type="submit"
-                      disabled={authLoading}
-                      className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm"
-                      style={{
-                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                        border: '1px solid rgba(52,211,153,0.3)',
-                        boxShadow: '0 0 20px rgba(16,185,129,0.2)',
-                      }}
-                    >
-                      {authLoading ? (
-                        <span className="flex items-center gap-2">
-                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Registrando...
-                        </span>
-                      ) : (
-                        'Criar Conta'
-                      )}
-                    </Button>
-                  </form>
-                </motion.div>
-              )}
-
-              {/* ── PUBLIC PASSWORD RESET DISABLED ── */}
-              {false && mode === 'reset' && (
-                <motion.div
-                  key="reset"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    className="flex items-center gap-1 text-emerald-400/70 hover:text-emerald-300 text-xs mb-4 transition-colors"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                    Voltar ao login
-                  </button>
-
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1 lg:hidden">Recuperar Senha</h2>
-                  <p className="text-emerald-200/40 text-sm mb-6 lg:hidden">
-                    Informe seu email para receber o link de redefinição
-                  </p>
-
-                  {resetSent ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-6 space-y-4"
-                    >
-                      <div
-                        className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-2"
-                        style={{
-                          background: 'rgba(16,185,129,0.15)',
-                          border: '1px solid rgba(52,211,153,0.3)',
-                        }}
-                      >
-                        <Mail className="w-8 h-8 text-emerald-400" />
-                      </div>
-                      <p className="text-emerald-200/80 text-sm">
-                        Email de redefinição enviado para <strong className="text-emerald-100">{email}</strong>
-                      </p>
-                      <p className="text-emerald-200/40 text-xs">
-                        Verifique sua caixa de entrada e spam
-                      </p>
-                      <Button
-                        type="button"
-                        onClick={() => switchMode('login')}
-                        className="mt-2"
-                        style={{
-                          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                          border: '1px solid rgba(52,211,153,0.3)',
-                        }}
-                      >
-                        Voltar ao login
-                      </Button>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleReset} className="space-y-4 lg:space-y-5">
-                      <div className="space-y-2">
-                        <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
-                          <Input
-                            type="email"
-                            placeholder="seu@email.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="pl-9 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                            style={{ colorScheme: 'dark' }}
-                            disabled={authLoading}
-                          />
-                        </div>
-                      </div>
-
-                      {displayError && (
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-red-400 text-sm text-center bg-red-950/30 border border-red-800/30 rounded-lg p-2"
-                        >
-                          {displayError}
-                        </motion.p>
-                      )}
-
-                      <Button
-                        type="submit"
-                        disabled={authLoading}
-                        className="w-full h-11 lg:h-12 font-semibold tracking-wider uppercase text-sm"
-                        style={{
-                          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                          border: '1px solid rgba(52,211,153,0.3)',
-                          boxShadow: '0 0 20px rgba(16,185,129,0.2)',
-                        }}
-                      >
-                        {authLoading ? (
-                          <span className="flex items-center gap-2">
-                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Enviando...
-                          </span>
-                        ) : (
-                          'Enviar Link de Redefinição'
-                        )}
-                      </Button>
-                    </form>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
             <div className="mt-6 hidden border-t border-emerald-400/10 pt-4 lg:block">
               <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-200/40">
                 Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.

@@ -1,7 +1,8 @@
 'use client';
 
 // ── Firebase Authentication Service ──
-// Provides sign-in, sign-up, sign-out, password reset, and auth state observation
+// Provides sign-in, sign-out, password reset, and auth state observation.
+// Public self-registration is intentionally not exported; collaborators are created only by the admin flow.
 // Collection: "usuarios" (with profile and access metadata; credentials stay in Firebase Authentication)
 
 import { deleteApp, initializeApp } from 'firebase/app';
@@ -64,46 +65,6 @@ const DEFAULT_PERMISSIONS: PageType[] = [
   'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
   'avisos', 'lista-negra', 'achados-perdidos', 'configuracoes'
 ];
-
-// ── Sign up with email + password + profile info ──
-export async function signUpWithEmail(
-  nome: string,
-  email: string,
-  password: string,
-  cargo?: string,
-  cpf?: string
-): Promise<FirebaseUser> {
-  // Step 1: Create Firebase Auth user
-  const credential = await createUserWithEmailAndPassword(auth, email, password);
-
-  // Step 2: Update display name on Auth user (non-critical)
-  try {
-    await updateProfile(credential.user, { displayName: nome });
-  } catch (err) {
-    console.warn('[Firebase] Falha ao atualizar displayName:', err);
-  }
-
-  // Step 3: Create user document in Firestore (collection "usuarios")
-  try {
-    const userDoc: FirestoreUser = {
-      nome: nome.toUpperCase(),
-      email,
-      ...(cpf ? { cpf } : {}),
-      dataCadastro: serverTimestamp(),
-      ultimoLogin: serverTimestamp(),
-      ativo: true,
-      permissoes: DEFAULT_PERMISSIONS,
-      cargo,
-    };
-    await setDoc(doc(db, USUARIOS_COL, credential.user.uid), userDoc);
-  } catch (err) {
-    console.warn('[Firebase] Falha ao criar documento do usuário no Firestore:', err);
-    // Don't throw — the Auth user was already created successfully
-    // The Firestore document can be created later or on next login
-  }
-
-  return credential.user;
-}
 
 // ── Create a collaborator without changing the current admin session ──
 // A secondary named Firebase app uses in-memory Auth persistence. The primary
@@ -270,6 +231,23 @@ export function getAuthErrorMessage(errorCode: string): string {
     'auth/operation-not-allowed': 'Operação não permitida.',
     'auth/invalid-login-credentials': 'Credenciais inválidas. Verifique email e senha.',
     'auth/default': 'Ocorreu um erro. Tente novamente.',
+  };
+  return messages[errorCode] || messages['auth/default'];
+}
+
+// Login-facing errors intentionally avoid revealing whether an account exists.
+export function getLoginErrorMessage(errorCode: string): string {
+  const messages: Record<string, string> = {
+    'auth/user-not-found': 'Email ou senha inválidos.',
+    'auth/wrong-password': 'Email ou senha inválidos.',
+    'auth/invalid-credential': 'Email ou senha inválidos.',
+    'auth/invalid-login-credentials': 'Email ou senha inválidos.',
+    'auth/too-many-requests': 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.',
+    'auth/network-request-failed': 'Não foi possível conectar. Verifique sua internet e tente novamente.',
+    'auth/user-disabled': 'Não foi possível entrar. Verifique os dados e tente novamente.',
+    'auth/multi-factor-auth-required': 'Não foi possível concluir a autenticação. Tente novamente ou entre em contato com o administrador.',
+    'auth/operation-not-allowed': 'Não foi possível concluir a autenticação. Tente novamente ou entre em contato com o administrador.',
+    'auth/default': 'Não foi possível entrar. Verifique os dados e tente novamente.',
   };
   return messages[errorCode] || messages['auth/default'];
 }

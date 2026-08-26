@@ -74,7 +74,6 @@ export type AuthSlice = {
   authError: string | null;
   authInitialized: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (nome: string, email: string, password: string, cargo?: string, cpf?: string) => Promise<boolean>;
   updateUser: (data: Partial<User>) => void;
   logout: () => void;
   resetAuthError: () => void;

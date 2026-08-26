@@ -32,7 +32,6 @@ import type {
 } from './data';
 import {
   signInWithEmail,
-  signUpWithEmail,
   signOutFirebase,
   resetPassword,
   onAuthChange,
@@ -42,9 +41,11 @@ import {
   ensureUserProfile,
   getAuthErrorMessage,
   type FirestoreUser,
+  getLoginErrorMessage,
 } from './auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { setupPushNotificationsAfterAuth } from './push-notifications';
+import { clearLoginFailures, formatLoginCooldown, getLoginRateLimitStatus, recordLoginFailure } from './auth-rate-limit';
 import { createRegistroNotificationEvent, createRegistroSaidaNotificationEvent } from './notification-events';
 import {
   subscribeEmpresas,
@@ -422,9 +423,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   authInitialized: false,
 
   login: async (email: string, password: string) => {
+    const rateLimitStatus = getLoginRateLimitStatus();
+    if (!rateLimitStatus.allowed) {
+      set({
+        authLoading: false,
+        authError: `Muitas tentativas de acesso. Aguarde ${formatLoginCooldown(rateLimitStatus.retryAfterMs)} e tente novamente.`,
+      });
+      return false;
+    }
+
     set({ authLoading: true, authError: null });
+    let credentialsAccepted = false;
     try {
       const firebaseUser = await signInWithEmail(email, password);
+      credentialsAccepted = true;
+      clearLoginFailures();
 
       // Fetch profile (returns null if not found or error — that's OK)
       const profile = await fetchUserProfile(firebaseUser.uid);
@@ -503,48 +516,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       return true;
     } catch (err: any) {
       const errorCode = err?.code || 'auth/default';
-      const message = getAuthErrorMessage(errorCode);
-      set({ authLoading: false, authError: message });
-      return false;
-    }
-  },
-
-  register: async (nome: string, email: string, password: string, cargo?: string, cpf?: string) => {
-    set({ authLoading: true, authError: null });
-    try {
-      const firebaseUser = await signUpWithEmail(nome, email, password, cargo, cpf);
-      // PERMISSOES padrão para PORTEIRO (same as we had before)
-      const PERMISSOES_PORTEIRO: PageType[] = [
-        'dashboard', 'fluxo', 'correspondencias', 'cadastros', 'lembretes', 
-        'checklist-turno', 'protocolos-emergencia', 'empresas', 'ramais', 
-        'avisos', 'chaves', 'lista-negra', 'achados-perdidos', 'configuracoes'
-      ];
-      const user: User = {
-        id: firebaseUser.uid,
-        nome,
-        email: firebaseUser.email || email,
-        ...(cpf ? { cpf } : {}),
-        cargo: cargo || 'PORTEIRO',
-        dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
-        ativo: true,
-        permissoes: PERMISSOES_PORTEIRO
-      };
-      if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
-      set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
-
-      void setupPushNotificationsAfterAuth(user.id)
-        .then((pushResult) => {
-          if (pushResult.enabled) get().updateSettings({ notificationsEnabled: true });
-        })
-        .catch((error) => console.warn('[FCM] Falha ao ativar notificações após cadastro:', error));
-
-      // Start Firestore core subscriptions, then activate dashboard features
-      startSubscriptions();
-      getFeaturesForPage('dashboard').forEach(activateFeature);
-      return true;
-    } catch (err: any) {
-      const errorCode = err?.code || 'auth/default';
-      const message = getAuthErrorMessage(errorCode);
+      const shouldRecordFailure = !credentialsAccepted && errorCode.startsWith('auth/');
+      const failureStatus = shouldRecordFailure ? recordLoginFailure() : { retryAfterMs: 0 };
+      const message = failureStatus.retryAfterMs > 0
+        ? `Muitas tentativas de acesso. Aguarde ${formatLoginCooldown(failureStatus.retryAfterMs)} e tente novamente.`
+        : getLoginErrorMessage(errorCode);
       set({ authLoading: false, authError: message });
       return false;
     }
