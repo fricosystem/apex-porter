@@ -38,7 +38,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogPortal,
+  DialogOverlay,
 } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAppStore } from '@/lib/store';
 import { type RegistroChave, type Pessoa } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
@@ -94,29 +97,31 @@ function ChaveMessageModal({ message, onClose }: ChaveMessageModalProps) {
 
   return (
     <Dialog open={!!message} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-full max-w-sm p-6">
-        <DialogTitle className="text-base font-medium mb-5">Mensagem de Movimentação</DialogTitle>
-        <div className="bg-muted p-3 rounded-lg text-base text-foreground select-all">
-          {message}
-        </div>
-        <div className="mt-4 flex gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-base flex-1"
-            onClick={onClose}
-          >
-            Fechar
-          </Button>
-          <Button
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-base flex-1"
-            onClick={handleCopy}
-          >
-            Copiar
-          </Button>
-        </div>
-      </DialogContent>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className="fixed top-1/2 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <DialogTitle className="mb-5 text-sm font-medium">Mensagem de Movimentação</DialogTitle>
+          <div className="select-all rounded-lg bg-muted p-3 text-xs text-foreground whitespace-pre-wrap">
+            {message}
+          </div>
+          <div className="mt-4">
+            <Button
+              size="sm"
+              className="w-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+              onClick={handleCopy}
+            >
+              Copiar e Fechar
+            </Button>
+          </div>
+          <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-1 opacity-70 hover:bg-muted hover:opacity-100">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fechar</span>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }
@@ -267,7 +272,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
         porteiroRetirada: user?.nome || '',
       };
       addRegistroChave(registro);
-      message = `${nome} retirou a chave do setor ${chave} às ${horarioRetirada} na portaria.`;
+      message = `O colaborador ${nome} retirou a chave do setor ${chave} às ${horarioRetirada} na portaria.`;
       toast.success('Retirada registrada com sucesso!');
     } else {
       const horarioDevolucao = format(new Date(), 'HH:mm');
@@ -290,7 +295,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
       }
       if (aberto) {
         registrarDevolucaoChave(aberto.id, nome);
-        message = `${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
+        message = `O colaborador ${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
         toast.success('Devolução registrada com sucesso!');
       } else {
         addRegistroChave({
@@ -304,7 +309,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
           porteiroDevolucao: user?.nome || '',
           nomeDevolucao: nome,
         });
-        message = `${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
+        message = `O colaborador ${nome} devolveu a chave do setor ${chave} às ${horarioDevolucao} na portaria.`;
         toast.warning('Aviso: nenhuma retirada em aberto encontrada para esta chave. Devolução registrada sem retirada.');
       }
     }
