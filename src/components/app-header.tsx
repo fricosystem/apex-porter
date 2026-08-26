@@ -32,13 +32,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ALL_MAIN_NAV } from './navigation-config';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useTheme } from './theme-provider';
 
 // ── App Header ───────────────────────────────────────────────────────────────
 export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'desktop' }) {
   const isDesktop = mode === 'desktop';
-  const { resolvedTheme } = useTheme();
-  const logoSrc = resolvedTheme === 'light' ? '/icons/APEX_LOGO_LIGHT.png' : '/icons/APEX_LOGO.png';
+  // Mobile e tablet usam sempre a logo escura para manter contraste no header verde.
+  const logoSrc = '/icons/APEX_LOGO.png';
   const { user, setCurrentPage, logout, pessoas, registrosFluxo, setTicketModalOpen, ticketModalOpen, openRegistroModalWithPrefill, currentPage } = useAppStore();
   const actionButtonClass = isDesktop
     ? 'text-foreground hover:bg-muted'
