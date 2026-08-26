@@ -49,14 +49,6 @@ function TacticalParticles() {
   );
 }
 
-function formatCpf(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
 export default function LoginPage() {
   const { login, register, sendPasswordReset, authLoading, authError, resetAuthError } = useAppStore();
   const [mode, setMode] = useState<AuthMode>('login');
@@ -82,6 +74,14 @@ export default function LoginPage() {
     setCargo('Porteiro');
   };
 
+  function formatCpf(value: string): string {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+
   // ── Login Handler ──
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +96,7 @@ export default function LoginPage() {
     await login(email, password);
   };
 
-  // ── Register Handler ──
+  // O cadastro público está desativado. Novas contas são criadas pela área administrativa.
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
@@ -108,7 +108,6 @@ export default function LoginPage() {
       setLocalError('A senha deve ter pelo menos 6 caracteres');
       return;
     }
-    // O cadastro também é um ponto válido para solicitar a permissão do navegador.
     await requestNotificationPermissionOnAuth().catch(() => 'denied');
     await register(nome, email, password, cargo, cpf || undefined);
   };
@@ -254,35 +253,14 @@ export default function LoginPage() {
 
         <div className="mb-6 hidden lg:block">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300/70">
-            {mode === 'register' ? 'Novo acesso' : mode === 'reset' ? 'Recuperação de acesso' : 'Acesso ao sistema'}
+            Acesso ao sistema
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white xl:text-4xl">
-            {mode === 'register' ? 'Crie sua conta' : mode === 'reset' ? 'Recupere sua senha' : 'Bem-vindo!'}
+            Bem-vindo!
           </h2>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-100/55">
-            {mode === 'register'
-              ? 'Cadastre seus dados para começar a usar o sistema.'
-              : mode === 'reset'
-                ? 'Informe seu email para receber o link de redefinição.'
-                : 'Entre na sua conta para continuar operando.'}
+            Entre na sua conta para continuar operando.
           </p>
-        </div>
-
-        <div className="mb-5 hidden grid-cols-2 gap-1 rounded-xl border border-emerald-400/20 bg-black/20 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.16)] lg:grid">
-          <button
-            type="button"
-            onClick={() => switchMode('login')}
-            className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'login' || mode === 'reset' ? 'bg-emerald-950/80 text-emerald-300 shadow-sm' : 'text-emerald-100/45 hover:bg-emerald-950/40 hover:text-emerald-100'}`}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('register')}
-            className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'register' ? 'bg-emerald-950/80 text-emerald-300 shadow-sm' : 'text-emerald-100/45 hover:bg-emerald-950/40 hover:text-emerald-100'}`}
-          >
-            Criar conta
-          </button>
         </div>
 
         {/* Card — FIXED theme (always dark tactical, independent of system theme) */}
@@ -384,8 +362,8 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              {/* ── REGISTER MODE ── */}
-              {mode === 'register' && (
+              {/* ── PUBLIC REGISTER DISABLED ── */}
+              {false && mode === 'register' && (
                 <motion.div
                   key="register"
                   initial={{ opacity: 0, x: 20 }}
@@ -525,8 +503,8 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              {/* ── RESET PASSWORD MODE ── */}
-              {mode === 'reset' && (
+              {/* ── PUBLIC PASSWORD RESET DISABLED ── */}
+              {false && mode === 'reset' && (
                 <motion.div
                   key="reset"
                   initial={{ opacity: 0, x: 20 }}
