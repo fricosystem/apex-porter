@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, KeyRound, ArrowLeft, CreditCard } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -264,7 +264,7 @@ export default function LoginPage() {
               ? 'Cadastre seus dados para começar a usar o sistema.'
               : mode === 'reset'
                 ? 'Informe seu email para receber o link de redefinição.'
-                : 'Entre na sua conta para continuar acompanhando a operação.'}
+                : 'Entre na sua conta para continuar operando.'}
           </p>
         </div>
 
@@ -306,7 +306,7 @@ export default function LoginPage() {
                   transition={{ duration: 0.25 }}
                 >
                   <h2 className="text-xl font-semibold tracking-tight text-emerald-50 mb-1 lg:hidden">Bem-vindo!</h2>
-                  <p className="text-emerald-100/55 text-sm mb-7 lg:hidden">Entre na sua conta para continuar acompanhando a operação.</p>
+                  <p className="text-emerald-100/55 text-sm mb-7 lg:hidden">Entre na sua conta para continuar operando.</p>
 
                   <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
@@ -381,16 +381,6 @@ export default function LoginPage() {
                     </Button>
                   </form>
 
-                  <div className="mt-4 flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => switchMode('reset')}
-                      className="text-emerald-400/70 hover:text-emerald-300 text-xs transition-colors flex items-center gap-1"
-                    >
-                      <KeyRound className="h-3 w-3" />
-                      Esqueci a senha
-                    </button>
-                  </div>
                 </motion.div>
               )}
 
@@ -643,12 +633,13 @@ export default function LoginPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            <div className="mt-6 hidden border-t border-emerald-400/10 pt-4 lg:block">
+              <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-200/40">
+                Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.
+              </p>
+            </div>
           </div>
         </div>
-
-        <p className="hidden max-w-sm text-center text-[11px] leading-relaxed tracking-wide text-emerald-200/40 lg:block">
-          Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.
-        </p>
         <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase lg:hidden">
           APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
