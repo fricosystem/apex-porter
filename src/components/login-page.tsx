@@ -646,10 +646,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="hidden items-center justify-center gap-2 text-[11px] tracking-wide text-emerald-200/30 lg:flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/70 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          Ambiente seguro · Controle de acesso APEX Portaria
-        </div>
+        <p className="hidden max-w-sm text-center text-[11px] leading-relaxed tracking-wide text-emerald-200/40 lg:block">
+          Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.
+        </p>
         <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase lg:hidden">
           APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
