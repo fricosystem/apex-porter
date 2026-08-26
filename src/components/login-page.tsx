@@ -129,7 +129,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden"
+      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-0 lg:px-12 lg:py-8"
       style={{
         background: 'radial-gradient(ellipse at 50% 30%, #0a2e1f 0%, #061a12 40%, #030d09 100%)',
         paddingTop: 'max(1rem, env(safe-area-inset-top, 1rem))',
@@ -170,15 +170,64 @@ export default function LoginPage() {
 
 
 
+      {/* ── Desktop Presentation Panel ── */}
+      <motion.section
+        initial={{ opacity: 0, x: -24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-400/15 lg:pr-12 xl:py-8"
+      >
+        <div>
+          <div className="mb-12 flex items-center gap-3 xl:mb-16">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.12)]">
+              <img src="/icons/APEX_LOGO.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <p className="text-xl font-bold tracking-[0.2em] text-white">APEX PORTARIA</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-emerald-300/60">Controle de acesso</p>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-emerald-400/20 bg-emerald-950/30 p-7 shadow-[0_25px_70px_rgba(0,0,0,0.35),0_0_45px_rgba(16,185,129,0.06)] backdrop-blur-sm xl:p-9">
+            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300/70">
+              <span className="h-px w-8 bg-emerald-400/70" />
+              Gestão que acompanha o seu ritmo
+            </p>
+            <h1 className="max-w-lg text-4xl font-bold leading-[1.05] tracking-tight text-white xl:text-5xl">
+              Mais controle para uma operação{' '}
+              <span className="text-emerald-400">mais inteligente.</span>
+            </h1>
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-emerald-100/60">
+              Centralize acessos, registros e rotinas da portaria em uma experiência criada para tornar a operação mais segura, ágil e organizada todos os dias.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {[
+              'Operação em tempo real',
+              'Decisões mais rápidas',
+              'Visão do seu negócio',
+            ].map((item) => (
+              <div key={item} className="rounded-xl border border-emerald-400/15 bg-black/10 px-3 py-2.5 text-xs text-emerald-100/70">
+                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-xs tracking-wide text-emerald-300/30">© 2026 APEX Portaria · DESENVOLVIDO POR APEX HUB</p>
+      </motion.section>
+
       {/* ── Main Content ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-md z-10"
+        className="relative z-10 w-full max-w-md lg:max-h-[calc(100vh-4rem)] lg:w-full lg:pl-12 lg:overflow-y-auto lg:scrollbar-none"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 lg:hidden">
           <motion.div
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -203,6 +252,23 @@ export default function LoginPage() {
           </p>
         </div>
 
+        <div className="mb-4 hidden grid-cols-2 gap-1 rounded-xl border border-emerald-400/15 bg-black/20 p-1 lg:grid">
+          <button
+            type="button"
+            onClick={() => switchMode('login')}
+            className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'login' || mode === 'reset' ? 'bg-emerald-950/80 text-emerald-300 shadow-sm' : 'text-emerald-100/45 hover:bg-emerald-950/40 hover:text-emerald-100'}`}
+          >
+            Entrar
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('register')}
+            className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${mode === 'register' ? 'bg-emerald-950/80 text-emerald-300 shadow-sm' : 'text-emerald-100/45 hover:bg-emerald-950/40 hover:text-emerald-100'}`}
+          >
+            Criar conta
+          </button>
+        </div>
+
         {/* Card — FIXED theme (always dark tactical, independent of system theme) */}
         <div
           className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
@@ -223,7 +289,7 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <h2 className="text-lg font-semibold text-emerald-50 mb-1">Bem-vindo</h2>
+                  <h2 className="text-lg font-semibold text-emerald-50 mb-1">Bem-vindo de volta</h2>
                   <p className="text-emerald-200/40 text-sm mb-6">Faça login para acessar o sistema</p>
 
                   <form onSubmit={handleLogin} className="space-y-4">
@@ -564,7 +630,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase">
+        <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase lg:hidden">
           APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
       </motion.div>
