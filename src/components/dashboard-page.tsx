@@ -1354,19 +1354,21 @@ export default function DashboardPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border/50 pt-3 sm:grid-cols-3">
+                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 border-t border-border/50 pt-3 sm:grid-cols-2 xl:grid-cols-3">
                   {registrosPorDepartamento.map((entry, index) => (
                     <div
                       key={`departamento-legenda-${index}`}
-                      className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+                      className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground"
                       title={`${entry.name}: ${entry.value}`}
                     >
                       <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: entry.fill }}
                         aria-hidden="true"
                       />
-                      <span className="min-w-0 truncate">{abbreviateDashboardLabel(entry.name)}</span>
+                      <span className="min-w-0 flex-1 break-words whitespace-normal leading-tight">
+                        {abbreviateDashboardLabel(entry.name)}
+                      </span>
                       <span className="shrink-0 font-semibold text-foreground">{entry.value}</span>
                     </div>
                   ))}
