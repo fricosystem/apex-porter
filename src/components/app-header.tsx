@@ -168,8 +168,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
                 src={logoSrc}
                 alt="APEX Portaria Logo"
                 className={cn(
-                  'h-9 w-9 origin-center object-contain drop-shadow-sm transition-transform duration-150 md:h-10 md:w-10',
-                  'scale-125',
+                  'h-8 w-8 origin-center object-contain drop-shadow-sm transition-transform duration-150 md:h-9 md:w-9',
                 )}
               />
             )}
