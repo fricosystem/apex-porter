@@ -1,22 +1,72 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { PageType } from '@/lib/data';
+import PendingBadge from './pending-badge';
+import { getPendingCounts, sumPendingCounts } from '@/lib/pending-counts';
 import {
   CENTER_NAV,
   LEFT_NAV,
   RIGHT_NAV,
   SECONDARY_NAV,
-  type NavItem,
 } from './navigation-config';
 
 export default function BottomNav() {
-  const { currentPage, setCurrentPage, user } = useAppStore();
+  const {
+    currentPage,
+    setCurrentPage,
+    user,
+    registrosFluxo,
+    veiculos,
+    preAutorizacoes,
+    ocorrencias,
+    rondas,
+    checklists,
+    inspecoes,
+    avisos,
+    listaNegra,
+    achadosPerdidos,
+    lembretes,
+    registrosChaves,
+  } = useAppStore();
   const [moreOpen, setMoreOpen] = useState(false);
   const userPermissions = user?.permissoes || [];
+
+  const pendingCounts = useMemo(
+    () => getPendingCounts({
+      user,
+      registrosFluxo,
+      veiculos,
+      preAutorizacoes,
+      ocorrencias,
+      rondas,
+      checklists,
+      inspecoes,
+      avisos,
+      listaNegra,
+      achadosPerdidos,
+      lembretes,
+      registrosChaves,
+    }),
+    [
+      user,
+      registrosFluxo,
+      veiculos,
+      preAutorizacoes,
+      ocorrencias,
+      rondas,
+      checklists,
+      inspecoes,
+      avisos,
+      listaNegra,
+      achadosPerdidos,
+      lembretes,
+      registrosChaves,
+    ],
+  );
 
   const isActive = (page: PageType) => currentPage === page;
 
@@ -38,6 +88,10 @@ export default function BottomNav() {
   const filteredCenterNav = isPageAllowed(CENTER_NAV.page) ? CENTER_NAV : null;
   const filteredRightNav = RIGHT_NAV.filter(item => isPageAllowed(item.page));
   const filteredSecondaryNav = SECONDARY_NAV.filter(item => isPageAllowed(item.page));
+  const morePendingCount = sumPendingCounts(
+    pendingCounts,
+    filteredSecondaryNav.map((item) => item.page),
+  );
 
   const handleNavClick = (page: PageType) => {
     if (isPageAllowed(page)) {
@@ -83,7 +137,10 @@ export default function BottomNav() {
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <span className="relative inline-flex">
+                      <item.icon className="h-5 w-5" />
+                      <PendingBadge count={pendingCounts[item.page]} label={`pendências em ${item.label}`} />
+                    </span>
                     <span className="text-[10px] font-medium leading-tight text-center">
                       {item.label}
                     </span>
@@ -116,7 +173,10 @@ export default function BottomNav() {
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
-              <item.icon className="h-5 w-5" />
+              <span className="relative inline-flex">
+                <item.icon className="h-5 w-5" />
+                <PendingBadge count={pendingCounts[item.page]} label={`pendências em ${item.label}`} />
+              </span>
               <span className="text-[10px] font-medium leading-tight">{item.label}</span>
             </button>
           ))}
@@ -134,7 +194,10 @@ export default function BottomNav() {
                     : 'bg-emerald-500 text-white hover:bg-emerald-600'
                 }`}
               >
-                <filteredCenterNav.icon className="h-7 w-7" />
+                <span className="relative inline-flex">
+                  <filteredCenterNav.icon className="h-7 w-7" />
+                  <PendingBadge count={pendingCounts[filteredCenterNav.page]} label="pendências em Fluxo" />
+                </span>
               </div>
               <span className={`text-[10px] font-semibold leading-tight mt-1 ${
                 isActive(filteredCenterNav.page) ? 'text-emerald-600' : 'text-muted-foreground'
@@ -162,7 +225,10 @@ export default function BottomNav() {
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
-              <item.icon className="h-5 w-5" />
+              <span className="relative inline-flex">
+                <item.icon className="h-5 w-5" />
+                <PendingBadge count={pendingCounts[item.page]} label={`pendências em ${item.label}`} />
+              </span>
               <span className="text-[10px] font-medium leading-tight">{item.label}</span>
             </button>
           ))}
@@ -171,13 +237,16 @@ export default function BottomNav() {
           {filteredSecondaryNav.length > 0 && (
             <button
               onClick={() => setMoreOpen(!moreOpen)}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
                 moreOpen || filteredSecondaryNav.some((item) => isActive(item.page))
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <span className="relative inline-flex">
+                {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                <PendingBadge count={morePendingCount} label="pendências nas opções Mais" />
+              </span>
               <span className="text-[10px] font-medium leading-tight">Mais</span>
             </button>
           )}

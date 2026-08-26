@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -28,6 +28,9 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { AdminTab } from '@/lib/store-types';
+import type { PageType } from '@/lib/data';
+import PendingBadge from './pending-badge';
+import { getPendingCounts, sumPendingCounts } from '@/lib/pending-counts';
 
 export type { AdminTab } from '@/lib/store-types';
 
@@ -54,8 +57,63 @@ interface AdminBottomNavProps {
 }
 
 export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomNavProps) {
-  const { setCurrentPage } = useAppStore();
+  const {
+    setCurrentPage,
+    user,
+    registrosFluxo,
+    veiculos,
+    preAutorizacoes,
+    ocorrencias,
+    rondas,
+    checklists,
+    inspecoes,
+    avisos,
+    listaNegra,
+    achadosPerdidos,
+    lembretes,
+    registrosChaves,
+  } = useAppStore();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const pendingCounts = useMemo(
+    () => getPendingCounts({
+      user,
+      registrosFluxo,
+      veiculos,
+      preAutorizacoes,
+      ocorrencias,
+      rondas,
+      checklists,
+      inspecoes,
+      avisos,
+      listaNegra,
+      achadosPerdidos,
+      lembretes,
+      registrosChaves,
+    }),
+    [
+      user,
+      registrosFluxo,
+      veiculos,
+      preAutorizacoes,
+      ocorrencias,
+      rondas,
+      checklists,
+      inspecoes,
+      avisos,
+      listaNegra,
+      achadosPerdidos,
+      lembretes,
+      registrosChaves,
+    ],
+  );
+
+  const morePendingCount = sumPendingCounts(
+    pendingCounts,
+    SECONDARY_NAV
+      .filter((item) => item.page !== 'cargos')
+      .map((item) => item.page as PageType),
+  );
 
   const handleNavClick = (page: any) => {
     if (page === 'cargos') {
@@ -103,7 +161,10 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <span className="relative inline-flex">
+                      <item.icon className="h-5 w-5" />
+                      <PendingBadge count={pendingCounts[item.page as PageType]} label={`pendências em ${item.label}`} />
+                    </span>
                     <span className="text-[10px] font-medium leading-tight text-center">
                       {item.label}
                     </span>
@@ -194,7 +255,10 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               />
             )}
-            <Footprints className="h-5 w-5" />
+            <span className="relative inline-flex">
+              <Footprints className="h-5 w-5" />
+              <PendingBadge count={pendingCounts.ronda} label="pendências em Rondas" />
+            </span>
             <span className="text-[10px] font-medium leading-tight">Rondas</span>
           </button>
 
@@ -207,7 +271,10 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <span className="relative inline-flex">
+              {moreOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <PendingBadge count={morePendingCount} label="pendências nas opções Mais" />
+            </span>
             <span className="text-[10px] font-medium leading-tight">Mais</span>
           </button>
         </div>

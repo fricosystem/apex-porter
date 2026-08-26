@@ -228,14 +228,13 @@ const saveRascunhos = (rascunhos: RegistroFluxo[]) => {
 // ── Page group → Feature subscriptions mapping ──
 // Maps a "feature group" to which pages use that data
 const PAGE_FEATURE_MAP: Record<string, readonly string[]> = {
-  fluxo:      ['fluxo', 'dashboard'],
+  fluxo:      ['fluxo', 'dashboard', 'veiculos', 'correspondencias'],
   seguranca:  ['lista-negra', 'achados-perdidos', 'ocorrencias'],
   avisos:     ['avisos'],
-  rondas:     ['rondas', 'admin'],
+  rondas:     ['ronda', 'admin'],
   checklists: ['checklist-turno', 'inspecao-diaria', 'admin'],
   protocolos: ['protocolos-emergencia', 'admin'],
   lembretes:  ['lembretes'],
-  veiculos:   ['fluxo'],
   chaves:     ['chaves'],
   preAutorizacao: ['pre-autorizacao'],
 };
@@ -383,6 +382,19 @@ function getFeaturesForPage(page: string): string[] {
 function startSubscriptions() {
   clearAllSubscriptions();
   startCoreSubscriptions();
+
+  // The navigation badges need live data before a user opens each screen.
+  // Only activate feature groups represented in the user's permitted pages.
+  const state = useAppStore.getState();
+  const userCargo = (state.user?.cargo || '').toUpperCase();
+  const hasFullAccess = userCargo === 'DESENVOLVEDOR' || userCargo === 'DIRETOR';
+  const permittedPages = new Set(state.user?.permissoes || []);
+
+  Object.entries(PAGE_FEATURE_MAP).forEach(([feature, pages]) => {
+    if (hasFullAccess || pages.some((page) => permittedPages.has(page as PageType))) {
+      activateFeature(feature);
+    }
+  });
 }
 
 
