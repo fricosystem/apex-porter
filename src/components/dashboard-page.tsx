@@ -44,6 +44,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Bell,
+  KeyRound,
   ShoppingBag,
   ShoppingBasket,
   FlaskConical,
@@ -188,6 +189,7 @@ export default function DashboardPage() {
     preAutorizacoes,
     pessoas,
     avisos,
+    registrosChaves,
     checklists,
     inspecoes,
     setCurrentPage,
@@ -334,6 +336,24 @@ export default function DashboardPage() {
     () => pessoas.filter((p) => !p.inativo && isDateInRange(p.dataCadastro)),
     [pessoas, isDateInRange]
   );
+
+  const chavesPendentes = useMemo(() => {
+    const timestamp = (registro: (typeof registrosChaves)[number]) => {
+      const rawDate = String(registro.data || '');
+      const dateParts = rawDate.includes('/')
+        ? rawDate.split('/').map(Number)
+        : rawDate.split('-').map(Number);
+      const [hours = 0, minutes = 0] = String(registro.horarioRetirada || '00:00').split(':').map(Number);
+      const [day, month, year] = rawDate.includes('/')
+        ? dateParts
+        : [dateParts[2], dateParts[1], dateParts[0]];
+      return new Date(year || 0, (month || 1) - 1, day || 1, hours, minutes).getTime();
+    };
+
+    return registrosChaves
+      .filter((registro) => !registro.horarioDevolucao)
+      .sort((a, b) => timestamp(b) - timestamp(a));
+  }, [registrosChaves]);
 
   // ── Computed KPIs ──
   const kpis = useMemo(() => {
@@ -786,6 +806,48 @@ export default function DashboardPage() {
           <span>Toque nas barras ou fatias dos gráficos para ver os detalhes.</span>
         </div>
       )}
+
+      {/* ── Chaves pendentes de devolução ── */}
+      <motion.div variants={item}>
+        <Card className="overflow-hidden border-orange-200/70 dark:border-orange-900/60">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/50 pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <KeyRound className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              Chaves pendentes de devolução
+            </CardTitle>
+            <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+              {chavesPendentes.length}
+            </span>
+          </CardHeader>
+          <CardContent className="p-3">
+            {chavesPendentes.length > 0 ? (
+              <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                {chavesPendentes.map((registro) => (
+                  <div
+                    key={registro.id}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-orange-50/70 px-3 py-2 dark:bg-orange-950/20"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <KeyRound className="h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {registro.chave || 'Departamento não informado'}
+                      </span>
+                    </div>
+                    <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      {registro.horarioRetirada || '--:--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-2 text-sm text-muted-foreground">
+                Nenhuma chave pendente de devolução.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* ── KPI Cards (2 rows of 4) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">

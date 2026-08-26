@@ -235,7 +235,7 @@ const PAGE_FEATURE_MAP: Record<string, readonly string[]> = {
   checklists: ['checklist-turno', 'inspecao-diaria', 'admin'],
   protocolos: ['protocolos-emergencia', 'admin'],
   lembretes:  ['lembretes'],
-  chaves:     ['chaves'],
+  chaves:     ['chaves', 'dashboard'],
   preAutorizacao: ['pre-autorizacao'],
 };
 
