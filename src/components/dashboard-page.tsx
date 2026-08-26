@@ -700,18 +700,6 @@ export default function DashboardPage() {
     return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
   }, [inspecoesFiltered]);
 
-  // ── PESAGEM DE APARA — Peso Carregado vs Vazio (últimos 10 registros) ──
-  const aparaPesoCarregadoVazio = useMemo(() => {
-    return pesagensApara
-      .slice(-10)
-      .reverse()
-      .map((r, i) => ({
-        reg: `#${String(pesagensApara.length - 9 + i).padStart(2, '0')}`,
-        Carregado: Number((r as any).pesoCarregado ?? 0),
-        Vazio: Number((r as any).pesoVazio ?? 0),
-      }));
-  }, [pesagensApara]);
-
   // ── PESAGEM DE APARA — uma linha para cada tipo de reboque ──
   const aparaPesoTotalPorReboque = useMemo(() => {
     const ordered = [...pesagensApara].sort(
@@ -787,22 +775,6 @@ export default function DashboardPage() {
       'Tinta/Solv.': dataMap[d].tinta,
     }));
   }, [pesagensApara, pesagensTinta, inicio, fim]);
-
-  // ── Top condutores de pesagens (Apara + Tinta/Solvente) ──
-  const topCondutoresPesagens = useMemo(() => {
-    const counts: Record<string, number> = {};
-    [...pesagensApara, ...pesagensTinta].forEach((r) => {
-      const c = String((r as any).condutor || 'NÃO INFORMADO');
-      counts[c] = (counts[c] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([condutor, qtd]) => ({
-        condutor: condutor.length > 18 ? condutor.slice(0, 18) + '…' : condutor,
-        pesagens: qtd,
-      }));
-  }, [pesagensApara, pesagensTinta]);
 
   const renderTooltip = (cursorColor = '16,185,129') => (
     <Tooltip content={<ChartTooltip />} trigger={tooltipTrigger} cursor={{ fill: `rgba(${cursorColor},0.1)` }} />
@@ -1226,15 +1198,15 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={pesagensPorDia}>
+                    <LineChart data={pesagensPorDia}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="dia" tick={AXIS_TICK_STYLE_SMALL} />
                       <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      {renderTooltip('139,92,246')}
+                      {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="Apara" fill="#8b5cf6" radius={[3, 3, 0, 0]} name="Apara" className="cursor-pointer" />
-                      <Line type="monotone" dataKey="Tinta/Solv." stroke="#f43f5e" strokeWidth={2} dot={{ fill: '#f43f5e', r: 3 }} name="Tinta/Solv." className="cursor-pointer" />
-                    </ComposedChart>
+                      <Line type="monotone" dataKey="Apara" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5 }} name="Apara" className="cursor-pointer" />
+                      <Line type="monotone" dataKey="Tinta/Solv." stroke="#f43f5e" strokeWidth={2} dot={{ fill: '#f43f5e', r: 3 }} activeDot={{ r: 5 }} name="Tinta/Solv." className="cursor-pointer" />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1278,31 +1250,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {aparaPesoCarregadoVazio.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pesagem de Apara — Carregado vs Vazio</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={aparaPesoCarregadoVazio}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="reg" tick={AXIS_TICK_STYLE_SMALL} />
-                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      {renderTooltip('139,92,246')}
-                      <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="Carregado" fill="#8b5cf6" radius={[3, 3, 0, 0]} name="Carregado (kg)" className="cursor-pointer" />
-                      <Bar dataKey="Vazio" fill="#22d3ee" radius={[3, 3, 0, 0]} name="Vazio (kg)" className="cursor-pointer" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
         {tintaPesoPorMaterial.data.length > 0 && (
           <motion.div variants={item}>
             <Card>
@@ -1332,30 +1279,6 @@ export default function DashboardPage() {
                         />
                       ))}
                     </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {topCondutoresPesagens.length > 0 && (
-          <motion.div variants={item}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Top Condutores de Pesagens</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topCondutoresPesagens} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      <YAxis dataKey="condutor" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                      {renderTooltip('244,114,182')}
-                      <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="pesagens" fill="#f472b6" radius={[0, 4, 4, 0]} name="Pesagens" className="cursor-pointer" />
-                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -1395,14 +1318,14 @@ export default function DashboardPage() {
               <CardContent className="pt-0">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={registrosPorDepartamento} layout="vertical">
+                    <LineChart data={registrosPorDepartamento}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
-                      <YAxis dataKey="departamento" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                      {renderTooltip('99,102,241')}
+                      <XAxis dataKey="departamento" tick={AXIS_TICK_STYLE_SMALL} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      {renderTooltip()}
                       <Legend wrapperStyle={LEGEND_STYLE} />
-                      <Bar dataKey="registros" fill="#6366f1" radius={[0, 4, 4, 0]} name="Registros" className="cursor-pointer" />
-                    </BarChart>
+                      <Line type="monotone" dataKey="registros" stroke="#818cf8" strokeWidth={2} dot={{ fill: '#818cf8', r: 3 }} activeDot={{ r: 5 }} name="Registros" className="cursor-pointer" />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
