@@ -133,7 +133,7 @@ export default function LoginPage() {
         <div>
           <div className="relative z-20 mb-14 flex items-center gap-3 xl:mb-20">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.12)]">
-              <img src="/icons/APEX_LOGO.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
+              <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
             </div>
             <div>
               <p className="text-xl font-bold tracking-[0.2em] text-emerald-950">APEX PORTARIA</p>
@@ -192,7 +192,7 @@ export default function LoginPage() {
               boxShadow: '0 0 30px rgba(16,185,129,0.15), inset 0 0 20px rgba(16,185,129,0.05)',
             }}
           >
-            <img src="/icons/APEX_LOGO.png" alt="APEX Portaria Logo" className="w-24 h-24 object-contain" />
+            <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria Logo" className="w-24 h-24 object-contain" />
             {/* Pulse ring around logo */}
             <div
               className="absolute inset-0 rounded-[2rem] border border-emerald-400/30"
@@ -242,7 +242,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Email</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
                         <Input
                           id="email"
                           name="email"
@@ -261,7 +261,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Senha</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
                         <Input
                           id="password"
                           name="password"
@@ -277,7 +277,7 @@ export default function LoginPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700/60 hover:text-emerald-800 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-black/80 hover:text-black transition-colors"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
