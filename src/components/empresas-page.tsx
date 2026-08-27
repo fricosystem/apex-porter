@@ -186,15 +186,19 @@ export default function EmpresasPage() {
           placeholder="Buscar por empresa, CNPJ ou contato..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="pl-9 pr-10"
         />
         {search && (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Limpar pesquisa"
+            className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 

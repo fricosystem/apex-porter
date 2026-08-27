@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Phone, Plus, Trash2 } from 'lucide-react';
+import { Search, X, Phone, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,8 +96,20 @@ export default function RamaisPage() {
           placeholder="Buscar ramais..."
           value={buscaRamais}
           onChange={(e) => setBuscaRamais(e.target.value)}
-          className="pl-9"
+          className="pl-9 pr-10"
         />
+        {buscaRamais && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Limpar pesquisa"
+            className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+            onClick={() => setBuscaRamais('')}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Table */}

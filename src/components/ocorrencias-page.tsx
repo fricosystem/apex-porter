@@ -6,6 +6,7 @@ import {
   Plus,
   Trash2,
   Search,
+  X,
   AlertTriangle,
   ShieldAlert,
   CheckCircle2,
@@ -285,8 +286,20 @@ export default function OcorrenciasPage() {
             placeholder="Buscar por título, local ou envolvidos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-10"
           />
+          {search && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Limpar pesquisa"
+              className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+              onClick={() => setSearch('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <Select value={filterGravidade} onValueChange={setFilterGravidade}>

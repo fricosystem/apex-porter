@@ -6,6 +6,7 @@ import {
   Plus,
   Trash2,
   Search,
+  X,
   Clock,
   Calendar,
   Repeat,
@@ -276,8 +277,20 @@ export default function LembretesPage() {
               placeholder="Buscar por título ou descrição..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="pl-9"
+              className="pl-9 pr-10"
             />
+            {busca && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Limpar pesquisa"
+                className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={() => setBusca('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>

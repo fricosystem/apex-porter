@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import {
   Plus,
   Search,
+  X,
   Inbox,
   Clock,
   LogOut,
@@ -247,8 +248,20 @@ export default function CorrespondenciasPage() {
             placeholder="Buscar destinatário, remetente, tipo..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
+            className="pl-10 pr-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
           />
+          {busca && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Limpar pesquisa"
+              className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+              onClick={() => setBusca('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Filters row */}
