@@ -11,7 +11,6 @@ import {
   Menu,
   Mail,
   AlertTriangle,
-  ClipboardCheck,
   Eye,
   Siren,
   Car,
@@ -22,7 +21,6 @@ import {
   Phone,
   Bell,
   ShieldBan,
-  Search,
   Settings,
   Briefcase,
 } from 'lucide-react';
@@ -42,11 +40,8 @@ interface NavItem {
 
 const SECONDARY_NAV: NavItem[] = [
   { page: 'cargos', label: 'Cargos', icon: Briefcase },
-  { page: 'cadastros', label: 'Cadastros', icon: Users },
   { page: 'avisos', label: 'Avisos', icon: Bell },
   { page: 'lista-negra', label: 'Lista Negra', icon: ShieldBan },
-  { page: 'achados-perdidos', label: 'Achados e Perdidos', icon: Search },
-  { page: 'checklist-turno', label: 'Plantão', icon: ClipboardCheck },
   { page: 'protocolos-emergencia', label: 'Emergência', icon: Siren },
   { page: 'configuracoes', label: 'Configurações', icon: Settings },
 ];
