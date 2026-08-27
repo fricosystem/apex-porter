@@ -10,6 +10,8 @@ import {
   Clock,
   LogOut,
   Info,
+  FileText,
+  ShieldCheck,
   Bell,
   BellRing,
 } from 'lucide-react';
@@ -22,6 +24,13 @@ import { Separator } from '@/components/ui/separator';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   createTestPushRequest,
   disablePushNotifications,
@@ -75,6 +84,7 @@ export default function ConfiguracoesPage() {
   const theme = resolvedTheme || 'light';
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [loadingTestNotification, setLoadingTestNotification] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const handleToggleNotifications = async (checked: boolean) => {
     if (!user?.id) return;
@@ -420,11 +430,11 @@ export default function ConfiguracoesPage() {
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Versão</span>
-            <span className="font-medium">1.0.0</span>
+            <span className="font-medium">1.2.13</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Sistema</span>
-            <span className="font-medium">APEX Portaria</span>
+            <span className="font-medium uppercase">APEX PORTARIA</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Desenvolvido por</span>
@@ -432,6 +442,170 @@ export default function ConfiguracoesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Terms of use */}
+      <Card className="border-primary/20 bg-primary/[0.03]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            Termos de Uso e Serviços
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Consulte as regras de utilização, responsabilidades e diretrizes de segurança do APEX PORTARIA.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10 border-primary/40 hover:bg-primary hover:text-primary-foreground transition-colors"
+            onClick={() => setTermsOpen(true)}
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            Ler termos completos
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="xl:max-w-4xl">
+          <DialogHeader className="border-b border-border/60 pb-5">
+            <div className="flex items-start gap-3 pr-8">
+              <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl sm:text-2xl">Termos de Uso e Serviços</DialogTitle>
+                <DialogDescription className="mt-2 leading-relaxed">
+                  APEX PORTARIA · Versão 1.2.13
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-7 text-sm leading-7 text-foreground/90">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-800 dark:text-amber-200">
+              <p className="font-semibold">Documento operacional</p>
+              <p className="mt-1">
+                Este conteúdo apresenta as regras de uso do sistema para a operação interna. A administração da empresa deve revisar o texto com assessoria jurídica antes de adotá-lo como instrumento contratual definitivo.
+              </p>
+            </div>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">1. Objeto e finalidade</h3>
+              <p>
+                O APEX PORTARIA é um sistema interno de controle de acesso, registro de movimentações, gestão de visitantes, veículos, correspondências, chaves, rondas, pré-autorizações, avisos e rotinas operacionais de portaria. Seu objetivo é apoiar a organização, a rastreabilidade e a segurança dos procedimentos autorizados pela empresa.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">2. Usuários e contas</h3>
+              <p>
+                O acesso é destinado exclusivamente a usuários cadastrados e autorizados pela administração. Cada usuário deve utilizar sua própria conta, manter suas credenciais em sigilo e comunicar imediatamente ao responsável pelo sistema qualquer suspeita de uso indevido, perda de acesso ou alteração não reconhecida.
+              </p>
+              <p>
+                O usuário é responsável pelas operações realizadas durante sua sessão. É proibido compartilhar senha, permitir que terceiros operem uma conta autenticada ou tentar contornar os controles de permissão do sistema.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">3. Uso permitido</h3>
+              <p>
+                O sistema deve ser utilizado somente para atividades relacionadas à operação da portaria e às finalidades autorizadas pela empresa. Os registros devem ser preenchidos com informações verdadeiras, completas, atualizadas e compatíveis com os documentos e procedimentos aplicáveis.
+              </p>
+              <p>
+                O usuário deve revisar os dados antes de confirmar uma entrada, saída, retirada, devolução, autorização ou ocorrência. Quando houver erro em um registro auditável, a correção deve seguir o fluxo de refação ou o procedimento administrativo definido pela empresa, sem apagar evidências.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">4. Condutas proibidas</h3>
+              <p>
+                Não é permitido inserir informações falsas ou discriminatórias, registrar movimentações em nome de outra pessoa, utilizar o sistema para finalidade pessoal, extrair dados sem autorização, tentar obter acesso a áreas restritas, interferir no funcionamento do serviço ou modificar, apagar ou ocultar registros fora dos fluxos disponibilizados.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">5. Registros e auditoria</h3>
+              <p>
+                Os registros operacionais podem conter data, horário, identificação de usuários, visitantes, colaboradores, empresas, departamentos, veículos, documentos, autorizações e informações necessárias à rastreabilidade da operação. O sistema pode manter versões anteriores, marcações de inativação e eventos de auditoria para preservar o histórico.
+              </p>
+              <p>
+                A inativação ou correção prevista no sistema não deve ser interpretada como autorização para eliminar documentos, evidências ou informações que precisem ser mantidos por obrigação legal, política interna ou necessidade de investigação.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">6. Privacidade e proteção de dados</h3>
+              <p>
+                Os dados devem ser coletados e utilizados somente quando necessários às finalidades de controle de acesso, segurança, operação, atendimento de solicitações e cumprimento de obrigações aplicáveis. O tratamento deve observar as políticas internas de privacidade e a legislação de proteção de dados vigente, incluindo os princípios de finalidade, necessidade, segurança, prevenção e responsabilização.
+              </p>
+              <p>
+                O usuário não deve copiar, fotografar, compartilhar ou transferir dados pessoais do sistema para pessoas ou serviços não autorizados. Solicitações relacionadas a acesso, correção, retenção ou eliminação de dados devem ser encaminhadas ao responsável indicado pela empresa.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">7. Segurança</h3>
+              <p>
+                A empresa deve adotar controles compatíveis com o risco da operação, incluindo gestão de permissões, revisão de usuários, proteção de credenciais e acompanhamento de registros. Os usuários devem utilizar dispositivos confiáveis, manter o sistema atualizado e encerrar a sessão ao deixar o posto de trabalho.
+              </p>
+              <p>
+                Nenhum sistema conectado à internet é imune a falhas. Ao identificar comportamento suspeito, mensagem inesperada, acesso indevido ou indisponibilidade anormal, o usuário deve interromper a operação de risco e comunicar a administração.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">8. Disponibilidade e suporte</h3>
+              <p>
+                O APEX PORTARIA depende de infraestrutura, conectividade, serviços de autenticação e armazenamento. Podem ocorrer interrupções para manutenção, atualização, falha técnica, indisponibilidade de rede ou eventos fora do controle da empresa. Durante uma indisponibilidade, os procedimentos de contingência definidos pela administração devem ser seguidos.
+              </p>
+              <p>
+                Solicitações de suporte devem informar o usuário, a tela, o horário aproximado, a operação realizada e a mensagem apresentada, sem enviar senhas ou dados pessoais desnecessários.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">9. Responsabilidades da administração</h3>
+              <p>
+                Compete à administração definir os perfis de acesso, manter os cadastros atualizados, revisar permissões, orientar os usuários, estabelecer prazos de retenção e avaliar periodicamente os registros. A empresa também deve definir quem pode aprovar autorizações, consultar dados sensíveis, realizar correções e atender solicitações de privacidade.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">10. Propriedade e uso do sistema</h3>
+              <p>
+                A interface, a organização funcional, os elementos visuais, os textos e os componentes do APEX PORTARIA são destinados ao uso autorizado da operação. Não é permitido copiar, modificar, redistribuir, realizar engenharia reversa ou explorar comercialmente o sistema sem autorização expressa dos responsáveis.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">11. Alterações dos termos</h3>
+              <p>
+                Estes termos podem ser atualizados para refletir mudanças na operação, na segurança, na legislação, nas funcionalidades ou nas políticas internas. A versão vigente será disponibilizada no próprio sistema, e alterações relevantes devem ser comunicadas aos usuários pelos canais definidos pela administração.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">12. Encerramento e medidas administrativas</h3>
+              <p>
+                O acesso pode ser suspenso ou encerrado quando o usuário deixar de exercer função autorizada, violar regras internas, comprometer a segurança ou utilizar o sistema de maneira incompatível com estes termos. O encerramento do acesso não elimina automaticamente registros que precisem ser mantidos para auditoria, segurança ou cumprimento de obrigação aplicável.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="text-base font-semibold">13. Aceite</h3>
+              <p>
+                Ao utilizar o APEX PORTARIA, o usuário declara que leu estas regras, compreendeu suas responsabilidades e se compromete a utilizar o sistema de forma legítima, segura e compatível com as orientações da empresa.
+              </p>
+            </section>
+
+            <div className="border-t border-border/60 pt-4 text-xs text-muted-foreground">
+              Sistema: APEX PORTARIA · Versão: 1.2.13 · Documento disponibilizado para leitura dentro do sistema.
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Logout */}
       <Button
