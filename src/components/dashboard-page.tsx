@@ -619,21 +619,21 @@ export default function DashboardPage() {
       .sort((a, b) => b.value - a.value);
   }, [pessoasFiltered]);
 
-  // ── Pré-autorizações por status ──
+  // ── Pré-autorizações pendentes por status ──
   const preAuthPorStatus = useMemo(() => {
     const colors: Record<string, string> = { agendado: '#3b82f6', confirmado: '#10b981', cancelado: '#ef4444', expirado: '#6b7280' };
     const labels: Record<string, string> = { agendado: 'Agendado', confirmado: 'Confirmado', cancelado: 'Cancelado', expirado: 'Expirado' };
     const counts: Record<string, number> = {};
-    preAuthFiltered.forEach((p) => {
+    preAuthPendentes.forEach((p) => {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, qtd]) => ({ name: labels[status] || status, value: qtd, fill: colors[status] || '#6b7280' }));
-  }, [preAuthFiltered]);
+  }, [preAuthPendentes]);
 
-  // ── Pré-autorizações por categoria (departamento) ──
+  // ── Pré-autorizações pendentes por categoria (departamento) ──
   const preAuthPorCategoria = useMemo(() => {
     const counts: Record<string, number> = {};
-    preAuthFiltered.forEach((preAutorizacao) => {
+    preAuthPendentes.forEach((preAutorizacao) => {
       const departamento = String(preAutorizacao.departamento || '').trim() || 'Não informado';
       counts[departamento] = (counts[departamento] || 0) + 1;
     });
@@ -645,7 +645,7 @@ export default function DashboardPage() {
         value,
         fill: PESAGEM_CHART_COLORS[index % PESAGEM_CHART_COLORS.length],
       }));
-  }, [preAuthFiltered]);
+  }, [preAuthPendentes]);
 
   // ── Achados e perdidos por status ──
   const achadosPorStatus = useMemo(() => {

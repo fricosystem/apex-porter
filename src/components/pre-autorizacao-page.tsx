@@ -72,7 +72,7 @@ function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggesti
   };
 }
 
-type StatusFilter = 'pendentes' | 'concluidos';
+type StatusFilter = 'pendentes' | 'concluidos' | 'cancelados';
 
 const statusIcons: Record<StatusPreAutorizacao, React.ElementType> = {
   agendado: Clock4,
@@ -116,6 +116,7 @@ export default function PreAutorizacaoPage() {
     return preAutorizacoes.filter(pa => {
       if (statusFilter === 'pendentes' && !isPreAutorizacaoPendente(pa)) return false;
       if (statusFilter === 'concluidos' && pa.status !== 'confirmado') return false;
+      if (statusFilter === 'cancelados' && pa.status !== 'cancelado') return false;
       if (busca) {
         const s = busca.toLowerCase();
         return [pa.visitanteNome, pa.visitanteEmpresa, pa.departamento, pa.autorizadoPor, pa.motivo, pa.criadoPor]
@@ -349,9 +350,10 @@ export default function PreAutorizacaoPage() {
 
         {/* Status tabs */}
         <Tabs value={statusFilter} onValueChange={v => setStatusFilter(v as StatusFilter)}>
-          <TabsList className="w-full grid grid-cols-2 h-10">
+          <TabsList className="grid h-10 w-full grid-cols-3">
             <TabsTrigger value="pendentes" className="text-sm data-[state=active]:bg-amber-600 data-[state=active]:text-white">Pendentes</TabsTrigger>
             <TabsTrigger value="concluidos" className="text-sm data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Concluídos</TabsTrigger>
+            <TabsTrigger value="cancelados" className="text-sm data-[state=active]:bg-red-600 data-[state=active]:text-white">Cancelados</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -368,7 +370,9 @@ export default function PreAutorizacaoPage() {
                 ? 'Nenhuma pré-autorização pendente'
                 : statusFilter === 'concluidos'
                   ? 'Nenhuma pré-autorização concluída'
-                  : 'Nenhuma pré-autorização encontrada'}
+                  : statusFilter === 'cancelados'
+                    ? 'Nenhuma pré-autorização cancelada'
+                    : 'Nenhuma pré-autorização encontrada'}
             </p>
             <p className="text-sm text-muted-foreground/70">Toque em Nova para agendar uma visita.</p>
           </div>
