@@ -29,6 +29,7 @@ import {
   CalendarClock,
   BarChart3,
   TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -924,18 +925,23 @@ export default function CadastrosPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-40"
-                          disabled={p.inativo}
-                          title={p.inativo ? 'Pessoa já inativada' : 'Inativar pessoa'}
+                          className={`h-8 w-8 ${p.inativo
+                            ? 'text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700'
+                            : 'text-destructive hover:bg-destructive/10'}`}
+                          title={p.inativo ? 'Reativar pessoa' : 'Inativar pessoa'}
+                          aria-label={p.inativo ? 'Reativar pessoa' : 'Inativar pessoa'}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!p.inativo) {
+                            if (p.inativo) {
+                              updatePessoa({ ...p, inativo: false });
+                              toast.success('Pessoa reativada com sucesso');
+                            } else {
                               removePessoa(p.id);
                               toast.success('Pessoa inativada e preservada para auditoria');
                             }
                           }}
                         >
-                          <ShieldOff className="h-4 w-4" />
+                          {p.inativo ? <RotateCcw className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
