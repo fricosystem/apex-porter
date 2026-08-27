@@ -131,10 +131,8 @@ export default function LoginPage() {
         className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-800/25 lg:pr-12 xl:py-8"
       >
         <div>
-          <div className="relative z-20 mb-14 flex items-center gap-3 xl:mb-20">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.12)]">
-              <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
-            </div>
+          <div className="relative z-20 mb-14 flex items-center gap-4 xl:mb-20">
+            <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria" className="h-16 w-16 object-contain" />
             <div>
               <p className="text-xl font-bold tracking-[0.2em] text-emerald-950">APEX PORTARIA</p>
               <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-emerald-800/80">Controle de acesso</p>
@@ -185,19 +183,9 @@ export default function LoginPage() {
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-            className="relative z-20 inline-flex items-center justify-center w-36 h-36 rounded-[2rem] mb-4"
-            style={{
-              background: 'rgba(16,185,129,0.1)',
-              border: '1px solid rgba(52,211,153,0.25)',
-              boxShadow: '0 0 30px rgba(16,185,129,0.15), inset 0 0 20px rgba(16,185,129,0.05)',
-            }}
+            className="relative z-20 inline-flex items-center justify-center mb-4"
           >
-            <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria Logo" className="w-24 h-24 object-contain" />
-            {/* Pulse ring around logo */}
-            <div
-              className="absolute inset-0 rounded-[2rem] border border-emerald-400/30"
-              style={{ animation: 'pulse-ring 2.5s ease-in-out infinite' }}
-            />
+            <img src="/icons/APEX_LOGO_LIGHT.png" alt="APEX Portaria Logo" className="w-32 h-32 object-contain" />
           </motion.div>
           <h1 className="text-3xl font-bold text-emerald-950 tracking-widest">APEX PORTARIA</h1>
           <p className="text-emerald-700/70 mt-1 text-xs tracking-[0.25em] uppercase">
