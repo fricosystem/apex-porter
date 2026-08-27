@@ -198,9 +198,9 @@ export default function LoginPage() {
             Acesso ao sistema
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-emerald-950 xl:text-4xl">
-            Bem-vindo!
+            Bem-vindo de volta!
           </h2>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-900/75">
+          <p className="mt-2 max-w-md text-base leading-relaxed text-emerald-900/75 xl:text-lg">
             Entre na sua conta para continuar operando.
           </p>
         </div>
@@ -223,8 +223,8 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <h2 className="text-xl font-semibold tracking-tight text-emerald-950 mb-1 lg:hidden">Bem-vindo!</h2>
-                  <p className="text-emerald-900/75 text-sm mb-7 lg:hidden">Entre na sua conta para continuar operando.</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-emerald-950 mb-1 lg:hidden">Bem-vindo de volta!</h2>
+                  <p className="text-emerald-900/75 text-base leading-relaxed mb-7 lg:hidden">Entre na sua conta para continuar operando.</p>
 
                   <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
