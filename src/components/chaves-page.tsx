@@ -100,23 +100,23 @@ function ChaveMessageModal({ message, onClose }: ChaveMessageModalProps) {
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
-          className="fixed top-1/2 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg"
+          className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-emerald-400/20 bg-slate-950 p-5 text-white shadow-2xl sm:p-6"
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
-          <DialogTitle className="mb-5 text-sm font-medium">Mensagem de Movimentação</DialogTitle>
-          <div className="select-all rounded-lg bg-muted p-3 text-xs text-foreground whitespace-pre-wrap">
+          <DialogTitle className="mb-5 pr-8 text-sm font-semibold text-white">Mensagem de Movimentação</DialogTitle>
+          <div className="select-all rounded-xl border border-white/10 bg-white/[0.07] p-4 text-xs leading-relaxed text-white/90 whitespace-pre-wrap">
             {message}
           </div>
           <div className="mt-4">
             <Button
               size="sm"
-              className="w-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+              className="w-full bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-500"
               onClick={handleCopy}
             >
               Copiar e Fechar
             </Button>
           </div>
-          <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-1 opacity-70 hover:bg-muted hover:opacity-100">
+          <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-2 text-white/70 opacity-80 transition-colors hover:bg-white/10 hover:text-white hover:opacity-100">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
@@ -319,9 +319,9 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="w-full max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-left">
+      <DialogContent className="w-full max-w-md border-emerald-400/20 bg-slate-950 text-white shadow-2xl xl:rounded-2xl" onOpenAutoFocus={(event) => event.preventDefault()}>
+        <DialogHeader className="border-b border-white/10 pb-4">
+          <DialogTitle className="flex items-center gap-2 pr-8 text-left text-white">
             {isRetirada ? (
               <LogIn className="h-5 w-5 text-emerald-600" />
             ) : (
@@ -332,8 +332,9 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-3">
-            <Label className="text-base">Nome *</Label>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+            <div className="space-y-2">
+            <Label className="text-sm font-semibold text-white/90">Nome *</Label>
             <AutocompleteInput
               value={formData.nome || ''}
               onChange={(v) => updateField('nome', v)}
@@ -343,8 +344,8 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
             />
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-base">Chave *</Label>
+            <div className="space-y-2">
+            <Label className="text-sm font-semibold text-white/90">Chave *</Label>
             {!isRetirada && prefill?.chave ? (
               <Input value={formData.chave} readOnly className="bg-muted" />
             ) : (
@@ -356,13 +357,14 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
                 placeholder="Ex: SALA 101, PORTARIA"
               />
             )}
+            </div>
           </div>
 
           {/* Cadastro de nova pessoa quando o nome não existe na coleção de cadastros */}
           {mostrarCadastroNovo && (
             <>
-              <div className="space-y-3">
-                <Label className="text-base">RG / CPF</Label>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
+                <Label className="text-sm font-semibold text-white/90">RG / CPF</Label>
                 <Input
                   value={formData.rgCpf || ''}
                   onChange={(e) => updateField('rgCpf', e.target.value)}
@@ -370,8 +372,8 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
                   className="bg-muted/50"
                 />
               </div>
-              <div className="space-y-3">
-                <Label className="text-base">Departamento</Label>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-2">
+                <Label className="text-sm font-semibold text-white/90">Departamento</Label>
                 <Select value={formData.departamento || ''} onValueChange={(v) => updateField('departamento', v)}>
                   <SelectTrigger className="w-full bg-muted/50">
                     <SelectValue placeholder="Selecione o departamento" />
@@ -388,8 +390,8 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
             </>
           )}
 
-          <div className="space-y-3">
-            <Label className="text-base">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2">
+            <Label className="text-sm font-semibold text-white/90">
               {isRetirada ? 'Horário de Retirada' : 'Horário de Devolução'}
             </Label>
             <Input
@@ -400,7 +402,7 @@ function ChavesModal({ open, onClose, onSaved, prefill, modo }: ChavesModalProps
           </div>
         </div>
 
-        <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
+        <DialogFooter className="mt-5 gap-3 border-t border-white/10 pt-4 sm:gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -900,29 +902,31 @@ export default function ChavesPage() {
       {/* Detail Modal */}
       <Dialog open={detailOpen} onOpenChange={(v) => { if (!v) { setDetailOpen(false); setSelectedRegistro(null); } }}>
         <DialogContent
+          className="border-emerald-400/20 bg-slate-950 text-white shadow-2xl xl:max-w-xl xl:rounded-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-left">
-              <KeyRound className="h-5 w-5 text-emerald-600" />
+          <DialogHeader className="border-b border-white/10 pb-4">
+
+            <DialogTitle className="flex items-center gap-2 pr-8 text-left text-white">
+              <KeyRound className="h-5 w-5 text-emerald-400" />
               <span className="flex-1">Detalhes da Retirada</span>
             </DialogTitle>
           </DialogHeader>
 
           {selectedRegistro && (
             <div className="space-y-5">
-              <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-1">
                 {getAllFields(selectedRegistro).map((field) => (
-                  <div key={field.label} className="flex justify-between items-start gap-2">
-                    <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
-                    <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
+                  <div key={field.label} className="flex justify-between items-start gap-3 border-b border-white/[0.07] py-2.5 last:border-0 last:pb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-white/55 shrink-0">{field.label}</span>
+                    <span className="text-sm text-white/90 text-right">{field.value || '-'}</span>
                   </div>
                 ))}
               </div>
 
               {!selectedRegistro.horarioDevolucao && (
                 <Button
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold"
                   onClick={() => {
                     setDetailOpen(false);
                     handleDevolver(selectedRegistro);
