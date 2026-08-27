@@ -52,8 +52,8 @@ export default function CorrespondenciaDetailModal({
         className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="flex items-center gap-2 pr-8 text-card-foreground">
             <Mail className="h-5 w-5 text-emerald-600" />
             Detalhes da Correspondência
           </DialogTitle>
@@ -66,7 +66,7 @@ export default function CorrespondenciaDetailModal({
                 <FileText className="h-4 w-4 text-emerald-600" />
                 <span className="font-semibold text-sm">Informações da Correspondência</span>
               </div>
-              <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+              <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-1">
                 {[
                   { label: 'Destinatário', value: registro.destinatario },
                   { label: 'Remetente', value: registro.remetente },
@@ -78,9 +78,9 @@ export default function CorrespondenciaDetailModal({
                   ...(registro.horarioSaida ? [{ label: 'Horário de Retirada', value: registro.horarioSaida }] : []),
                   ...(registro.quemRetirou ? [{ label: 'Quem Retirou', value: registro.quemRetirou }] : []),
                 ].map((field) => (
-                  <div key={field.label} className="flex justify-between items-start gap-2">
-                    <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
-                    <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
+                  <div key={field.label} className="flex justify-between items-start gap-3 border-b border-border py-2.5 last:border-0 last:pb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{field.label}</span>
+                    <span className="text-sm text-card-foreground text-right">{field.value || '-'}</span>
                   </div>
                 ))}
               </div>
@@ -92,7 +92,7 @@ export default function CorrespondenciaDetailModal({
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <span className="font-semibold text-sm">Registros Adicionais</span>
                 </div>
-                <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-1">
                   {registro.detalhes && (
                     <div>
                       <span className="text-sm font-medium text-muted-foreground">Detalhes</span>
@@ -111,8 +111,8 @@ export default function CorrespondenciaDetailModal({
 
             {!registro.horarioSaida && (
               <>
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-2">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                  <Label className="flex items-center gap-2 text-card-foreground">
                     <PackageCheck className="h-4 w-4 text-emerald-600" />
                     Quem Retirou
                   </Label>
@@ -127,8 +127,8 @@ export default function CorrespondenciaDetailModal({
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-2">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                  <Label className="flex items-center gap-2 text-card-foreground">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     Detalhes
                   </Label>
@@ -141,8 +141,8 @@ export default function CorrespondenciaDetailModal({
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-2">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                  <Label className="flex items-center gap-2 text-card-foreground">
                     <AlertTriangle className="h-4 w-4 text-amber-500" />
                     Ocorrência
                   </Label>
@@ -157,7 +157,7 @@ export default function CorrespondenciaDetailModal({
 
                 <Button
                   onClick={onRegistrarRetirada}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold"
+                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 text-base font-semibold"
                 >
                   <PackageCheck className="h-5 w-5 mr-2" />
                   Registrar Retirada
@@ -166,7 +166,7 @@ export default function CorrespondenciaDetailModal({
             )}
 
             {registro.horarioSaida && (
-              <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
                   Retirado em {registro.horarioSaida}
                   {registro.quemRetirou ? ` por ${registro.quemRetirou}` : ''}

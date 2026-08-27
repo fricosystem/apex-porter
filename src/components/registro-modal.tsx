@@ -2021,8 +2021,8 @@ export default function RegistroModal({
     <>
     <Dialog open={open && !coletaMessage} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="flex items-center gap-2 pr-8 text-xl text-card-foreground">
             {isRascunho ? (
               <AlertTriangle className="h-6 w-6 text-red-500" />
             ) : isRefacao ? (
@@ -2032,7 +2032,7 @@ export default function RegistroModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {isRefacao && (
             <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-base rounded-xl p-4 flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 shrink-0 mt-0.5" />
@@ -2043,7 +2043,7 @@ export default function RegistroModal({
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-3">
                 <Label className="flex items-center gap-1 text-base">
@@ -2097,13 +2097,13 @@ export default function RegistroModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">{renderFields()}</div>
+          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-muted/30 p-4">{renderFields()}</div>
 
           {renderPessoasExtras()}
 
           {categoria && (
-            <div className="space-y-3 pt-2 border-t border-border/50">
-              <Label className="text-base">Observação <span className="text-muted-foreground font-normal">(Opcional)</span></Label>
+            <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+              <Label className="text-base text-card-foreground">Observação <span className="text-muted-foreground font-normal">(Opcional)</span></Label>
               <Textarea
                 placeholder="Anotações ou observações adicionais sobre o registro..."
                 value={formData.observacao || ''}
@@ -2115,7 +2115,7 @@ export default function RegistroModal({
           )}
         </div>
 
-        <DialogFooter className="mt-4 gap-3 flex-wrap justify-between sm:justify-end w-full pt-0 sm:gap-3">
+        <DialogFooter className="mt-5 gap-3 flex-wrap justify-between sm:justify-end w-full border-t border-border pt-4 sm:gap-3">
           {isRascunho ? (
             <Button variant="destructive" onClick={handleDeleteDraft} className="w-full sm:w-auto mb-2 sm:mb-0 sm:mr-auto text-base">
               Excluir Rascunho
@@ -2152,10 +2152,10 @@ export default function RegistroModal({
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-lg border border-border bg-background p-6 text-foreground shadow-lg xl:rounded-2xl xl:bg-card xl:text-card-foreground xl:shadow-2xl"
         >
-          <DialogTitle className="text-base font-medium mb-5">Mensagem de Liberação</DialogTitle>
-          <div className="bg-muted p-3 rounded-lg text-base text-foreground select-all">
+          <DialogTitle className="mb-5 pr-8 text-base font-semibold text-foreground xl:text-card-foreground">Mensagem de Liberação</DialogTitle>
+          <div className="select-all rounded-xl border border-border bg-muted p-4 text-base leading-relaxed text-foreground">
             {coletaMessage}
           </div>
           <div className="mt-4 flex gap-3">
@@ -2172,7 +2172,7 @@ export default function RegistroModal({
             </Button>
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-base flex-1"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 text-base flex-1 font-semibold"
               onClick={() => {
                 if (coletaMessage) {
                   navigator.clipboard.writeText(coletaMessage)
@@ -2186,7 +2186,7 @@ export default function RegistroModal({
               Copiar
             </Button>
           </div>
-          <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+          <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground opacity-80 transition-colors hover:bg-muted hover:text-foreground hover:opacity-100">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
@@ -2203,13 +2203,13 @@ export default function RegistroModal({
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Content
-          className="data-[state=open]:animate-none data-[state=closed]:animate-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
+          className="data-[state=open]:animate-none data-[state=closed]:animate-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-lg border border-border bg-background p-6 text-foreground shadow-lg xl:rounded-2xl xl:bg-card xl:text-card-foreground xl:shadow-2xl"
         >
-          <DialogTitle className="flex items-center gap-2 text-base font-medium mb-5">
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold mb-5 pr-8 text-foreground xl:text-card-foreground">
             <Ticket className="h-5 w-5 text-amber-500" />
             Ticket Gerado com Sucesso!
           </DialogTitle>
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-500/30 p-3 rounded-lg text-center">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-center">
             <p className="text-base text-muted-foreground mb-1">Guarde este código para visitas futuras</p>
             <p className="text-2xl font-bold tracking-wider text-amber-700 dark:text-amber-400 select-all">{ticketGerado}</p>
           </div>
@@ -2227,7 +2227,7 @@ export default function RegistroModal({
             </Button>
             <Button
               size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white text-xs flex-1"
+              className="bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white text-xs flex-1 font-semibold"
               onClick={() => {
                 if (ticketGerado) {
                   navigator.clipboard.writeText(ticketGerado)
@@ -2241,7 +2241,7 @@ export default function RegistroModal({
               Copiar Ticket
             </Button>
           </div>
-          <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+          <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground opacity-80 transition-colors hover:bg-muted hover:text-foreground hover:opacity-100">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>

@@ -1269,11 +1269,10 @@ export default function FluxoPage() {
       {/* Detail Modal */}
       <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setSelectedListItem(null); setPesoSaidaInput(''); } }}>
         <DialogContent
-          desktopStyle="flow"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-left">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-2 pr-8 text-left text-card-foreground">
               {selectedRegistro && (() => {
                 const RIcon = catIcons[selectedRegistro.categoria];
                 return <RIcon className="h-5 w-5 text-emerald-600" />;
@@ -1320,10 +1319,10 @@ export default function FluxoPage() {
                     const empresaNome = isEmpresaField ? field.value : '';
                     const jaExiste = isEmpresaField ? empresaExisteNaColecao(empresaNome) : true;
                     return (
-                      <div key={field.label} className="flex justify-between items-start gap-2">
-                        <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
+                      <div key={field.label} className="flex justify-between items-start gap-3 border-b border-border py-2.5 last:border-0 last:pb-1">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{field.label}</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
+                          <span className="text-sm text-card-foreground text-right">{field.value || '-'}</span>
                           {isEmpresaField && field.value && !jaExiste && (
                             <button
                               onClick={() => {
@@ -1356,7 +1355,7 @@ export default function FluxoPage() {
                       const { label, value } = formatRgCpfField(extra.rgCpf);
                       const saiu = Boolean(extra.horarioSaida);
                       return (
-                        <div key={extra.id || `${extra.nome}-${index}`} className="flex items-start justify-between gap-3 rounded-lg bg-background/70 p-3">
+                        <div key={extra.id || `${extra.nome}-${index}`} className="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-3">
                           <div className="min-w-0">
                             <p className="font-semibold text-sm truncate">{index + 1}. {extra.nome || 'Nome não informado'}</p>
                             <p className="text-xs text-muted-foreground">{label}: {value}</p>
@@ -1418,9 +1417,9 @@ export default function FluxoPage() {
                     const hasDiferenca = pesoSaidaInput.trim() !== '' && pesoSaidaNum > 0;
                     const hasPesoEntrada = pesoEntrada > 0;
                     return (
-                      <div className="space-y-3">
+                      <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
                         <div className="space-y-1.5">
-                          <Label className="flex items-center gap-2">
+                          <Label className="flex items-center gap-2 text-card-foreground">
                             <Scale className="h-4 w-4 text-emerald-500" />
                             Peso de Saída (kg)
                           </Label>
@@ -1459,9 +1458,9 @@ export default function FluxoPage() {
                     if (!campoFaltante) return null;
                     const label = campoFaltante === 'pesoCarregado' ? 'Peso Carregado (kg)' : 'Peso Vazio (kg)';
                     return (
-                      <div className="space-y-3">
+                      <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
                         <div className="space-y-1.5">
-                          <Label className="flex items-center gap-2">
+                          <Label className="flex items-center gap-2 text-card-foreground">
                             <Weight className="h-4 w-4 text-emerald-500" />
                             {label} <span className="text-red-500">*</span>
                           </Label>
@@ -1478,8 +1477,8 @@ export default function FluxoPage() {
                   })()}
 
                   {/* Detalhes field */}
-                  <div className="space-y-1.5">
-                    <Label className="flex items-center gap-2">
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                    <Label className="flex items-center gap-2 text-card-foreground">
                       <FileText className="h-4 w-4 text-muted-foreground" />
                       Detalhes
                     </Label>
@@ -1493,8 +1492,8 @@ export default function FluxoPage() {
                   </div>
 
                   {/* Ocorrência field */}
-                  <div className="space-y-1.5">
-                    <Label className="flex items-center gap-2">
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
+                    <Label className="flex items-center gap-2 text-card-foreground">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       Ocorrência
                     </Label>
@@ -1516,7 +1515,7 @@ export default function FluxoPage() {
                     <AlertTriangle className="h-4 w-4 text-amber-500" />
                     <span className="font-semibold text-sm">Registros Adicionais</span>
                   </div>
-                  <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-1">
                     {selectedRegistro.detalhes && (
                       <div>
                         <span className="text-sm font-medium text-muted-foreground">Detalhes</span>
@@ -1553,7 +1552,7 @@ export default function FluxoPage() {
 
               {/* Status da saída principal e dos acompanhantes */}
               {selectedRegistro.horarioSaida && (
-                <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
                     {Array.isArray((registroOrigemSelecionado as any)?.pessoasExtras) && (registroOrigemSelecionado as any).pessoasExtras.some((extra: any) => !extra.horarioSaida)
                       ? `Saída parcial registrada às ${selectedRegistro.horarioSaida}`
@@ -1563,7 +1562,7 @@ export default function FluxoPage() {
               )}
 
               {!selectedRegistro.inativo && (
-                <div className="pt-2 border-t border-border/50 space-y-2">
+                <div className="rounded-2xl border-t border-border bg-muted/20 pt-4 space-y-2">
                   <p className="text-xs text-muted-foreground text-center">
                     Auditoria: O registro original não pode ser modificado. Para corrigir, crie uma nova versão auditável.
                   </p>
@@ -1587,10 +1586,10 @@ export default function FluxoPage() {
         setSaidaSelecaoOpen(openState);
         if (!openState) setPessoasSaidaSelecionadas([]);
       }}>
-        <DialogContent desktopStyle="flow" className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <LogOut className="h-5 w-5 text-amber-600" />
+        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-2 pr-8 text-card-foreground">
+              <LogOut className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               Registrar saída
             </DialogTitle>
           </DialogHeader>
@@ -1634,7 +1633,7 @@ export default function FluxoPage() {
               })}
             </div>
           </div>
-          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
+          <DialogFooter className="mt-5 gap-3 border-t border-border pt-4 sm:gap-3">
             <Button variant="outline" onClick={() => { setSaidaSelecaoOpen(false); setPessoasSaidaSelecionadas([]); }}>
               Cancelar
             </Button>
@@ -1652,10 +1651,10 @@ export default function FluxoPage() {
 
       {/* Cadastrar Empresa Quick Modal */}
       <Dialog open={cadastrarEmpresaOpen} onOpenChange={(v) => { if (!v) { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); } }}>
-        <DialogContent desktopStyle="flow" className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-emerald-600" />
+        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="flex items-center gap-2 pr-8 text-card-foreground">
+              <Building2 className="h-5 w-5 text-primary" />
               Cadastrar Empresa
             </DialogTitle>
           </DialogHeader>
@@ -1675,7 +1674,7 @@ export default function FluxoPage() {
               />
             </div>
           </div>
-          <DialogFooter className="mt-4 gap-3 pt-0 sm:gap-3">
+          <DialogFooter className="mt-5 gap-3 border-t border-border pt-4 sm:gap-3">
             <Button
               variant="outline"
               onClick={() => { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); }}
@@ -1699,17 +1698,17 @@ export default function FluxoPage() {
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-lg border border-border bg-background p-6 text-foreground shadow-lg xl:rounded-2xl xl:bg-card xl:text-card-foreground xl:shadow-2xl"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <DialogTitle className="text-sm font-medium mb-5">Mensagem de Liberação</DialogTitle>
-            <div className="bg-muted p-3 rounded-lg text-xs text-foreground whitespace-pre-wrap select-all">
+            <DialogTitle className="mb-5 pr-8 text-sm font-semibold text-foreground xl:text-card-foreground">Mensagem de Liberação</DialogTitle>
+            <div className="select-all rounded-xl border border-border bg-muted p-4 text-xs leading-relaxed text-foreground whitespace-pre-wrap">
               {mensagemLiberacao}
             </div>
             <div className="mt-4">
               <Button
                 size="sm"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold"
                 onClick={() => {
                   if (mensagemLiberacao) {
                     navigator.clipboard.writeText(mensagemLiberacao);
@@ -1721,7 +1720,7 @@ export default function FluxoPage() {
                 Copiar e Fechar
               </Button>
             </div>
-            <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+            <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground opacity-80 transition-colors hover:bg-muted hover:text-foreground hover:opacity-100">
               <X className="h-4 w-4" />
               <span className="sr-only">Fechar</span>
             </DialogPrimitive.Close>
@@ -1734,10 +1733,10 @@ export default function FluxoPage() {
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-lg border border-border bg-background p-6 text-foreground shadow-lg xl:rounded-2xl xl:bg-card xl:text-card-foreground xl:shadow-2xl"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <DialogTitle className="flex items-center gap-2 mb-5">
+            <DialogTitle className="flex items-center gap-2 mb-5 pr-8 text-foreground xl:text-card-foreground">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Confirmar Refazer Registro
             </DialogTitle>
@@ -1754,13 +1753,13 @@ export default function FluxoPage() {
               </Button>
               <Button
                 onClick={confirmarRefazer}
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                className="flex-1 bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white font-semibold"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Confirmar
               </Button>
             </div>
-            <DialogPrimitive.Close className="absolute top-3 right-3 rounded-full p-1 opacity-70 hover:opacity-100 hover:bg-muted">
+            <DialogPrimitive.Close className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground opacity-80 transition-colors hover:bg-muted hover:text-foreground hover:opacity-100">
               <X className="h-4 w-4" />
               <span className="sr-only">Fechar</span>
             </DialogPrimitive.Close>
