@@ -484,13 +484,6 @@ export default function ConfiguracoesPage() {
           </DialogHeader>
 
           <div className="space-y-7 text-sm leading-7 text-foreground/90">
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-800 dark:text-amber-200">
-              <p className="font-semibold">Documento operacional</p>
-              <p className="mt-1">
-                Este conteúdo apresenta as regras de uso do sistema para a operação interna. A administração da empresa deve revisar o texto com assessoria jurídica antes de adotá-lo como instrumento contratual definitivo.
-              </p>
-            </div>
-
             <section className="space-y-2">
               <h3 className="text-base font-semibold">1. Objeto e finalidade</h3>
               <p>
