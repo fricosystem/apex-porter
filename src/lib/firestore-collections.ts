@@ -41,6 +41,7 @@ import type {
   User,
   Posto,
   Cargo,
+  TipoPessoaConfig,
   RegistroPesagemApara,
   RegistroPesagemTinta,
   RegistroChave,
@@ -200,6 +201,33 @@ export async function updateCargo(id: string, data: Partial<Cargo>): Promise<voi
 
 export async function removeCargo(id: string): Promise<void> {
   await deleteDocument(CARGOS_COL, id);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// TIPOS DE PESSOA
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const TIPOS_PESSOA_COL = 'tiposPessoa';
+
+export function subscribeTiposPessoa(callback: (data: TipoPessoaConfig[]) => void): Unsubscribe {
+  return subscribeCollection<TipoPessoaConfig>(TIPOS_PESSOA_COL, callback);
+}
+
+export async function addTipoPessoa(data: Omit<TipoPessoaConfig, 'id'>): Promise<string> {
+  return addDocument(TIPOS_PESSOA_COL, data as Record<string, unknown>);
+}
+
+export async function setTipoPessoa(id: string, data: Omit<TipoPessoaConfig, 'id'>): Promise<void> {
+  await setDocument(TIPOS_PESSOA_COL, id, data as Record<string, unknown>);
+}
+
+export async function updateTipoPessoa(id: string, data: Partial<TipoPessoaConfig>): Promise<void> {
+  await updateDocument(TIPOS_PESSOA_COL, id, data);
+}
+
+// A tela administrativa usa inativação; esta função fica disponível apenas para migrações controladas.
+export async function removeTipoPessoa(id: string): Promise<void> {
+  await deleteDocument(TIPOS_PESSOA_COL, id);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

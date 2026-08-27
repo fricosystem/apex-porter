@@ -29,6 +29,7 @@ import type {
   Lembrete,
   RotaGeoreferenciada,
   RegistroChave,
+  TipoPessoaConfig,
 } from './data';
 import {
   signInWithEmail,
@@ -77,6 +78,9 @@ import {
   setCargo as setCargoFS,
   updateCargo as updateCargoFS,
   removeCargo as removeCargoFS,
+  subscribeTiposPessoa,
+  setTipoPessoa as setTipoPessoaFS,
+  updateTipoPessoa as updateTipoPessoaFS,
   // Phase 3 — Fluxo + Veículos + Pré-Autorizações
   subscribeRegistrosFluxo,
   setRegistroFluxo as setRegistroFluxoFS,
@@ -271,6 +275,9 @@ function startCoreSubscriptions() {
   );
   coreUnsubs.push(
     subscribeCargos((data) => useAppStore.setState({ cargos: data }))
+  );
+  coreUnsubs.push(
+    subscribeTiposPessoa((data) => useAppStore.setState({ tiposPessoa: data }))
   );
   coreUnsubs.push(
     subscribeUsuarios((data) => useAppStore.setState({ usuarios: data }))
@@ -1047,7 +1054,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao remover cargo:', err);
     });
   },
-  updateCargo: (cargo) => {
+    updateCargo: (cargo) => {
     set((state) => ({
       cargos: state.cargos.map((c) => (c.id === cargo.id ? cargo : c)),
     }));
@@ -1056,7 +1063,36 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao atualizar cargo:', err);
     });
   },
-
+  // Tipos de Pessoa (Firestore-backed; inativação preserva auditoria)
+  tiposPessoa: [],
+  addTipoPessoa: (tipo) => {
+    set((state) => ({ tiposPessoa: [...state.tiposPessoa, tipo] }));
+    const { id, ...data } = tipo;
+    setTipoPessoaFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao adicionar tipo de pessoa:', err);
+    });
+  },
+  updateTipoPessoa: (tipo) => {
+    set((state) => ({
+      tiposPessoa: state.tiposPessoa.map((item) => (
+        item.id === tipo.id ? { ...item, ...tipo } : item
+      )),
+    }));
+    const { id, ...data } = tipo;
+    updateTipoPessoaFS(id, data).catch((err) => {
+      console.warn('[Firestore] Falha ao atualizar tipo de pessoa:', err);
+    });
+  },
+  inativarTipoPessoa: (id) => {
+    set((state) => ({
+      tiposPessoa: state.tiposPessoa.map((item) => (
+        item.id === id ? { ...item, ativo: false } : item
+      )),
+    }));
+    updateTipoPessoaFS(id, { ativo: false }).catch((err) => {
+      console.warn('[Firestore] Falha ao inativar tipo de pessoa:', err);
+    });
+  },
   // Avisos (Firestore-backed — Phase 5)
   avisos: [],
   addAviso: (aviso) => {

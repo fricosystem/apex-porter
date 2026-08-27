@@ -292,7 +292,8 @@ export type TipoPessoaCanonico =
 
 export type TipoPessoaLegado = 'Visitante' | 'Motorista' | 'Outro';
 
-export type TipoPessoa = TipoPessoaCanonico | TipoPessoaLegado;
+// Tipos gerenciáveis pela administração podem ser personalizados, mantendo os legados.
+export type TipoPessoa = TipoPessoaCanonico | TipoPessoaLegado | (string & {});
 
 // Lista exibida nos seletores de cadastro (apenas tipos canônicos atuais)
 export const TIPOS_PESSOA: { value: TipoPessoaCanonico; label: string }[] = [
@@ -314,16 +315,17 @@ const MAPA_TIPO_LEGADO: Record<TipoPessoaLegado, TipoPessoaCanonico> = {
   Outro: 'Esporadico',
 };
 
-export function normalizeTipoPessoa(tipo: string | undefined | null): TipoPessoaCanonico {
+export function normalizeTipoPessoa(tipo: string | undefined | null): TipoPessoa {
   if (!tipo) return 'Esporadico';
   if (tipo in MAPA_TIPO_LEGADO) return MAPA_TIPO_LEGADO[tipo as TipoPessoaLegado];
-  const canonicos = TIPOS_PESSOA.map((t) => t.value);
-  return (canonicos.includes(tipo as TipoPessoaCanonico) ? tipo : 'Esporadico') as TipoPessoaCanonico;
+  return tipo as TipoPessoa;
 }
 
-export function getTipoPessoaLabel(tipo: string | undefined | null): string {
-  const canonico = normalizeTipoPessoa(tipo);
-  return TIPOS_PESSOA.find((t) => t.value === canonico)?.label || 'Visitantes';
+export function getTipoPessoaLabel(tipo: string | undefined | null, options?: TipoPessoaOption[]): string {
+  const normalized = normalizeTipoPessoa(tipo);
+  return options?.find((option) => option.value === normalized || option.value === tipo)?.label
+    || TIPOS_PESSOA.find((t) => t.value === normalized)?.label
+    || normalized;
 }
 
 export interface Pessoa {
@@ -398,6 +400,46 @@ export interface Cargo {
   id: string;
   nome: string;
   ativo: boolean;
+}
+
+export interface TipoPessoaConfig {
+  id: string;
+  nome: string;
+  valor?: string;
+  ativo: boolean;
+  sistema?: boolean;
+}
+
+export interface TipoPessoaOption {
+  id: string;
+  value: string;
+  label: string;
+  ativo: boolean;
+  sistema?: boolean;
+}
+
+export function getTipoPessoaOptions(configs: TipoPessoaConfig[] = []): TipoPessoaOption[] {
+  const defaults: TipoPessoaOption[] = TIPOS_PESSOA.map((tipo) => ({
+    id: `system_${tipo.value}`,
+    value: tipo.value,
+    label: tipo.label,
+    ativo: true,
+    sistema: true,
+  }));
+  const optionsById = new Map(defaults.map((tipo) => [tipo.id, tipo]));
+
+  configs.forEach((config) => {
+    const fallbackDefault = defaults.find((tipo) => tipo.id === config.id);
+    optionsById.set(config.id, {
+      id: config.id,
+      value: config.valor || fallbackDefault?.value || config.nome,
+      label: config.nome,
+      ativo: config.ativo,
+      sistema: config.sistema ?? fallbackDefault?.sistema,
+    });
+  });
+
+  return Array.from(optionsById.values());
 }
 
 export interface User {

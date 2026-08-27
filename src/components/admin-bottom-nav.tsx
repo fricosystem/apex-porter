@@ -23,6 +23,7 @@ import {
   ShieldBan,
   Settings,
   Briefcase,
+  Tags,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { AdminTab } from '@/lib/store-types';
@@ -40,6 +41,7 @@ interface NavItem {
 
 const SECONDARY_NAV: NavItem[] = [
   { page: 'cargos', label: 'Cargos', icon: Briefcase },
+  { page: 'tipos-pessoa', label: 'Tipos de Pessoa', icon: Tags },
   { page: 'avisos', label: 'Avisos', icon: Bell },
   { page: 'lista-negra', label: 'Lista Negra', icon: ShieldBan },
   { page: 'protocolos-emergencia', label: 'Emergência', icon: Siren },
@@ -111,8 +113,8 @@ export default function AdminBottomNav({ currentTab, onTabChange }: AdminBottomN
   );
 
   const handleNavClick = (page: any) => {
-    if (page === 'cargos') {
-      onTabChange('cargos');
+    if (page === 'cargos' || page === 'tipos-pessoa') {
+      onTabChange(page as AdminTab);
     } else {
       setCurrentPage(page);
     }

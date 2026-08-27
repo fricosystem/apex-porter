@@ -66,14 +66,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppStore } from '@/lib/store';
-import { TIPOS_PESSOA, getTipoPessoaLabel, normalizeTipoPessoa, CATEGORIAS_FLUXO, type TipoPessoa, type Pessoa } from '@/lib/data';
+import { getTipoPessoaLabel, getTipoPessoaOptions, normalizeTipoPessoa, CATEGORIAS_FLUXO, type TipoPessoa, type Pessoa } from '@/lib/data';
 import { toast } from 'sonner';
 import AutocompleteInput from './autocomplete-input';
 import { PESSOAS_INICIAIS, REGISTROS_FLUXO_INICIAIS } from '@/lib/seed-data';
 import { formatCpfRg, formatPhone } from '@/lib/utils';
 import { expandRegistroIndividualmente } from '@/lib/registro-individualizacao';
 
-const TIPO_ICONS: Record<TipoPessoa, React.ReactNode> = {
+const TIPO_ICONS: Partial<Record<TipoPessoa, React.ReactNode>> = {
   Porteiro: <DoorOpen className="h-3.5 w-3.5" />,
   Vigia: <Shield className="h-3.5 w-3.5" />,
   Vigilante: <ShieldCheck className="h-3.5 w-3.5" />,
@@ -88,7 +88,7 @@ const TIPO_ICONS: Record<TipoPessoa, React.ReactNode> = {
   Outro: <UserPlus className="h-3.5 w-3.5" />,
 };
 
-const TIPO_COLORS: Record<TipoPessoa, string> = {
+const TIPO_COLORS: Partial<Record<TipoPessoa, string>> = {
   Porteiro: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   Vigia: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   Vigilante: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
@@ -130,7 +130,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function CadastrosPage() {
-  const { pessoas, addPessoa, removePessoa, updatePessoa, departamentos, empresas, registrosFluxo } = useAppStore();
+  const { pessoas, addPessoa, removePessoa, updatePessoa, departamentos, empresas, registrosFluxo, tiposPessoa } = useAppStore();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -147,6 +147,15 @@ export default function CadastrosPage() {
   const [showMoreVisits, setShowMoreVisits] = useState(false);
   const [visitPeriodInicio, setVisitPeriodInicio] = useState('');
   const [visitPeriodFim, setVisitPeriodFim] = useState('');
+  const allTipoOptions = useMemo(() => getTipoPessoaOptions(tiposPessoa), [tiposPessoa]);
+  const tipoOptions = useMemo(
+    () => allTipoOptions.filter((tipo) => tipo.ativo),
+    [allTipoOptions],
+  );
+  const tipoFormOptions = useMemo(
+    () => allTipoOptions.filter((tipo) => tipo.ativo || tipo.value === form.tipo),
+    [allTipoOptions, form.tipo],
+  );
 
   // ── Paginação infinita (20 itens por vez) ──
   const PAGE_SIZE = 20;
@@ -536,7 +545,8 @@ export default function CadastrosPage() {
     const list = pessoas.filter(p => !p.inativo);
     const counts: Record<string, number> = { total: list.length };
     list.forEach((p) => {
-      counts[p.tipo] = (counts[p.tipo] || 0) + 1;
+      const tipo = normalizeTipoPessoa(p.tipo);
+      counts[tipo] = (counts[tipo] || 0) + 1;
     });
     return counts;
   }, [pessoas]);
@@ -724,7 +734,7 @@ export default function CadastrosPage() {
         >
           Todos ({countByTipo.total})
         </button>
-        {TIPOS_PESSOA.map((t) => (
+        {tipoOptions.map((t) => (
           <button
             key={t.value}
             onClick={() => setFilterTipo(t.value)}
@@ -734,7 +744,7 @@ export default function CadastrosPage() {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            {TIPO_ICONS[t.value]}
+            {TIPO_ICONS[t.value] || <Users className="h-3.5 w-3.5" />}
             {t.label} ({countByTipo[t.value] || 0})
           </button>
         ))}
@@ -885,7 +895,7 @@ export default function CadastrosPage() {
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <p className="font-medium truncate text-base uppercase">{p.nome}</p>
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border">
-                            {getTipoPessoaLabel(p.tipo)}
+                            {getTipoPessoaLabel(p.tipo, allTipoOptions)}
                           </span>
                           {p.inativo && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border">
@@ -988,12 +998,12 @@ export default function CadastrosPage() {
             <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
               <div className="bg-muted/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${TIPO_COLORS[detailsPessoa.tipo]}`}>
-                    {TIPO_ICONS[detailsPessoa.tipo]}
+                  <div className={`p-2.5 rounded-lg ${TIPO_COLORS[detailsPessoa.tipo] || 'bg-muted text-muted-foreground'}`}>
+                    {TIPO_ICONS[detailsPessoa.tipo] || <Users className="h-5 w-5" />}
                   </div>
                   <div>
                     <h3 className="font-bold text-lg leading-tight">{detailsPessoa.nome}</h3>
-                    <p className="text-sm text-muted-foreground">{detailsPessoa.cargo || getTipoPessoaLabel(detailsPessoa.tipo)}</p>
+                    <p className="text-sm text-muted-foreground">{detailsPessoa.cargo || getTipoPessoaLabel(detailsPessoa.tipo, allTipoOptions)}</p>
                   </div>
                 </div>
 
@@ -1318,10 +1328,10 @@ export default function CadastrosPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIPOS_PESSOA.map((t) => (
+                  {tipoFormOptions.map((t) => (
                     <SelectItem key={t.value} value={t.value}>
                       <span className="flex items-center gap-2">
-                        {TIPO_ICONS[t.value]}
+                        {TIPO_ICONS[t.value] || <Users className="h-3.5 w-3.5" />}
                         {t.label}
                       </span>
                     </SelectItem>
@@ -1455,7 +1465,7 @@ export default function CadastrosPage() {
   );
 }
 
-const TIPO_STRIPE_COLORS: Record<TipoPessoa, string> = {
+const TIPO_STRIPE_COLORS: Partial<Record<TipoPessoa, string>> = {
   Porteiro: 'bg-blue-500',
   Vigia: 'bg-cyan-500',
   Vigilante: 'bg-teal-500',

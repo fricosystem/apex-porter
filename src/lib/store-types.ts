@@ -18,6 +18,7 @@ import type {
   Ramal,
   Posto,
   Cargo,
+  TipoPessoaConfig,
   Aviso,
   ListaNegraEntry,
   AchadosPerdidosItem,
@@ -58,7 +59,7 @@ export type SystemConfig = {
 
 // ─── Tipos de cada slice ──────────────────────────────────────────────────────
 
-export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos' | 'cargos';
+export type AdminTab = 'painel' | 'rondas' | 'usuarios' | 'postos' | 'cargos' | 'tipos-pessoa';
 
 export type NavigationSlice = {
   currentPage: PageType;
@@ -128,6 +129,10 @@ export type CadastrosSlice = {
   addCargo: (cargo: Cargo) => void;
   removeCargo: (id: string) => void;
   updateCargo: (cargo: Cargo) => void;
+  tiposPessoa: TipoPessoaConfig[];
+  addTipoPessoa: (tipo: TipoPessoaConfig) => void;
+  updateTipoPessoa: (tipo: TipoPessoaConfig) => void;
+  inativarTipoPessoa: (id: string) => void;
 };
 
 export type SegurancaSlice = {

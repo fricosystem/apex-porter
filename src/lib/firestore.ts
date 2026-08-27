@@ -40,6 +40,7 @@ export async function getDocument<T>(path: string, id: string): Promise<T | null
 // ── Helper to automatically convert string fields to uppercase ──
 const DONT_UPPERCASE_KEYS = new Set([
   'id',
+  'valor',
   'categoria',
   'status',
   'tipo',

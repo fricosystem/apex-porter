@@ -6,6 +6,7 @@ import { AdminPainelTab } from './admin/admin-painel-tab';
 import { AdminRondasTab } from './admin/admin-rondas-tab';
 import { AdminUsuariosTab } from './admin/admin-usuarios-tab';
 import { AdminCargosTab } from './admin/admin-cargos-tab';
+import { AdminTiposPessoaTab } from './admin/admin-tipos-pessoa-tab';
 import { AdminPostosTab } from './admin/admin-postos-tab';
 import { useViewport } from '@/hooks/use-viewport';
 import { useAppStore } from '@/lib/store';
@@ -36,6 +37,7 @@ export default function AdminPage() {
             {currentTab === 'usuarios' && <AdminUsuariosTab />}
             {currentTab === 'postos'   && <AdminPostosTab />}
             {currentTab === 'cargos'   && <AdminCargosTab />}
+            {currentTab === 'tipos-pessoa' && <AdminTiposPessoaTab />}
           </motion.div>
         </AnimatePresence>
       </div>

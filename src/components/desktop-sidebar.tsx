@@ -1,6 +1,6 @@
 'use client';
 
-import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Users } from 'lucide-react';
+import { Briefcase, Footprints, LayoutDashboard, LogOut, MapPin, Tags, Users } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useTheme } from './theme-provider';
 import {
@@ -64,6 +64,7 @@ const ADMIN_NAV: Array<{ tab: AdminTab; label: string; icon: React.ElementType }
   { tab: 'usuarios', label: 'Colaboradores', icon: Users },
   { tab: 'postos', label: 'Postos', icon: MapPin },
   { tab: 'cargos', label: 'Cargos', icon: Briefcase },
+  { tab: 'tipos-pessoa', label: 'Tipos de Pessoa', icon: Tags },
 ];
 
 function initials(name?: string) {
