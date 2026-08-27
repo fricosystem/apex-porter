@@ -50,18 +50,26 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  desktopStyle = 'standard',
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** Mantém a apresentação anterior para modais pertencentes ao Fluxo. */
+  desktopStyle?: 'standard' | 'flow'
 }) {
+  const desktopThemeClass = desktopStyle === 'flow'
+    ? 'xl:bg-background xl:text-foreground'
+    : 'xl:bg-card xl:text-card-foreground';
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background fixed inset-0 z-50 flex flex-col w-full h-full max-w-none m-0 p-0 gap-0 rounded-none border-0 shadow-none data-[state=open]:animate-none data-[state=closed]:animate-none xl:inset-auto xl:left-1/2 xl:top-1/2 xl:h-auto xl:max-h-[calc(100vh-3rem)] xl:w-[calc(100%-3rem)] xl:max-w-3xl xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-2xl xl:border xl:shadow-2xl xl:data-[state=open]:animate-in xl:data-[state=closed]:animate-out",
-          className
+          "bg-background fixed inset-0 z-50 flex flex-col w-full h-full max-w-none m-0 p-0 gap-0 rounded-none border-0 shadow-none data-[state=open]:animate-none data-[state=closed]:animate-none xl:inset-auto xl:left-1/2 xl:top-1/2 xl:h-auto xl:max-h-[calc(100vh-3rem)] xl:w-[calc(100%-3rem)] xl:max-w-3xl xl:-translate-x-1/2 xl:-translate-y-1/2 xl:rounded-2xl xl:border xl:border-border xl:shadow-2xl xl:data-[state=open]:animate-in xl:data-[state=closed]:animate-out",
+          desktopThemeClass,
+          className,
         )}
         {...props}
       >

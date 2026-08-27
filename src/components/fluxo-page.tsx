@@ -1269,6 +1269,7 @@ export default function FluxoPage() {
       {/* Detail Modal */}
       <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setSelectedListItem(null); setPesoSaidaInput(''); } }}>
         <DialogContent
+          desktopStyle="flow"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
@@ -1586,7 +1587,7 @@ export default function FluxoPage() {
         setSaidaSelecaoOpen(openState);
         if (!openState) setPessoasSaidaSelecionadas([]);
       }}>
-        <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent desktopStyle="flow" className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LogOut className="h-5 w-5 text-amber-600" />
@@ -1651,7 +1652,7 @@ export default function FluxoPage() {
 
       {/* Cadastrar Empresa Quick Modal */}
       <Dialog open={cadastrarEmpresaOpen} onOpenChange={(v) => { if (!v) { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); } }}>
-        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent desktopStyle="flow" className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-emerald-600" />

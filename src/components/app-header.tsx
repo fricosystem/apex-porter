@@ -253,7 +253,7 @@ export default function AppHeader({ mode = 'compact' }: { mode?: 'compact' | 'de
         <DialogPortal>
           <DialogOverlay />
           <DialogPrimitive.Content
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-background rounded-lg border shadow-lg p-6 xl:rounded-2xl xl:border-border xl:bg-card xl:text-card-foreground xl:shadow-2xl"
           >
             <DialogTitle className="flex items-center gap-2 text-sm font-medium mb-5">
               <Ticket className="h-5 w-5 text-emerald-600" />
