@@ -24,7 +24,7 @@ function TacticalParticles() {
         left: `${pseudoRandom1}%`,
         delay: `${pseudoRandom2}s`,
         duration: `${6 + pseudoRandom3}s`,
-        size: 1 + pseudoRandom4,
+        size: 1.5 + pseudoRandom4,
       };
     }), []);
 
@@ -33,14 +33,14 @@ function TacticalParticles() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute rounded-full bg-emerald-500"
+          className="absolute rounded-full bg-emerald-600"
           style={{
             left: p.left,
             bottom: '-10px',
             width: `${p.size}px`,
             height: `${p.size}px`,
             animation: `float-particle ${p.duration} ${p.delay} infinite linear`,
-            boxShadow: `0 0 ${p.size * 3}px rgba(16,185,129,0.55)`,
+            boxShadow: `0 0 ${p.size * 4}px rgba(16,185,129,0.85)`,
           }}
         />
       ))}
@@ -131,7 +131,7 @@ export default function LoginPage() {
         className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-800/15 lg:pr-12 xl:py-8"
       >
         <div>
-          <div className="mb-14 flex items-center gap-3 xl:mb-20">
+          <div className="relative z-20 mb-14 flex items-center gap-3 xl:mb-20">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.12)]">
               <img src="/icons/APEX_LOGO.png" alt="APEX Portaria" className="h-10 w-10 object-contain" />
             </div>
@@ -150,7 +150,7 @@ export default function LoginPage() {
               Mais controle para uma operação{' '}
               <span className="text-emerald-400">mais inteligente.</span>
             </h1>
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-emerald-900/65 xl:text-lg">
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-900/60 xl:text-lg">
               Centralize acessos, registros e rotinas da portaria em uma experiência criada para tornar a operação mais segura, ágil e organizada todos os dias.
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-            className="inline-flex items-center justify-center w-36 h-36 rounded-[2rem] mb-4 relative"
+            className="relative z-20 inline-flex items-center justify-center w-36 h-36 rounded-[2rem] mb-4"
             style={{
               background: 'rgba(16,185,129,0.1)',
               border: '1px solid rgba(52,211,153,0.25)',
@@ -217,13 +217,13 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card — FIXED theme (always dark tactical, independent of system theme) */}
+        {/* Card — light theme with emerald accents, independent of system theme */}
         <div
           className="relative overflow-hidden rounded-2xl p-6 md:p-8 lg:rounded-[1.5rem] lg:p-8"
           style={{
-            background: 'linear-gradient(135deg, rgba(10,30,22,0.95) 0%, rgba(6,20,14,0.98) 100%)',
-            border: '1px solid rgba(52,211,153,0.15)',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 40px rgba(16,185,129,0.05)',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(236,253,245,0.98) 100%)',
+            border: '1px solid rgba(16,185,129,0.22)',
+            boxShadow: '0 25px 60px rgba(15,23,42,0.12), 0 0 40px rgba(16,185,129,0.1)',
           }}
         >
           <div className="relative z-10">
@@ -240,7 +240,7 @@ export default function LoginPage() {
 
                   <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Email</Label>
+                      <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -251,15 +251,15 @@ export default function LoginPage() {
                           placeholder="seu@email.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-9 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                          style={{ colorScheme: 'dark' }}
+                          className="pl-9 bg-emerald-50/80 border-emerald-200 text-emerald-950 placeholder:text-emerald-700/50 focus:border-emerald-500/60 focus:ring-emerald-500/20"
+                          style={{ colorScheme: 'light' }}
                           disabled={authLoading}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-200/75 text-xs tracking-wider uppercase">Senha</Label>
+                      <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Senha</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500/50" />
                         <Input
@@ -270,14 +270,14 @@ export default function LoginPage() {
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-9 pr-10 bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
-                          style={{ colorScheme: 'dark' }}
+                          className="pl-9 pr-10 bg-emerald-50/80 border-emerald-200 text-emerald-950 placeholder:text-emerald-700/50 focus:border-emerald-500/60 focus:ring-emerald-500/20"
+                          style={{ colorScheme: 'light' }}
                           disabled={authLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500/50 hover:text-emerald-400 transition-colors"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700/60 hover:text-emerald-800 transition-colors"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -288,7 +288,7 @@ export default function LoginPage() {
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-red-400 text-sm text-center bg-red-950/30 border border-red-800/30 rounded-lg p-2"
+                        className="text-red-700 text-sm text-center bg-red-50 border border-red-200 rounded-lg p-2"
                       >
                         {displayError}
                       </motion.p>
@@ -318,8 +318,8 @@ export default function LoginPage() {
                   </form>
 
                 </motion.div>
-            <div className="mt-6 hidden border-t border-emerald-400/10 pt-4 lg:block">
-              <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-200/40">
+            <div className="mt-6 hidden border-t border-emerald-800/10 pt-4 lg:block">
+              <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-800/60">
                 Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.
               </p>
             </div>
