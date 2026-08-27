@@ -91,10 +91,10 @@ export default function LoginPage() {
     >
       {/* ── Animated Grid Background ── */}
       <div
-        className="absolute inset-0 opacity-[0.035]"
+        className="absolute inset-0 opacity-[0.065]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(52,211,153,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(52,211,153,0.5) 1px, transparent 1px)',
+            'linear-gradient(rgba(5,150,105,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(5,150,105,0.55) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
           animation: 'grid-flow 4s linear infinite',
         }}
@@ -128,7 +128,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, x: -24 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-800/15 lg:pr-12 xl:py-8"
+        className="relative z-10 hidden w-full max-w-xl flex-1 flex-col justify-between self-stretch py-4 lg:flex lg:max-w-none lg:w-full lg:border-r lg:border-emerald-800/25 lg:pr-12 xl:py-8"
       >
         <div>
           <div className="relative z-20 mb-14 flex items-center gap-3 xl:mb-20">
@@ -137,20 +137,20 @@ export default function LoginPage() {
             </div>
             <div>
               <p className="text-xl font-bold tracking-[0.2em] text-emerald-950">APEX PORTARIA</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-emerald-700/65">Controle de acesso</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-emerald-800/80">Controle de acesso</p>
             </div>
           </div>
 
           <div className="max-w-xl">
-            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700/75">
-              <span className="h-px w-8 bg-emerald-400/70" />
+            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-800/85">
+              <span className="h-px w-8 bg-emerald-600/80" />
               Gestão que acompanha o seu ritmo
             </p>
             <h1 className="max-w-xl text-4xl font-bold leading-[1.04] tracking-tight text-emerald-950 xl:text-6xl">
               Mais controle para uma operação{' '}
-              <span className="text-emerald-400">mais inteligente.</span>
+              <span className="text-emerald-600">mais inteligente.</span>
             </h1>
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-900/60 xl:text-lg">
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-900/75 xl:text-lg">
               Centralize acessos, registros e rotinas da portaria em uma experiência criada para tornar a operação mais segura, ágil e organizada todos os dias.
             </p>
           </div>
@@ -161,15 +161,15 @@ export default function LoginPage() {
               'Decisões mais rápidas',
               'Visão do seu negócio',
             ].map((item) => (
-              <div key={item} className="rounded-xl border border-emerald-700/15 bg-emerald-50/80 px-3 py-2.5 text-xs text-emerald-900/75">
-                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <div key={item} className="rounded-xl border border-emerald-700/25 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-950/85">
+                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
                 {item}
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-xs tracking-wide text-emerald-700/45">© 2026 APEX Portaria · DESENVOLVIDO POR APEX HUB</p>
+        <p className="text-xs tracking-wide text-emerald-800/70">© 2026 APEX Portaria · DESENVOLVIDO POR APEX HUB</p>
       </motion.section>
 
       {/* ── Main Content ── */}
@@ -206,13 +206,13 @@ export default function LoginPage() {
         </div>
 
         <div className="mb-6 hidden lg:block">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/75">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-800/85">
             Acesso ao sistema
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-emerald-950 xl:text-4xl">
             Bem-vindo!
           </h2>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-100/55">
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-900/75">
             Entre na sua conta para continuar operando.
           </p>
         </div>
@@ -235,12 +235,12 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <h2 className="text-xl font-semibold tracking-tight text-emerald-50 mb-1 lg:hidden">Bem-vindo!</h2>
-                  <p className="text-emerald-100/55 text-sm mb-7 lg:hidden">Entre na sua conta para continuar operando.</p>
+                  <h2 className="text-xl font-semibold tracking-tight text-emerald-950 mb-1 lg:hidden">Bem-vindo!</h2>
+                  <p className="text-emerald-900/75 text-sm mb-7 lg:hidden">Entre na sua conta para continuar operando.</p>
 
                   <form onSubmit={handleLogin} className="space-y-4 lg:space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Email</Label>
+                      <Label className="text-emerald-900/90 text-xs tracking-wider uppercase">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
                         <Input
@@ -251,7 +251,7 @@ export default function LoginPage() {
                           placeholder="seu@email.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-9 bg-emerald-50/80 border-emerald-200 text-emerald-950 placeholder:text-emerald-700/50 focus:border-emerald-500/60 focus:ring-emerald-500/20"
+                          className="pl-9 bg-emerald-50/80 border-emerald-300 text-emerald-950 placeholder:text-emerald-700/70 focus:border-emerald-600/70 focus:ring-emerald-600/25"
                           style={{ colorScheme: 'light' }}
                           disabled={authLoading}
                         />
@@ -259,7 +259,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-emerald-900/75 text-xs tracking-wider uppercase">Senha</Label>
+                      <Label className="text-emerald-900/90 text-xs tracking-wider uppercase">Senha</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black" />
                         <Input
@@ -270,7 +270,7 @@ export default function LoginPage() {
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-9 pr-10 bg-emerald-50/80 border-emerald-200 text-emerald-950 placeholder:text-emerald-700/50 focus:border-emerald-500/60 focus:ring-emerald-500/20"
+                          className="pl-9 pr-10 bg-emerald-50/80 border-emerald-300 text-emerald-950 placeholder:text-emerald-700/70 focus:border-emerald-600/70 focus:ring-emerald-600/25"
                           style={{ colorScheme: 'light' }}
                           disabled={authLoading}
                         />
@@ -318,14 +318,14 @@ export default function LoginPage() {
                   </form>
 
                 </motion.div>
-            <div className="mt-6 hidden border-t border-emerald-800/10 pt-4 lg:block">
-              <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-800/60">
+            <div className="mt-6 hidden border-t border-emerald-800/20 pt-4 lg:block">
+              <p className="text-center text-[11px] leading-relaxed tracking-wide text-emerald-900/75">
                 Ao continuar, você concorda com os termos de uso e a política de privacidade do APEX Portaria.
               </p>
             </div>
           </div>
         </div>
-        <p className="text-center text-emerald-700/45 text-xs mt-6 tracking-widest uppercase lg:hidden">
+          <p className="text-center text-emerald-800/70 text-xs mt-6 tracking-widest uppercase lg:hidden">
           APEX Portaria v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
       </motion.div>
