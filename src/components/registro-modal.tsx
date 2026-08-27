@@ -669,15 +669,22 @@ export default function RegistroModal({
   };
 
   const updateField = (field: string, value: string) => {
+    const uppercaseFields = new Set([
+      'nome', 'empresa', 'departamento', 'motorista', 'nomeColaborador',
+      'autorizadoPor', 'destinatario', 'remetente', 'condutor', 'tipoReboque',
+      'veiculo', 'material', 'observacao', 'porteiro',
+    ]);
+    const normalizedValue = uppercaseFields.has(field) ? value.toUpperCase() : value;
+
     if (field === 'empresa' && supportsExtraPeople(categoria)) {
       const empresaAnterior = formData.empresa || '';
       setPessoasExtras((extras) => extras.map((extra) => (
         !extra.empresa || extra.empresa === empresaAnterior
-          ? { ...extra, empresa: value }
+          ? { ...extra, empresa: normalizedValue }
           : extra
       )));
     }
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: normalizedValue }));
   };
 
   const addPessoaExtra = () => {
@@ -694,8 +701,9 @@ export default function RegistroModal({
   };
 
   const updatePessoaExtra = (id: string, field: keyof PessoaExtra, value: string) => {
+    const normalizedValue = ['nome', 'empresa'].includes(field) ? value.toUpperCase() : value;
     setPessoasExtras((extras) => extras.map((extra) => (
-      extra.id === id ? { ...extra, [field]: value } : extra
+      extra.id === id ? { ...extra, [field]: normalizedValue } : extra
     )));
   };
 
@@ -705,9 +713,9 @@ export default function RegistroModal({
       extra.id === id
         ? {
             ...extra,
-            nome: unified.name || extra.nome,
+            nome: unified.name ? unified.name.toUpperCase() : extra.nome,
             rgCpf: unified.doc ? formatCpfRg(unified.doc) : extra.rgCpf,
-            empresa: extra.empresa || formData.empresa || unified.company || '',
+            empresa: extra.empresa || formData.empresa || unified.company?.toUpperCase() || '',
           }
         : extra
     )));
@@ -823,31 +831,34 @@ export default function RegistroModal({
     const unified = suggestionData as unknown as UnifiedSuggestionData;
     const activeCatForAuto = categoria || categoriaInicial || 'entregas2';
     const mapped = mapToFormFields(activeCatForAuto, unified, targetField);
+    const normalizedMapped = Object.fromEntries(
+      Object.entries(mapped).map(([field, value]) => [field, value.toUpperCase()])
+    );
 
     setFormData((prev) => ({
       ...prev,
-      ...mapped,
+      ...normalizedMapped,
       // Always preserve auto date/time — never overwrite with historical values
       data: format(new Date(), 'dd/MM/yyyy'),
       horarioEntrada: format(new Date(), 'HH:mm'),
       porteiro: prev.porteiro || user?.nome || '',
     }));
-    if (mapped.empresa && supportsExtraPeople(activeCatForAuto)) {
+    if (normalizedMapped.empresa && supportsExtraPeople(activeCatForAuto)) {
       setPessoasExtras((extras) => extras.map((extra) => (
-        !extra.empresa ? { ...extra, empresa: mapped.empresa } : extra
+        !extra.empresa ? { ...extra, empresa: normalizedMapped.empresa } : extra
       )));
     }
   };
 
   const handleEmpresaSelect = (suggestionData: Record<string, string>) => {
     const unified = suggestionData as unknown as UnifiedSuggestionData;
-    if (unified.company) updateField('empresa', unified.company);
+    if (unified.company) updateField('empresa', unified.company.toUpperCase());
   };
 
   const handleReboqueSelect = (suggestionData: Record<string, string>) => {
     const valor = suggestionData.tipoReboque;
     if (valor) {
-      updateField('tipoReboque', valor);
+      updateField('tipoReboque', valor.toUpperCase());
     }
   };
 

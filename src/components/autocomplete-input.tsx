@@ -69,13 +69,13 @@ export default function AutocompleteInput({
   }, [handleClickOutside]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
+    onChange(e.target.value.toUpperCase());
     setHighlightedIndex(-1);
     setIsOpen(true);
   };
 
   const handleSelect = (suggestion: AutocompleteSuggestion) => {
-    onChange(suggestion.label);
+    onChange(suggestion.label.toUpperCase());
     setIsOpen(false);
     if (onSelect) onSelect(suggestion);
   };
@@ -128,7 +128,7 @@ export default function AutocompleteInput({
     <div ref={containerRef} className="relative">
       <Input
         ref={inputRef}
-        value={value}
+        value={value.toUpperCase()}
         onChange={handleInputChange}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
@@ -162,10 +162,10 @@ export default function AutocompleteInput({
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="truncate">{highlightMatch(suggestion.label)}</span>
+                  <span className="truncate">{highlightMatch(suggestion.label.toUpperCase())}</span>
                   {suggestion.sublabel && (
                     <span className="text-xs text-muted-foreground truncate">
-                      {suggestion.sublabel}
+                      {suggestion.sublabel.toUpperCase()}
                     </span>
                   )}
                 </div>

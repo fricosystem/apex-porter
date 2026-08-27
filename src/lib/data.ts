@@ -269,6 +269,7 @@ export interface Empresa {
   nome: string;
   cnpj?: string;
   contato?: string;
+  inativo?: boolean; // soft-delete flag para preservar auditoria
 }
 
 export interface Departamento {

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
+  ShieldOff,
   Trash2,
   Search,
   Users,
@@ -489,31 +490,31 @@ export default function CadastrosPage() {
     if (editingId) {
       updatePessoa({
         id: editingId,
-        nome: form.nome.trim(),
+        nome: form.nome.trim().toUpperCase(),
         tipo: form.tipo,
-        empresa: form.empresa.trim(),
-        departamento: form.departamento.trim(),
-        cargo: form.cargo.trim(),
+        empresa: form.empresa.trim().toUpperCase(),
+        departamento: form.departamento.trim().toUpperCase(),
+        cargo: form.cargo.trim().toUpperCase(),
         rgCpf: form.rgCpf.trim(),
         placa: form.placa.trim().toUpperCase(),
         telefone: form.telefone.trim(),
         email: form.email.trim(),
-        ticket: form.ticket.trim() || undefined,
+        ticket: form.ticket.trim().toUpperCase() || undefined,
       });
       toast.success('Pessoa atualizada!');
     } else {
       addPessoa({
         id: `pes_${Date.now()}`,
-        nome: form.nome.trim(),
+        nome: form.nome.trim().toUpperCase(),
         tipo: form.tipo,
-        empresa: form.empresa.trim(),
-        departamento: form.departamento.trim(),
-        cargo: form.cargo.trim(),
+        empresa: form.empresa.trim().toUpperCase(),
+        departamento: form.departamento.trim().toUpperCase(),
+        cargo: form.cargo.trim().toUpperCase(),
         rgCpf: form.rgCpf.trim(),
         placa: form.placa.trim().toUpperCase(),
         telefone: form.telefone.trim(),
         email: form.email.trim(),
-        ticket: form.ticket.trim() || undefined,
+        ticket: form.ticket.trim().toUpperCase() || undefined,
       });
       toast.success('Pessoa cadastrada!');
     }
@@ -524,7 +525,10 @@ export default function CadastrosPage() {
   };
 
   const updateForm = (field: keyof FormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    const normalizedValue = ['nome', 'empresa', 'departamento', 'cargo', 'ticket'].includes(field)
+      ? value.toUpperCase()
+      : value;
+    setForm((prev) => ({ ...prev, [field]: normalizedValue }));
   };
 
   // Summary counts
@@ -879,7 +883,7 @@ export default function CadastrosPage() {
                     <div className="flex-1 p-3 flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <p className="font-medium truncate text-base">{p.nome}</p>
+                          <p className="font-medium truncate text-base uppercase">{p.nome}</p>
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border">
                             {getTipoPessoaLabel(p.tipo)}
                           </span>
@@ -910,14 +914,18 @@ export default function CadastrosPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-40"
+                          disabled={p.inativo}
+                          title={p.inativo ? 'Pessoa já inativada' : 'Inativar pessoa'}
                           onClick={(e) => {
                             e.stopPropagation();
-                            removePessoa(p.id);
-                            toast.success(p.inativo ? 'Pessoa removida' : 'Pessoa inativada');
+                            if (!p.inativo) {
+                              removePessoa(p.id);
+                              toast.success('Pessoa inativada e preservada para auditoria');
+                            }
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <ShieldOff className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

@@ -52,7 +52,6 @@ import {
   addEmpresa as addEmpresaFS,
   setEmpresa as setEmpresaFS,
   updateEmpresa as updateEmpresaFS,
-  removeEmpresa as removeEmpresaFS,
   subscribeDepartamentos,
   addDepartamento as addDepartamentoFS,
   setDepartamento as setDepartamentoFS,
@@ -901,14 +900,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
   removeEmpresa: (id) => {
-    set((state) => ({ empresas: state.empresas.filter((e) => e.id !== id) }));
-    removeEmpresaFS(id).catch((err) => {
-      console.warn('[Firestore] Falha ao remover empresa:', err);
+    // Empresas nunca são excluídas fisicamente: preserva o histórico para auditoria.
+    set((state) => ({
+      empresas: state.empresas.map((empresa) => (
+        empresa.id === id ? { ...empresa, inativo: true } : empresa
+      )),
+    }));
+    updateEmpresaFS(id, { inativo: true }).catch((err) => {
+      console.warn('[Firestore] Falha ao inativar empresa:', err);
     });
   },
   updateEmpresa: (empresa) => {
     set((state) => ({
-      empresas: state.empresas.map((e) => (e.id === empresa.id ? empresa : e)),
+      empresas: state.empresas.map((e) => (
+        e.id === empresa.id ? { ...e, ...empresa } : e
+      )),
     }));
     const { id, ...data } = empresa;
     updateEmpresaFS(id, data).catch((err) => {
@@ -960,7 +966,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   updatePessoa: (pessoa) => {
     set((state) => ({
-      pessoas: state.pessoas.map((p) => (p.id === pessoa.id ? pessoa : p)),
+      pessoas: state.pessoas.map((p) => (p.id === pessoa.id ? { ...p, ...pessoa } : p)),
     }));
     const { id, ...data } = pessoa;
     updatePessoaFS(id, data).catch((err) => {

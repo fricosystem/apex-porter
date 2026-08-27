@@ -741,10 +741,10 @@ export function ModalNovaRota({ onClose, rotaEditar }: ModalNovaRotaProps) {
               <label className="block text-base font-medium mb-1.5">Nome da Rota *</label>
               <input
                 type="text"
-                value={nomeRota}
-                onChange={(e) => setNomeRota(e.target.value)}
+                value={nomeRota.toUpperCase()}
+                onChange={(e) => setNomeRota(e.target.value.toUpperCase())}
                 placeholder="Ex: Rota Externa Norte"
-                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-background border border-input rounded-xl px-4 py-3 text-base uppercase focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
 

@@ -27,14 +27,14 @@ import { db } from './firebase';
 // ── Get all documents from a collection ──
 export async function getCollection<T>(path: string): Promise<T[]> {
   const snap = await getDocs(collection(db, path));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
+  return snap.docs.map((d) => normalizeTextData({ id: d.id, ...d.data() } as T));
 }
 
 // ── Get a single document by ID ──
 export async function getDocument<T>(path: string, id: string): Promise<T | null> {
   const snap = await getDoc(doc(db, path, id));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as T;
+  return normalizeTextData({ id: snap.id, ...snap.data() } as T);
 }
 
 // ── Helper to automatically convert string fields to uppercase ──
@@ -63,7 +63,6 @@ const DONT_UPPERCASE_KEYS = new Set([
   'postoId',
   'rotaId',
   'permissoes',
-  'nome',
   'diasSemana',
   'horariosPlantao',
   'horarioPlantao',
@@ -107,59 +106,7 @@ const DONT_UPPERCASE_KEYS = new Set([
   'telefone',
   'ramal',
   'cnpj',
-  'empresa',
-  'departamento',
-  'local',
-  'localEncontrado',
-  'titulo',
-  'conteudo',
-  'motivo',
-  'descricao',
-  'observacao',
-  'observacoes',
-  'observacoesGerais',
-  'detalhes',
-  'ocorrencia',
-  'envolvidos',
-  'acaoTomada',
-  'resolucao',
-  'autorizadoPor',
-  'remetente',
-  'destinatario',
-  'quemRetirou',
-  'porteiro',
-  'porteiroEntrada',
-  'porteiroSaida',
-  'porteiroSaindo',
-  'porteiroEntrando',
-  'porteiroRetirada',
-  'porteiroDevolucao',
-  'chave',
-  'motorista',
-  'motoristaNome',
-  'motoristaDoc',
-  'visitanteNome',
-  'visitanteDoc',
-  'visitanteEmpresa',
-  'nomeColaborador',
-  'nomeEmpresa',
-  'tipoMovimentacao',
-  'supervisor',
-  'condutor',
-  'tipoReboque',
-  'veiculo',
-  'acionadoPor',
-  'criadoPor',
   'criadoPorUid',
-  'item',
-  'itens',
-  'vaga',
-  'cor',
-  'modelo',
-  'responsavel',
-  'contato',
-  'funcao',
-  'ticket',
   'lidoPor',
   'cicloCompleto',
   'fixado',
@@ -171,15 +118,13 @@ const DONT_UPPERCASE_KEYS = new Set([
   'notificadoAntes',
   'notificadoNoHorario',
   'mapconfig',
-  'tipoRecorrencia',
   'minutosAntes',
-  'usuarioEmail',
   'ordem',
   'etapas',
   'contatos',
 ]);
 
-function transformToUpperCase<T>(obj: T): T {
+export function normalizeTextData<T>(obj: T): T {
   // Não modifica tipos primitivos que não sejam string
   if (obj === null || obj === undefined) {
     return obj;
@@ -190,7 +135,7 @@ function transformToUpperCase<T>(obj: T): T {
   }
   
   if (Array.isArray(obj)) {
-    return obj.map((item) => transformToUpperCase(item)) as unknown as T;
+    return obj.map((item) => normalizeTextData(item)) as unknown as T;
   }
   
   if (typeof obj === 'object') {
@@ -205,7 +150,7 @@ function transformToUpperCase<T>(obj: T): T {
         if (DONT_UPPERCASE_KEYS.has(key)) {
           newObj[key] = value;
         } else {
-          newObj[key] = transformToUpperCase(value);
+          newObj[key] = normalizeTextData(value);
         }
       }
     }
@@ -220,7 +165,7 @@ export async function addDocument<T extends Record<string, unknown>>(
   path: string,
   data: T
 ): Promise<string> {
-  const transformed = transformToUpperCase(data);
+  const transformed = normalizeTextData(data);
   const ref = await addDoc(collection(db, path), transformed);
   return ref.id;
 }
@@ -231,7 +176,7 @@ export async function setDocument<T extends Record<string, unknown>>(
   id: string,
   data: T
 ): Promise<void> {
-  const transformed = transformToUpperCase(data);
+  const transformed = normalizeTextData(data);
   await setDoc(doc(db, path, id), transformed);
 }
 
@@ -241,7 +186,7 @@ export async function updateDocument<T extends Record<string, unknown>>(
   id: string,
   data: Partial<T>
 ): Promise<void> {
-  const transformed = transformToUpperCase(data);
+  const transformed = normalizeTextData(data);
   await setDoc(doc(db, path, id), transformed as Record<string, unknown>, { merge: true });
 }
 
@@ -258,7 +203,7 @@ export function subscribeCollection<T>(
 ): Unsubscribe {
   const q = constraints.length > 0 ? query(collection(db, path), ...constraints) : collection(db, path);
   return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
+    const items = snap.docs.map((d) => normalizeTextData({ id: d.id, ...d.data() } as T));
     callback(items);
   });
 }
@@ -273,7 +218,7 @@ export function subscribeDocument<T>(
     if (!snap.exists()) {
       callback(null);
     } else {
-      callback({ id: snap.id, ...snap.data() } as T);
+      callback(normalizeTextData({ id: snap.id, ...snap.data() } as T));
     }
   });
 }
@@ -285,7 +230,7 @@ export async function queryCollection<T>(
 ): Promise<T[]> {
   const q = query(collection(db, path), ...constraints);
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
+  return snap.docs.map((d) => normalizeTextData({ id: d.id, ...d.data() } as T));
 }
 
 // ── Re-export Firestore utilities for use in collection-specific files ──

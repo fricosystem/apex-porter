@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
-  Trash2,
+  ShieldOff,
   Search,
   Building,
   Edit2,
@@ -100,17 +100,17 @@ export default function EmpresasPage() {
     if (editingId) {
       updateEmpresa({
         id: editingId,
-        nome: form.nome.trim(),
-        cnpj: form.cnpj.trim() || undefined,
-        contato: form.contato.trim() || undefined,
+        nome: form.nome.trim().toUpperCase(),
+        cnpj: form.cnpj.trim().toUpperCase() || undefined,
+        contato: form.contato.trim().toUpperCase() || undefined,
       });
       toast.success('Empresa atualizada com sucesso!');
     } else {
       addEmpresa({
         id: `emp_${Date.now()}`,
-        nome: form.nome.trim(),
-        cnpj: form.cnpj.trim() || undefined,
-        contato: form.contato.trim() || undefined,
+        nome: form.nome.trim().toUpperCase(),
+        cnpj: form.cnpj.trim().toUpperCase() || undefined,
+        contato: form.contato.trim().toUpperCase() || undefined,
       });
       toast.success('Empresa cadastrada com sucesso!');
     }
@@ -121,7 +121,7 @@ export default function EmpresasPage() {
   };
 
   const updateForm = (field: keyof FormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value.toUpperCase() }));
   };
 
   const empresaVisits = useMemo(() => {
@@ -246,8 +246,11 @@ export default function EmpresasPage() {
                     <div className="w-1.5 shrink-0 bg-emerald-500" />
                     <div className="flex-1 p-3 flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground truncate">{e.nome}</p>
-                        <div className="text-xs text-muted-foreground space-y-0.5 truncate">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="font-semibold text-foreground truncate">{e.nome}</p>
+                  {e.inativo && <Badge variant="outline" className="shrink-0 border-red-200 text-red-600">Inativa</Badge>}
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5 truncate">
                           {e.cnpj && <p>CNPJ: {e.cnpj}</p>}
                           {e.contato && <p>Contato / Telefone: {e.contato}</p>}
                         </div>
@@ -264,14 +267,18 @@ export default function EmpresasPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-40"
+                          disabled={e.inativo}
                           onClick={(evt) => {
                             evt.stopPropagation();
-                            removeEmpresa(e.id);
-                            toast.success('Empresa removida');
+                            if (!e.inativo) {
+                              removeEmpresa(e.id);
+                              toast.success('Empresa inativada e preservada para auditoria');
+                            }
                           }}
+                          title={e.inativo ? 'Empresa já inativada' : 'Inativar empresa'}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <ShieldOff className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
